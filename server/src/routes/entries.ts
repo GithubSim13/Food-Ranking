@@ -15,10 +15,29 @@ router.get('/search', async (req, res) => {
 
 router.get('/', async (_req, res) => {
   const entries = await prisma.entry.findMany({
-    include: { restaurant: { select: { name: true } } },
+    include: {
+      restaurant: { select: { name: true } },
+      reviews: { select: { overallRating: true } },
+    },
     orderBy: { createdAt: 'desc' },
   });
   res.json(entries);
+});
+
+router.get('/:id', async (req, res) => {
+  const id = Number(req.params.id);
+  const entry = await prisma.entry.findUnique({
+    where: { id },
+    include: {
+      restaurant: { select: { name: true } },
+      reviews: { orderBy: { date: 'desc' } },
+    },
+  });
+  if (!entry) {
+    res.status(404).json({ error: 'Not found' });
+    return;
+  }
+  res.json(entry);
 });
 
 router.post('/', async (req, res) => {
