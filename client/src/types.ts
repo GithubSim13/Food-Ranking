@@ -7,6 +7,7 @@ export interface Review {
   rating2: number | null;
   rating3: number | null;
   overallRating: number | null;
+  retroactive: boolean;
   createdAt: string;
 }
 

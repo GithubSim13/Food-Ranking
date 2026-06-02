@@ -31,6 +31,7 @@ function ReviewCard({ review: r, onUpdated }: ReviewCardProps) {
     rating2: '',
     rating3: '',
     notes: '',
+    retroactive: false,
   })
 
   const { mutate, isPending } = useMutation({
@@ -41,6 +42,7 @@ function ReviewCard({ review: r, onUpdated }: ReviewCardProps) {
         rating2: form.rating2 ? Number(form.rating2) : null,
         rating3: form.rating3 ? Number(form.rating3) : null,
         notes: form.notes || null,
+        retroactive: form.retroactive,
       }),
     onSuccess: () => {
       setIsEditing(false)
@@ -71,6 +73,7 @@ function ReviewCard({ review: r, onUpdated }: ReviewCardProps) {
       rating2: r.rating2?.toString() ?? '',
       rating3: r.rating3?.toString() ?? '',
       notes: r.notes ?? '',
+      retroactive: r.retroactive,
     })
     setIsEditing(true)
   }
@@ -112,6 +115,14 @@ function ReviewCard({ review: r, onUpdated }: ReviewCardProps) {
               style={{ ...inputStyle, resize: 'vertical' }}
             />
           </div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--ink-mute, #6b7280)', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={form.retroactive}
+              onChange={e => setForm(f => ({ ...f, retroactive: e.target.checked }))}
+            />
+            Ratings added after the fact
+          </label>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button
               onClick={() => mutate()}
@@ -136,8 +147,15 @@ function ReviewCard({ review: r, onUpdated }: ReviewCardProps) {
   return (
     <div style={cardStyle}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-        <div style={{ fontSize: '0.8rem', color: '#9ca3af' }}>
-          {r.date ? new Date(r.date).toLocaleDateString() : 'No date'}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>
+            {r.date ? new Date(r.date).toLocaleDateString() : 'No date'}
+          </span>
+          {r.retroactive && (
+            <span style={{ fontSize: '0.7rem', fontFamily: 'var(--font-mono, monospace)', color: 'var(--ink-mute, #9ca3af)', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+              &#x1F559; ratings added later
+            </span>
+          )}
         </div>
         <div style={{ display: 'flex', gap: '0.375rem' }}>
           <button onClick={startEdit} style={editBtnStyle}>Edit</button>

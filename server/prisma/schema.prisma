@@ -38,5 +38,6 @@ model Review {
   rating2       Float?
   rating3       Float?
   overallRating Float?
+  retroactive   Boolean   @default(false)
   createdAt     DateTime  @default(now())
 }

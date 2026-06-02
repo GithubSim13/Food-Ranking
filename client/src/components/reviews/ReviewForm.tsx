@@ -18,6 +18,7 @@ export default function ReviewForm({ entryId, onSuccess }: Props) {
   const [date, setDate] = useState(today)
   const [ratings, setRatings] = useState({ rating1: '', rating2: '', rating3: '' })
   const [notes, setNotes] = useState('')
+  const [retroactive, setRetroactive] = useState(false)
 
   const { mutate, isPending } = useMutation({
     mutationFn: createReview,
@@ -25,6 +26,7 @@ export default function ReviewForm({ entryId, onSuccess }: Props) {
       setDate(today)
       setRatings({ rating1: '', rating2: '', rating3: '' })
       setNotes('')
+      setRetroactive(false)
       onSuccess()
     },
   })
@@ -38,6 +40,7 @@ export default function ReviewForm({ entryId, onSuccess }: Props) {
       rating1: ratings.rating1 ? Number(ratings.rating1) : undefined,
       rating2: ratings.rating2 ? Number(ratings.rating2) : undefined,
       rating3: ratings.rating3 ? Number(ratings.rating3) : undefined,
+      retroactive,
     })
   }
 
@@ -73,6 +76,15 @@ export default function ReviewForm({ entryId, onSuccess }: Props) {
           style={{ ...inputStyle, resize: 'vertical' }}
         />
       </div>
+
+      <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: '#6b7280', cursor: 'pointer' }}>
+        <input
+          type="checkbox"
+          checked={retroactive}
+          onChange={e => setRetroactive(e.target.checked)}
+        />
+        Ratings added after the fact
+      </label>
 
       <button type="submit" disabled={isPending} style={{ ...btnStyle, opacity: isPending ? 0.6 : 1 }}>
         {isPending ? 'Saving…' : 'Add Review'}

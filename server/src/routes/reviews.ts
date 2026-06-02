@@ -13,7 +13,7 @@ function computeOverallRating(
 }
 
 router.post('/', async (req, res) => {
-  const { entryId, date, notes, rating1, rating2, rating3 } = req.body;
+  const { entryId, date, notes, rating1, rating2, rating3, retroactive } = req.body;
 
   if (!entryId) {
     res.status(400).json({ error: 'entryId is required' });
@@ -33,6 +33,7 @@ router.post('/', async (req, res) => {
       rating2: r2,
       rating3: r3,
       overallRating: computeOverallRating(r1, r2, r3),
+      retroactive: retroactive === true,
     },
   });
 
@@ -46,7 +47,7 @@ router.put('/:id', async (req, res) => {
     return;
   }
 
-  const { date, notes, rating1, rating2, rating3 } = req.body;
+  const { date, notes, rating1, rating2, rating3, retroactive } = req.body;
 
   const r1 = rating1 != null ? Number(rating1) : null;
   const r2 = rating2 != null ? Number(rating2) : null;
@@ -61,6 +62,7 @@ router.put('/:id', async (req, res) => {
       rating2: r2,
       rating3: r3,
       overallRating: computeOverallRating(r1, r2, r3),
+      ...(retroactive !== undefined && { retroactive: retroactive === true }),
     },
   });
 

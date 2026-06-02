@@ -8,6 +8,7 @@ export const createReview = (data: {
   rating1?: number;
   rating2?: number;
   rating3?: number;
+  retroactive?: boolean;
 }) => axios.post<Review>('/api/reviews', data).then(r => r.data);
 
 export type ReviewUpdatePayload = {
@@ -16,6 +17,7 @@ export type ReviewUpdatePayload = {
   rating1?: number | null;
   rating2?: number | null;
   rating3?: number | null;
+  retroactive?: boolean;
 };
 
 export const updateReview = (id: number, data: ReviewUpdatePayload) =>
