@@ -5,6 +5,7 @@ import EntryForm from './components/entries/EntryForm'
 import EntryDetail from './components/entries/EntryDetail'
 import EntryModal from './components/entries/EntryModal'
 import RankingsPage from './components/rankings/RankingsPage'
+import StarredPage from './components/starred/StarredPage'
 import CategoriesPage from './components/categories/CategoriesPage'
 import RestaurantsPage from './components/restaurants/RestaurantsPage'
 
@@ -20,6 +21,7 @@ export default function App() {
           <Route path="entries" element={<EntryList />} />
           <Route path="entries/new" element={<EntryForm />} />
           <Route path="entries/:id" element={<EntryDetail />} />
+          <Route path="starred" element={<StarredPage />} />
           <Route path="rankings" element={<RankingsPage />} />
           <Route path="categories" element={<CategoriesPage />} />
           <Route path="restaurants" element={<RestaurantsPage />} />

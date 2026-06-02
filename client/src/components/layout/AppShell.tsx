@@ -30,6 +30,9 @@ export default function AppShell() {
         <NavLink to="/entries" style={({ isActive }) => linkStyle(isActive)}>
           Entries
         </NavLink>
+        <NavLink to="/starred" style={({ isActive }) => linkStyle(isActive)}>
+          ★ Starred
+        </NavLink>
         <NavLink to="/rankings" style={({ isActive }) => linkStyle(isActive)}>
           Rankings
         </NavLink>
