@@ -8,8 +8,15 @@ function computeOverallRating(
   r2: number | null,
   r3: number | null,
 ): number | null {
-  const nonNull = [r1, r2, r3].filter((r): r is number => r !== null);
-  return nonNull.length > 0 ? nonNull.reduce((a, b) => a + b, 0) / nonNull.length : null;
+  const candidates = [
+    { value: r1, weight: 0.6 },
+    { value: r2, weight: 0.1 },
+    { value: r3, weight: 0.3 },
+  ].filter((r): r is { value: number; weight: number } => r.value !== null);
+
+  if (candidates.length === 0) return null;
+  const totalWeight = candidates.reduce((s, r) => s + r.weight, 0);
+  return candidates.reduce((s, r) => s + r.value * r.weight, 0) / totalWeight;
 }
 
 router.post('/', async (req, res) => {
