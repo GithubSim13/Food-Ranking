@@ -144,9 +144,11 @@ export default function HomePage() {
 
   const rated = entries.filter(e => entryAvg(e) !== null)
   const byScore = [...rated].sort((a, b) => entryAvg(b)! - entryAvg(a)!)
-  const byDate = [...entries].sort((a, b) =>
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  )
+  const earliestReviewDate = (e: Entry): number => {
+    const dates = e.reviews.map(r => r.date).filter((d): d is string => d !== null)
+    return dates.length ? new Date(dates.sort()[0]).getTime() : 0
+  }
+  const byDate = [...entries].sort((a, b) => earliestReviewDate(b) - earliestReviewDate(a))
   const categoryCount = new Set(entries.map(e => e.category)).size
   const restaurantCount = new Set(entries.map(e => e.restaurant.name)).size
   const starredCount = entries.filter(e => e.starred).length
@@ -360,7 +362,9 @@ export default function HomePage() {
               >
                 <FlagImage code={entry.flag} />
                 <span style={{ flex: 1, fontSize: '0.88rem', color: 'var(--ink)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.foodName}</span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--ink-mute)', flexShrink: 0 }}>{formatDay(entry.createdAt)}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--ink-mute)', flexShrink: 0 }}>
+                  {(() => { const d = entry.reviews.map(r => r.date).filter((d): d is string => d !== null).sort()[0]; return d ? formatDay(d) : '' })()}
+                </span>
               </div>
             ))}
           </div>
