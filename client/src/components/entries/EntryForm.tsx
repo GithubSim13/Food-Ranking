@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createEntry, searchEntries } from '../../api/entries'
+import { getCategories } from '../../api/categories'
 import FlagPicker from '../common/FlagPicker'
 
 function useDebounce<T>(value: T, delay: number): T {
@@ -11,6 +12,84 @@ function useDebounce<T>(value: T, delay: number): T {
     return () => clearTimeout(t)
   }, [value, delay])
   return debounced
+}
+
+interface CategoryComboProps {
+  value: string
+  onChange: (val: string) => void
+}
+
+function CategoryCombo({ value, onChange }: CategoryComboProps) {
+  const [open, setOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categories'],
+    queryFn: getCategories,
+  })
+
+  const filtered = categories
+    .map(c => c.name)
+    .filter(name => name.toLowerCase().includes(value.toLowerCase()))
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  return (
+    <div ref={containerRef} style={{ position: 'relative' }}>
+      <input
+        value={value}
+        onChange={e => { onChange(e.target.value); setOpen(true) }}
+        onFocus={() => setOpen(true)}
+        required
+        style={inputStyle}
+        autoComplete="off"
+      />
+      {open && filtered.length > 0 && (
+        <ul style={{
+          position: 'absolute',
+          top: '100%',
+          left: 0,
+          right: 0,
+          zIndex: 50,
+          margin: '2px 0 0',
+          padding: 0,
+          listStyle: 'none',
+          background: '#fff',
+          border: '1px solid #d1d5db',
+          borderRadius: 6,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+          maxHeight: 200,
+          overflowY: 'auto',
+        }}>
+          {filtered.map(name => (
+            <li
+              key={name}
+              onMouseDown={e => { e.preventDefault(); onChange(name); setOpen(false) }}
+              style={{
+                padding: '0.45rem 0.75rem',
+                cursor: 'pointer',
+                fontSize: '0.9rem',
+                background: name === value ? '#eff6ff' : undefined,
+                color: name === value ? '#1d4ed8' : '#111827',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = '#f3f4f6')}
+              onMouseLeave={e => (e.currentTarget.style.background = name === value ? '#eff6ff' : '')}
+            >
+              {name}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
 }
 
 export default function EntryForm() {
@@ -68,15 +147,27 @@ export default function EntryForm() {
               fontSize: '0.85rem',
               color: '#92400e',
             }}>
-              Possible duplicate{dupes.length > 1 ? 's' : ''}:{' '}
-              {dupes.map(d => `${d.foodName} (${d.restaurant.name})`).join(', ')}
+              <div style={{ fontWeight: 600, marginBottom: '0.3rem' }}>
+                Possible duplicate{dupes.length > 1 ? 's' : ''}:
+              </div>
+              <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                {dupes.map(d => (
+                  <li key={d.id} style={{ display: 'flex', gap: '0.4rem', alignItems: 'baseline' }}>
+                    <span style={{ fontWeight: 600 }}>{d.foodName}</span>
+                    <span style={{ color: '#b45309' }}>·</span>
+                    <span>{d.restaurant.name}</span>
+                    <span style={{ color: '#b45309' }}>·</span>
+                    <span style={{ color: '#78350f' }}>{d.category}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
         </div>
 
         <div>
           <label style={labelStyle}>Category</label>
-          <input value={category} onChange={e => setCategory(e.target.value)} required style={inputStyle} />
+          <CategoryCombo value={category} onChange={setCategory} />
         </div>
 
         <div>
@@ -113,6 +204,7 @@ const inputStyle: React.CSSProperties = {
   padding: '0.5rem 0.75rem',
   border: '1px solid #d1d5db',
   borderRadius: 6,
+  boxSizing: 'border-box',
 }
 const btnStyle: React.CSSProperties = {
   background: '#2563eb',

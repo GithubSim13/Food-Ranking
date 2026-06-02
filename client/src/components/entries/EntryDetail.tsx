@@ -288,18 +288,23 @@ export default function EntryDetail() {
                 onClick={() => toggleStar()}
                 disabled={isTogglingStar}
                 style={{
-                  background: 'transparent',
-                  border: 'none',
+                  background: entry.starred ? '#FEF3C7' : '#f9fafb',
+                  border: entry.starred ? '2px solid #F59E0B' : '2px solid #d1d5db',
                   cursor: isTogglingStar ? 'default' : 'pointer',
-                  padding: '0.2rem 0.4rem',
-                  borderRadius: 4,
-                  fontSize: '0.9rem',
-                  fontWeight: 600,
-                  color: entry.starred ? '#F59E0B' : '#9ca3af',
+                  padding: '0.4rem 0.875rem',
+                  borderRadius: 8,
+                  fontSize: '1rem',
+                  fontWeight: 700,
+                  color: entry.starred ? '#B45309' : '#6b7280',
                   opacity: isTogglingStar ? 0.5 : 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  transition: 'all 0.15s',
+                  boxShadow: entry.starred ? '0 0 0 3px #FDE68A' : 'none',
                 }}
               >
-                {entry.starred ? '★ Starred' : '☆ Add Star'}
+                {entry.starred ? '★ Starred' : '☆ Star'}
               </button>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
