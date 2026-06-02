@@ -57,11 +57,13 @@ Restaurant ──< Entry ──< Review
 
 - **Restaurant** — `id`, `name`
 - **Entry** — `id`, `foodName`, `category`, `restaurantId`, `starred` (bool), `flag` (String?, nullable 2-letter ISO code), `manualRank` (Int?, nullable — per-category drag order), `createdAt`, `updatedAt`
-- **Review** — `id`, `entryId`, `date?` (DateTime, nullable), `notes?`, `rating1?` (Taste), `rating2?` (Value), `rating3?` (Consistency), `overallRating?`, `createdAt`
+- **Review** — `id`, `entryId`, `date?` (DateTime, nullable), `notes?`, `rating1?` (Taste), `rating2?` (Value), `rating3?` (Consistency), `overallRating?`, `retroactive` (Boolean, default false), `createdAt`
 
 `Entry.flag` is a nullable 2-letter ISO 3166-1 alpha-2 country code (e.g. `"SG"`, `"JP"`). `null` means the food was eaten locally (home country). Non-null means eaten abroad.
 
 `Entry.manualRank` is a nullable integer used to persist drag-and-drop order within a category on the Rankings page. `null` means unranked (new entries). Lower value = higher position within the drag order tier.
+
+`Review.retroactive` flags that ratings were added after the fact, not at time of eating. Shown as a badge on review cards.
 
 The generated Prisma client lives at `server/src/generated/prisma/` (Prisma v6 TypeScript client, **not** the default `@prisma/client`). Always import via the singleton at `src/lib/prisma.ts`.
 
@@ -98,15 +100,19 @@ server/
 | GET | `/api/entries/:id` | Single entry with full restaurant + reviews, ordered by `createdAt` asc |
 | POST | `/api/entries` | Create entry — body: `{ foodName, category, restaurantName, starred?, flag? }`. Find-or-creates restaurant. |
 | PATCH | `/api/entries/:id` | Partial update — body: `{ starred?, foodName?, category?, flag? }`. Only provided fields are written. |
+| DELETE | `/api/entries/:id` | Delete entry and all its reviews. |
 | GET | `/api/entries/search?q=` | Case-insensitive foodName search (ILIKE) for duplicate detection |
-| POST | `/api/reviews` | Create review — body: `{ entryId, date?, rating1?, rating2?, rating3?, notes? }`. `overallRating` is computed server-side; client value is ignored. |
-| PUT | `/api/reviews/:id` | Update review — same optional fields as POST. `overallRating` recomputed server-side. |
-| GET | `/api/rankings` | All entries grouped by category; within each category, entries sorted by `manualRank` asc (nulls last), then by avg `overallRating` desc as tiebreaker. Includes `flag` and `manualRank` per entry. |
-| PATCH | `/api/rankings/reorder` | Persist drag-and-drop order — body: `{ category: string, orderedIds: number[] }`. Writes `manualRank` (0-based index) to each entry in the list. |
+| POST | `/api/reviews` | Create review — body: `{ entryId, date?, rating1?, rating2?, rating3?, notes?, retroactive? }`. `overallRating` is computed server-side. |
+| PUT | `/api/reviews/:id` | Update review — same optional fields as POST including `retroactive?`. `overallRating` recomputed server-side. |
+| DELETE | `/api/reviews/:id` | Delete a single review. |
+| GET | `/api/rankings` | All entries grouped by category; sorted by `manualRank` asc (nulls last), then `overallRating` desc. Includes `flag` and `manualRank` per entry. |
+| PATCH | `/api/rankings/reorder` | Persist drag order — body: `{ category: string, orderedIds: number[] }`. Writes `manualRank` (0-based index). |
 | GET | `/api/categories` | Distinct categories with entry count — `[{ name, entryCount }]`, sorted alphabetically. |
-| PATCH | `/api/categories/:name` | Rename a category — body: `{ name: string }`. Bulk-updates all entries via `updateMany`. `:name` is URL-encoded. |
+| PATCH | `/api/categories/:name` | Rename a category — body: `{ name: string }`. Bulk-updates all entries. `:name` is URL-encoded. |
+| DELETE | `/api/categories/:name` | Delete a category — only if no entries assigned to it. |
 | GET | `/api/restaurants` | All restaurants with entry count — `[{ id, name, entryCount }]`, sorted alphabetically. |
 | PATCH | `/api/restaurants/:id` | Edit restaurant name — body: `{ name: string }`. |
+| DELETE | `/api/restaurants/:id` | Delete a restaurant — only if it has no entries. |
 
 #### overallRating computation (server-enforced)
 `overallRating` is always the average of whichever of `rating1`, `rating2`, `rating3` are non-null. If all three are null, `overallRating` is null. Clients must never send `overallRating` — it is always overwritten.
@@ -116,54 +122,66 @@ server/
 ```
 client/src/
   api/
-    entries.ts          # getEntries, getEntry, searchEntries, createEntry, patchEntry
-    reviews.ts          # createReview, updateReview
+    entries.ts          # getEntries, getEntry, searchEntries, createEntry, patchEntry, deleteEntry
+    reviews.ts          # createReview, updateReview, deleteReview
     rankings.ts         # getRankings, reorderCategory
-    restaurants.ts      # getRestaurants, patchRestaurant
-    categories.ts       # getCategories, renameCategory
+    restaurants.ts      # getRestaurants, patchRestaurant, deleteRestaurant
+    categories.ts       # getCategories, renameCategory, deleteCategory
   components/
     layout/
-      AppShell.tsx      # sidebar nav (Entries, Rankings, Categories, Restaurants) + Outlet
+      AppShell.tsx      # sidebar nav: Home, Entries, Rankings, then EXPLORE: Categories, Restaurants; footer shows entry count + avg rating
     common/
       Modal.tsx         # reusable modal overlay: backdrop + scrollable card, ESC/backdrop to close
+      Toast.tsx         # single toast notification, auto-dismisses after 3s, success/error variants
+      ToastContainer.tsx  # renders active toasts stacked in bottom-right
       FlagImage.tsx     # renders SVG flag from country-flag-icons; null → nothing, unknown code → text fallback
       FlagPicker.tsx    # searchable country dropdown; props: { value: string | null, onChange }
       countryList.ts    # static list of 250 { code, name } pairs (auto-generated, do not hand-edit)
+    home/
+      HomePage.tsx      # / — dashboard: greeting, stat grid, top 5 podium, Hall of Fame/Shame, Reigning Champion, Fresh off the fork, Top Tables, Regulars, Logging pace, Best value
     entries/
-      EntryList.tsx     # /entries — card list + client-side search; card click opens EntryModal
+      EntryList.tsx     # /entries — card list + search + scope filters (Everything/Starred/Abroad/Home) + sort pills (Most recent/Top rated/A-Z)
       EntryCard.tsx     # card: flag SVG, name, category, restaurant, avg overallRating; gold styling when starred
-      EntryForm.tsx     # /entries/new — form + live dupe detection + FlagPicker
-      EntryDetail.tsx   # /entries/:id — entry info + inline editing (foodName, category, flag, restaurant) + star toggle + reviews list + ReviewForm
+      EntryForm.tsx     # /entries/new — form + live dupe detection (list format) + FlagPicker + category combo box
+      EntryDetail.tsx   # /entries/:id — entry info + inline editing + star toggle + reviews list + ReviewForm + delete entry/review
       EntryModal.tsx    # modal wrapper around EntryDetail; onClose navigates back
     reviews/
-      ReviewForm.tsx    # add review: Taste/Value/Consistency (1–10) + date + notes
+      ReviewForm.tsx    # add review: Taste/Value/Consistency (1–10) + date + notes + retroactive checkbox
     rankings/
-      RankingsPage.tsx  # /rankings — grouped by category, drag-and-drop reorder via @dnd-kit, shows flag SVGs
+      RankingsPage.tsx  # /rankings — grouped by category, drag-and-drop reorder via @dnd-kit (gated behind Edit Rankings mode)
     categories/
-      CategoriesPage.tsx  # /categories — list categories with counts, click to expand entries, inline rename
+      CategoriesPage.tsx  # /categories — accordion list, inline rename, delete (blocked if entries exist)
     restaurants/
-      RestaurantsPage.tsx # /restaurants — list restaurants with counts, click to expand entries, inline rename
-  types.ts              # Entry, EntryDetail, Review, RankedEntry, Rankings, CategorySummary, RestaurantSummary
+      RestaurantsPage.tsx # /restaurants — accordion list, inline rename, delete (blocked if entries exist)
+  context/
+    ToastContext.tsx    # ToastProvider + useToast() hook; showToast(message, variant?)
+  types.ts              # Entry, EntryDetail, Review (includes retroactive), RankedEntry, Rankings, CategorySummary, RestaurantSummary
   App.tsx               # routes + React Router background-location modal pattern for /entries/:id
-  main.tsx              # QueryClientProvider + BrowserRouter
+  main.tsx              # QueryClientProvider + BrowserRouter + ToastProvider + ToastContainer
 ```
 
 ### Key behaviours
 
 - **Vite proxy**: `/api` → `http://localhost:3000`
-- **Dupe detection**: debounced 300ms on foodName input (>2 chars), calls `GET /api/entries/search?q=`, shows amber inline warning with matches
+- **Design system**: Ube Midnight palette — CSS variables (`--paper`, `--paper-2`, `--surface`, `--ink`, `--ink-mute`, `--line`, `--accent`, `--gold`, etc.) in `index.css`. Fonts: Bricolage Grotesque (display), Hanken Grotesk (body), Space Mono (mono).
+- **Dupe detection**: debounced 300ms on foodName input (>2 chars), calls `GET /api/entries/search?q=`, shows matches as a readable list (name, restaurant, category per item)
 - **Avg rating on cards**: computed client-side from `reviews[].overallRating` (null values excluded); displayed as `toFixed(2)`, shows "Unrated" when null
-- **Review invalidation**: after POST /api/reviews or PUT /api/reviews/:id, `['entries', entryId]` query is invalidated to refresh the detail page
-- **Starred entries**: gold card styling (amber border, warm background, box shadow) on entry list and rankings; toggle button on entry detail page uses optimistic update via TanStack Query
-- **Review notes**: stored as newline-separated text; rendered as `<ul><li>` bullet list (split on `\n`, empty lines skipped)
-- **Inline review editing**: each review card on `/entries/:id` has an Edit button that switches to an inline form pre-filled with existing values; saves via PUT /api/reviews/:id
-- **Inline entry editing**: "Edit" button on `/entries/:id` shows a form to edit foodName, category, flag (via FlagPicker), and restaurant name. Restaurant renames call PATCH /api/restaurants/:id; other fields call PATCH /api/entries/:id. Both fire in parallel if both changed.
-- **Flag display**: `FlagImage` component renders the SVG flag from `country-flag-icons/react/3x2` wherever a flag is shown (EntryCard, EntryDetail header, RankingsPage, CategoriesPage expanded list, RestaurantsPage expanded list). Falls back to raw text for unknown codes; renders nothing for null.
-- **FlagPicker**: searchable dropdown — type country name or ISO code to filter 250 countries. Shows SVG flag + name + code in results. "✕ No flag (local)" clears to null. Arrow-key navigation, Enter to select, Escape to close, click-outside to dismiss.
-- **Entry detail modal**: clicking an entry card anywhere in the app opens `EntryDetail` inside `Modal.tsx` as an overlay. URL updates to `/entries/:id` (React Router background-location pattern). ESC or backdrop click closes and returns to the previous page. Direct navigation to `/entries/:id` still renders `EntryDetail` as a full page.
-- **Rankings drag-and-drop**: on `/rankings`, each category's entries are reorderable via `@dnd-kit`. All entries (rated and unrated) are draggable. Drag order is persisted to `Entry.manualRank` via `PATCH /api/rankings/reorder`. Rated entries are not locked — the user's manual order takes precedence. `overallRating` is shown as a secondary label, not as a sort enforcer.
-- **Categories page**: accordion list — clicking a category reveals its entries inline. Rename button enters inline edit mode (Enter to save, Escape to cancel); calls PATCH /api/categories/:name which bulk-updates all entries.
-- **Restaurants page**: same pattern keyed by restaurant ID; rename calls PATCH /api/restaurants/:id.
+- **Toast notifications**: all mutations show a success or error toast via `useToast()` from `ToastContext`
+- **Query invalidation**: after any mutation, relevant TanStack Query keys invalidated for immediate UI update — `['entries']`, `['entries', id]`, `['rankings']`, `['restaurants']`, `['categories']` as appropriate
+- **Starred entries**: gold card styling on entry list and rankings; toggle button on entry detail page
+- **Review notes**: stored as newline-separated text; rendered as `<ul><li>` bullet list
+- **Retroactive reviews**: `Review.retroactive` boolean — when true, review card shows a small muted clock badge "ratings added later". Checkbox in both new and edit review forms.
+- **Inline review editing**: Edit button on each review card; saves via PUT /api/reviews/:id; includes retroactive checkbox
+- **Inline entry editing**: Edit button on `/entries/:id` — edits foodName, category (combo box), flag (FlagPicker), restaurant name. Fires PATCH /api/restaurants/:id and PATCH /api/entries/:id in parallel if both changed.
+- **Delete flows**: Delete Entry button on entry detail (confirms, deletes entry + all reviews, navigates to /entries). Delete button on each review card. Categories/Restaurants block delete if entries exist.
+- **Flag display**: `FlagImage` renders SVG flags everywhere. Falls back to raw text for unknown codes; renders nothing for null.
+- **FlagPicker**: searchable dropdown — type country name or ISO code. Arrow-key navigation, Enter/Escape/click-outside support.
+- **Entry detail modal**: clicking an entry card anywhere opens `EntryDetail` inside `Modal.tsx`. URL updates to `/entries/:id`. ESC or backdrop closes. Direct navigation renders as full page.
+- **Rankings drag-and-drop**: gated behind "Edit Rankings" button. Save persists order via `PATCH /api/rankings/reorder`; Cancel restores snapshot.
+- **Category combo box**: on new entry form, shows existing categories as dropdown, allows free-text new category.
+- **Home dashboard**: stat grid, top 5 podium, Hall of Fame/Shame, Reigning Champion, Fresh off the fork, Top Tables, Regulars, Logging pace bar chart, Best value. All computed client-side from cached `['entries']` query.
+- **Sidebar**: primary nav (Home, Entries, Rankings) + EXPLORE section (Categories, Restaurants). Footer shows total foods rated + avg rating.
+- **Scope filters on Entries**: Everything / ★ Starred / Abroad / Home. Sort pills: Most recent / Top rated / A–Z.
 
 ### Environment
 
@@ -191,9 +209,18 @@ Default to low or medium effort unless the task is explicitly complex. Only use 
 - [x] Inline review editing (PUT /api/reviews/:id)
 - [x] Rankings show all entries (unrated below rated)
 - [x] Edit existing entries (foodName, category, flag, restaurant name — inline on detail page)
-- [x] Categories sidebar tab (/categories) — list, filter, rename
-- [x] Restaurants sidebar tab (/restaurants) — list, filter, rename
+- [x] Categories sidebar tab (/categories) — list, filter, rename, delete
+- [x] Restaurants sidebar tab (/restaurants) — list, filter, rename, delete
 - [x] Country flag support — `Entry.flag` ISO code, SVG rendering via FlagImage, FlagPicker for input
 - [x] Entry detail opens as modal overlay (React Router background-location pattern); direct URL still works as full page
 - [x] Rankings drag-and-drop reorder per category (`Entry.manualRank`, `@dnd-kit`, `PATCH /api/rankings/reorder`)
+- [x] Rankings edit mode — drag gated behind Edit Rankings button; Save/Cancel flow
+- [x] Delete entries, reviews, categories, restaurants with confirmation and warnings
+- [x] Toast notifications + query invalidation for immediate UI updates without refresh
+- [x] Category combo box on new entry form (existing categories + free-text new)
+- [x] Duplicate warnings shown as readable list
+- [x] Star button prominent on entry modal
+- [x] Ube Midnight redesign — design tokens, typography, nav restructure, scope filters on Entries
+- [x] Home dashboard — stat grid, podium, Hall of Fame/Shame, Top Tables, Regulars, Logging pace
+- [x] Review.retroactive flag — checkbox on form, badge on review card, persisted via POST/PUT reviews
 - [ ] Capacitor mobile wrapper
