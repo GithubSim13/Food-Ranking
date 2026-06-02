@@ -18,14 +18,16 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { getRankings, reorderCategory } from '../../api/rankings'
 import FlagImage from '../common/FlagImage'
+import { useToast } from '../../context/ToastContext'
 import type { RankedEntry } from '../../types'
 
 interface SortableEntryRowProps {
   entry: RankedEntry
   index: number
+  isEditing: boolean
 }
 
-function SortableEntryRow({ entry, index }: SortableEntryRowProps) {
+function SortableEntryRow({ entry, index, isEditing }: SortableEntryRowProps) {
   const navigate = useNavigate()
   const location = useLocation()
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -36,7 +38,9 @@ function SortableEntryRow({ entry, index }: SortableEntryRowProps) {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-    background: entry.starred ? '#FEF3C7' : '#fff',
+    background: isEditing
+      ? (entry.starred ? '#FEF9E7' : '#f8fafc')
+      : (entry.starred ? '#FEF3C7' : '#fff'),
     border: entry.starred ? '2px solid #F59E0B' : '1px solid #e5e7eb',
     borderRadius: 8,
     padding: '0.75rem 1rem',
@@ -51,19 +55,19 @@ function SortableEntryRow({ entry, index }: SortableEntryRowProps) {
 
   return (
     <div ref={setNodeRef} style={style}>
-      {/* Drag handle — only this receives drag listeners */}
+      {/* Drag handle */}
       <span
-        {...attributes}
-        {...listeners}
+        {...(isEditing ? { ...attributes, ...listeners } : {})}
         style={{
-          cursor: 'grab',
-          color: '#9ca3af',
+          cursor: isEditing ? 'grab' : 'default',
+          color: isEditing ? '#6b7280' : 'transparent',
           fontSize: '1.1rem',
           flexShrink: 0,
           padding: '0 2px',
           touchAction: 'none',
+          transition: 'color 0.15s',
         }}
-        title="Drag to reorder"
+        title={isEditing ? 'Drag to reorder' : undefined}
       >
         ⠿
       </span>
@@ -72,10 +76,9 @@ function SortableEntryRow({ entry, index }: SortableEntryRowProps) {
         {index + 1}
       </span>
 
-      {/* Clickable area to open entry detail */}
       <div
-        style={{ flex: 1, cursor: 'pointer' }}
-        onClick={() => navigate(`/entries/${entry.id}`, { state: { background: location } })}
+        style={{ flex: 1, cursor: isEditing ? 'default' : 'pointer' }}
+        onClick={isEditing ? undefined : () => navigate(`/entries/${entry.id}`, { state: { background: location } })}
       >
         <div style={{ fontWeight: 600, color: entry.starred ? '#92400E' : undefined, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
           <FlagImage code={entry.flag} />
@@ -101,37 +104,22 @@ function SortableEntryRow({ entry, index }: SortableEntryRowProps) {
 
 interface CategorySectionProps {
   category: string
-  initialEntries: RankedEntry[]
+  entries: RankedEntry[]
+  isEditing: boolean
+  onReorder: (category: string, newEntries: RankedEntry[]) => void
 }
 
-function CategorySection({ category, initialEntries }: CategorySectionProps) {
-  const queryClient = useQueryClient()
-  const [entries, setEntries] = useState(initialEntries)
-
-  // Sync when server data changes
-  useEffect(() => {
-    setEntries(initialEntries)
-  }, [initialEntries])
-
+function CategorySection({ category, entries, isEditing, onReorder }: CategorySectionProps) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   )
 
-  async function handleDragEnd(event: DragEndEvent) {
+  function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event
     if (!over || active.id === over.id) return
-
     const oldIndex = entries.findIndex(e => e.id === active.id)
     const newIndex = entries.findIndex(e => e.id === over.id)
-    const reordered = arrayMove(entries, oldIndex, newIndex)
-
-    setEntries(reordered)
-
-    try {
-      await reorderCategory(category, reordered.map(e => e.id))
-    } catch {
-      queryClient.invalidateQueries({ queryKey: ['rankings'] })
-    }
+    onReorder(category, arrayMove(entries, oldIndex, newIndex))
   }
 
   return (
@@ -150,7 +138,7 @@ function CategorySection({ category, initialEntries }: CategorySectionProps) {
         <SortableContext items={entries.map(e => e.id)} strategy={verticalListSortingStrategy}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             {entries.map((entry, i) => (
-              <SortableEntryRow key={entry.id} entry={entry} index={i} />
+              <SortableEntryRow key={entry.id} entry={entry} index={i} isEditing={isEditing} />
             ))}
           </div>
         </SortableContext>
@@ -160,14 +148,68 @@ function CategorySection({ category, initialEntries }: CategorySectionProps) {
 }
 
 export default function RankingsPage() {
+  const queryClient = useQueryClient()
+  const { showToast } = useToast()
+
   const { data: rankings, isLoading } = useQuery({
     queryKey: ['rankings'],
     queryFn: getRankings,
   })
 
+  const [isEditing, setIsEditing] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [localOrder, setLocalOrder] = useState<Record<string, RankedEntry[]>>({})
+  const [snapshot, setSnapshot] = useState<Record<string, RankedEntry[]>>({})
+
+  // Sync local order from server whenever data arrives (but not while editing)
+  useEffect(() => {
+    if (!isEditing && rankings) {
+      setLocalOrder(
+        Object.fromEntries(Object.entries(rankings).map(([cat, entries]) => [cat, entries]))
+      )
+    }
+  }, [rankings, isEditing])
+
+  function enterEdit() {
+    const snap: Record<string, RankedEntry[]> = {}
+    for (const [cat, entries] of Object.entries(localOrder)) {
+      snap[cat] = [...entries]
+    }
+    setSnapshot(snap)
+    setIsEditing(true)
+  }
+
+  function cancelEdit() {
+    setLocalOrder(snapshot)
+    setIsEditing(false)
+  }
+
+  async function saveEdit() {
+    setIsSaving(true)
+    try {
+      const changed = Object.entries(localOrder).filter(([cat, entries]) =>
+        entries.some((e, i) => e.id !== snapshot[cat]?.[i]?.id)
+      )
+      await Promise.all(
+        changed.map(([cat, entries]) => reorderCategory(cat, entries.map(e => e.id)))
+      )
+      setIsEditing(false)
+      queryClient.invalidateQueries({ queryKey: ['rankings'] })
+      showToast('Rankings saved')
+    } catch {
+      showToast('Failed to save rankings', 'error')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  function handleReorder(category: string, newEntries: RankedEntry[]) {
+    setLocalOrder(prev => ({ ...prev, [category]: newEntries }))
+  }
+
   if (isLoading) return <p style={{ color: '#6b7280' }}>Loading…</p>
 
-  const categories = rankings ? Object.entries(rankings) : []
+  const categories = Object.entries(localOrder)
 
   if (categories.length === 0) {
     return (
@@ -182,12 +224,90 @@ export default function RankingsPage() {
 
   return (
     <div>
-      <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1.5rem' }}>Rankings</h2>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+        <h2 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>Rankings</h2>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          {isEditing ? (
+            <>
+              <button
+                onClick={saveEdit}
+                disabled={isSaving}
+                style={{ ...btnStyle, opacity: isSaving ? 0.6 : 1 }}
+              >
+                {isSaving ? 'Saving…' : 'Save Changes'}
+              </button>
+              <button onClick={cancelEdit} disabled={isSaving} style={cancelBtnStyle}>
+                Cancel
+              </button>
+            </>
+          ) : (
+            <button onClick={enterEdit} style={editBtnStyle}>
+              Edit Rankings
+            </button>
+          )}
+        </div>
+      </div>
+
+      {isEditing && (
+        <div style={{
+          marginBottom: '1.25rem',
+          padding: '0.6rem 0.875rem',
+          background: '#eff6ff',
+          border: '1px solid #bfdbfe',
+          borderRadius: 8,
+          fontSize: '0.85rem',
+          color: '#1e40af',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+        }}>
+          <span>⠿</span>
+          Drag entries to reorder within each category
+        </div>
+      )}
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
         {categories.map(([category, entries]) => (
-          <CategorySection key={category} category={category} initialEntries={entries} />
+          <CategorySection
+            key={category}
+            category={category}
+            entries={entries}
+            isEditing={isEditing}
+            onReorder={handleReorder}
+          />
         ))}
       </div>
     </div>
   )
+}
+
+const btnStyle: React.CSSProperties = {
+  background: '#2563eb',
+  color: '#fff',
+  border: 'none',
+  padding: '0.45rem 0.875rem',
+  borderRadius: 6,
+  cursor: 'pointer',
+  fontWeight: 500,
+  fontSize: '0.875rem',
+}
+const cancelBtnStyle: React.CSSProperties = {
+  background: 'transparent',
+  color: '#6b7280',
+  border: '1px solid #d1d5db',
+  padding: '0.45rem 0.875rem',
+  borderRadius: 6,
+  cursor: 'pointer',
+  fontWeight: 500,
+  fontSize: '0.875rem',
+}
+const editBtnStyle: React.CSSProperties = {
+  background: '#f9fafb',
+  color: '#374151',
+  border: '1px solid #d1d5db',
+  padding: '0.45rem 0.875rem',
+  borderRadius: 6,
+  cursor: 'pointer',
+  fontWeight: 500,
+  fontSize: '0.875rem',
 }
