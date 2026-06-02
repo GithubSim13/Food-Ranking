@@ -29,8 +29,10 @@ router.get('/:id', async (req, res) => {
   const entry = await prisma.entry.findUnique({
     where: { id },
     include: {
-      restaurant: { select: { name: true } },
-      reviews: { orderBy: { date: 'desc' } },
+      restaurant: true,
+      reviews: {
+        orderBy: { createdAt: 'asc' },
+      },
     },
   });
   if (!entry) {
