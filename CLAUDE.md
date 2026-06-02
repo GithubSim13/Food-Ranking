@@ -96,13 +96,13 @@ server/
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/` | Health check — `{ status: "ok" }` |
-| GET | `/api/entries` | All entries, newest first; includes `reviews: [{ overallRating }]` for avg calculation |
+| GET | `/api/entries` | All entries, newest first; includes `reviews: [{ overallRating, date }]` for avg and date calculations |
 | GET | `/api/entries/:id` | Single entry with full restaurant + reviews, ordered by `createdAt` asc |
 | POST | `/api/entries` | Create entry — body: `{ foodName, category, restaurantName, starred?, flag? }`. Find-or-creates restaurant. |
 | PATCH | `/api/entries/:id` | Partial update — body: `{ starred?, foodName?, category?, flag? }`. Only provided fields are written. |
 | DELETE | `/api/entries/:id` | Delete entry and all its reviews. |
 | GET | `/api/entries/search?q=` | Case-insensitive foodName search (ILIKE) for duplicate detection |
-| POST | `/api/reviews` | Create review — body: `{ entryId, date?, rating1?, rating2?, rating3?, notes?, retroactive? }`. `overallRating` is computed server-side. |
+| POST | `/api/reviews` | Create review — body: `{ entryId, date?, rating1?, rating2?, rating3?, notes?, retroactive? }`. `overallRating` computed server-side. |
 | PUT | `/api/reviews/:id` | Update review — same optional fields as POST including `retroactive?`. `overallRating` recomputed server-side. |
 | DELETE | `/api/reviews/:id` | Delete a single review. |
 | GET | `/api/rankings` | All entries grouped by category; sorted by `manualRank` asc (nulls last), then `overallRating` desc. Includes `flag` and `manualRank` per entry. |
@@ -115,7 +115,12 @@ server/
 | DELETE | `/api/restaurants/:id` | Delete a restaurant — only if it has no entries. |
 
 #### overallRating computation (server-enforced)
-`overallRating` is always the average of whichever of `rating1`, `rating2`, `rating3` are non-null. If all three are null, `overallRating` is null. Clients must never send `overallRating` — it is always overwritten.
+`overallRating` is a **weighted average** of non-null ratings:
+- `rating1` (Taste): 60%
+- `rating2` (Value): 10%
+- `rating3` (Consistency): 30%
+
+Weights are redistributed proportionally when some ratings are null. If all three are null, `overallRating` is null. Clients must never send `overallRating` — it is always overwritten.
 
 ### Client structure
 
@@ -131,11 +136,11 @@ client/src/
     layout/
       AppShell.tsx      # sidebar nav: Home, Entries, Rankings, then EXPLORE: Categories, Restaurants; footer shows entry count + avg rating
     common/
-      Modal.tsx         # reusable modal overlay: backdrop + scrollable card, ESC/backdrop to close
+      Modal.tsx         # reusable modal overlay: dark themed, ESC/backdrop to close
       Toast.tsx         # single toast notification, auto-dismisses after 3s, success/error variants
       ToastContainer.tsx  # renders active toasts stacked in bottom-right
       FlagImage.tsx     # renders SVG flag from country-flag-icons; null → nothing, unknown code → text fallback
-      FlagPicker.tsx    # searchable country dropdown; props: { value: string | null, onChange }
+      FlagPicker.tsx    # searchable country dropdown, dark themed; props: { value: string | null, onChange }
       countryList.ts    # static list of 250 { code, name } pairs (auto-generated, do not hand-edit)
     home/
       HomePage.tsx      # / — dashboard: greeting, stat grid, top 5 podium, Hall of Fame/Shame, Reigning Champion, Fresh off the fork, Top Tables, Regulars, Logging pace, Best value
@@ -143,7 +148,7 @@ client/src/
       EntryList.tsx     # /entries — card list + search + scope filters (Everything/Starred/Abroad/Home) + sort pills (Most recent/Top rated/A-Z)
       EntryCard.tsx     # card: flag SVG, name, category, restaurant, avg overallRating; gold styling when starred
       EntryForm.tsx     # /entries/new — form + live dupe detection (list format) + FlagPicker + category combo box
-      EntryDetail.tsx   # /entries/:id — entry info + inline editing + star toggle + reviews list + ReviewForm + delete entry/review
+      EntryDetail.tsx   # /entries/:id — entry info + inline editing + star toggle + reviews list + ReviewForm + delete entry/review; fully dark themed
       EntryModal.tsx    # modal wrapper around EntryDetail; onClose navigates back
     reviews/
       ReviewForm.tsx    # add review: Taste/Value/Consistency (1–10) + date + notes + retroactive checkbox
@@ -163,7 +168,7 @@ client/src/
 ### Key behaviours
 
 - **Vite proxy**: `/api` → `http://localhost:3000`
-- **Design system**: Ube Midnight palette — CSS variables (`--paper`, `--paper-2`, `--surface`, `--ink`, `--ink-mute`, `--line`, `--accent`, `--gold`, etc.) in `index.css`. Fonts: Bricolage Grotesque (display), Hanken Grotesk (body), Space Mono (mono).
+- **Design system**: Ube Midnight dark palette — CSS variables (`--paper`, `--paper-2`, `--surface`, `--ink`, `--ink-mute`, `--line`, `--accent`, `--gold`, etc.) in `index.css`. Fonts: Bricolage Grotesque (display), Hanken Grotesk (body), Space Mono (mono). All modals, dropdowns, inputs, and buttons use CSS variables — no hardcoded light colors anywhere.
 - **Dupe detection**: debounced 300ms on foodName input (>2 chars), calls `GET /api/entries/search?q=`, shows matches as a readable list (name, restaurant, category per item)
 - **Avg rating on cards**: computed client-side from `reviews[].overallRating` (null values excluded); displayed as `toFixed(2)`, shows "Unrated" when null
 - **Toast notifications**: all mutations show a success or error toast via `useToast()` from `ToastContext`
@@ -175,11 +180,11 @@ client/src/
 - **Inline entry editing**: Edit button on `/entries/:id` — edits foodName, category (combo box), flag (FlagPicker), restaurant name. Fires PATCH /api/restaurants/:id and PATCH /api/entries/:id in parallel if both changed.
 - **Delete flows**: Delete Entry button on entry detail (confirms, deletes entry + all reviews, navigates to /entries). Delete button on each review card. Categories/Restaurants block delete if entries exist.
 - **Flag display**: `FlagImage` renders SVG flags everywhere. Falls back to raw text for unknown codes; renders nothing for null.
-- **FlagPicker**: searchable dropdown — type country name or ISO code. Arrow-key navigation, Enter/Escape/click-outside support.
+- **FlagPicker**: searchable dropdown, dark themed — type country name or ISO code. Arrow-key navigation, Enter/Escape/click-outside support.
 - **Entry detail modal**: clicking an entry card anywhere opens `EntryDetail` inside `Modal.tsx`. URL updates to `/entries/:id`. ESC or backdrop closes. Direct navigation renders as full page.
 - **Rankings drag-and-drop**: gated behind "Edit Rankings" button. Save persists order via `PATCH /api/rankings/reorder`; Cancel restores snapshot.
 - **Category combo box**: on new entry form, shows existing categories as dropdown, allows free-text new category.
-- **Home dashboard**: stat grid, top 5 podium, Hall of Fame/Shame, Reigning Champion, Fresh off the fork, Top Tables, Regulars, Logging pace bar chart, Best value. All computed client-side from cached `['entries']` query.
+- **Home dashboard**: stat grid, top 5 podium, Hall of Fame/Shame, Reigning Champion, Fresh off the fork, Top Tables, Regulars, Logging pace bar chart, Best value. All computed client-side from cached `['entries']` query. Date-dependent sections (Logging pace, Fresh off the fork) use the earliest non-null `review.date` per entry — entries with no dated reviews are excluded from pace and sorted last in recency.
 - **Sidebar**: primary nav (Home, Entries, Rankings) + EXPLORE section (Categories, Restaurants). Footer shows total foods rated + avg rating.
 - **Scope filters on Entries**: Everything / ★ Starred / Abroad / Home. Sort pills: Most recent / Top rated / A–Z.
 
@@ -221,6 +226,9 @@ Default to low or medium effort unless the task is explicitly complex. Only use 
 - [x] Duplicate warnings shown as readable list
 - [x] Star button prominent on entry modal
 - [x] Ube Midnight redesign — design tokens, typography, nav restructure, scope filters on Entries
+- [x] Full dark theme — all modals, dropdowns, inputs, FlagPicker themed with CSS variables
 - [x] Home dashboard — stat grid, podium, Hall of Fame/Shame, Top Tables, Regulars, Logging pace
+- [x] Home dashboard date fix — Logging pace and Fresh off the fork use review.date, not createdAt
 - [x] Review.retroactive flag — checkbox on form, badge on review card, persisted via POST/PUT reviews
+- [x] Weighted overallRating — Taste 60%, Consistency 30%, Value 10%; weights redistributed for partial ratings
 - [ ] Capacitor mobile wrapper
