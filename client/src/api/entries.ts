@@ -15,6 +15,9 @@ export const patchEntry = (
   data: { starred?: boolean; foodName?: string; category?: string; flag?: string | null }
 ) => axios.patch<Omit<Entry, 'reviews'>>(`/api/entries/${id}`, data).then(r => r.data);
 
+export const deleteEntry = (id: number) =>
+  axios.delete(`/api/entries/${id}`).then(() => {});
+
 export const createEntry = (data: {
   foodName: string;
   category: string;

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { getCategories, renameCategory } from '../../api/categories'
+import { getCategories, renameCategory, deleteCategory } from '../../api/categories'
 import { getEntries } from '../../api/entries'
 import FlagImage from '../common/FlagImage'
 import { useToast } from '../../context/ToastContext'
@@ -24,6 +24,7 @@ export default function CategoriesPage() {
   const [selected, setSelected] = useState<string | null>(null)
   const [editingCategory, setEditingCategory] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
+  const [deletingCategory, setDeletingCategory] = useState<string | null>(null)
 
   const { mutate: doRename, isPending: isRenaming } = useMutation({
     mutationFn: ({ from, to }: { from: string; to: string }) => renameCategory(from, to),
@@ -36,6 +37,19 @@ export default function CategoriesPage() {
     },
     onError: () => {
       showToast('Failed to rename category', 'error')
+    },
+  })
+
+  const { mutate: doDelete, isPending: isDeleting } = useMutation({
+    mutationFn: (name: string) => deleteCategory(name),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['categories'] })
+      showToast('Category deleted')
+      setDeletingCategory(null)
+    },
+    onError: () => {
+      showToast('Failed to delete category', 'error')
+      setDeletingCategory(null)
     },
   })
 
@@ -119,9 +133,39 @@ export default function CategoriesPage() {
                   <button onClick={() => startRename(cat.name)} style={editBtnStyle}>
                     Rename
                   </button>
+                  <button onClick={() => setDeletingCategory(cat.name)} style={editBtnStyle}>
+                    Delete
+                  </button>
                 </>
               )}
             </div>
+
+            {deletingCategory === cat.name && (
+              <div style={{ marginTop: '0.25rem', padding: '0.5rem 0.875rem', background: cat.entryCount > 0 ? '#fffbeb' : '#fef2f2', border: `1px solid ${cat.entryCount > 0 ? '#fde68a' : '#fecaca'}`, borderRadius: 6, display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.85rem' }}>
+                {cat.entryCount > 0 ? (
+                  <>
+                    <span style={{ flex: 1, color: '#92400e' }}>
+                      Cannot delete: this category has {cat.entryCount} {cat.entryCount === 1 ? 'entry' : 'entries'} assigned to it.
+                    </span>
+                    <button onClick={() => setDeletingCategory(null)} style={smallCancelBtnStyle}>Close</button>
+                  </>
+                ) : (
+                  <>
+                    <span style={{ flex: 1, color: '#991b1b' }}>Delete this category?</span>
+                    <button
+                      onClick={() => doDelete(cat.name)}
+                      disabled={isDeleting}
+                      style={{ ...smallDeleteBtnStyle, opacity: isDeleting ? 0.6 : 1 }}
+                    >
+                      {isDeleting ? 'Deleting…' : 'Confirm'}
+                    </button>
+                    <button onClick={() => setDeletingCategory(null)} disabled={isDeleting} style={smallCancelBtnStyle}>
+                      Cancel
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
 
             {selected === cat.name && categoryEntries.length > 0 && (
               <div style={{ marginTop: '0.375rem', marginLeft: '1rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
@@ -192,5 +236,16 @@ const smallCancelBtnStyle: React.CSSProperties = {
   borderRadius: 5,
   cursor: 'pointer',
   fontSize: '0.8rem',
+  flexShrink: 0,
+}
+const smallDeleteBtnStyle: React.CSSProperties = {
+  background: '#dc2626',
+  color: '#fff',
+  border: 'none',
+  padding: '0.3rem 0.7rem',
+  borderRadius: 5,
+  cursor: 'pointer',
+  fontSize: '0.8rem',
+  fontWeight: 500,
   flexShrink: 0,
 }

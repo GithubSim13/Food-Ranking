@@ -31,4 +31,14 @@ router.patch('/:name', async (req, res) => {
   res.json({ updated: result.count });
 });
 
+router.delete('/:name', async (req, res) => {
+  const name = decodeURIComponent(req.params.name);
+  const count = await prisma.entry.count({ where: { category: name } });
+  if (count > 0) {
+    res.status(400).json({ error: `Cannot delete: ${count} ${count === 1 ? 'entry is' : 'entries are'} assigned to this category.` });
+    return;
+  }
+  res.status(204).send();
+});
+
 export default router;

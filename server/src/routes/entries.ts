@@ -70,6 +70,17 @@ router.patch('/:id', async (req, res) => {
   res.json(entry);
 });
 
+router.delete('/:id', async (req, res) => {
+  const id = Number(req.params.id);
+  if (isNaN(id)) {
+    res.status(400).json({ error: 'Invalid entry id' });
+    return;
+  }
+  await prisma.review.deleteMany({ where: { entryId: id } });
+  await prisma.entry.delete({ where: { id } });
+  res.status(204).send();
+});
+
 router.post('/', async (req, res) => {
   const { foodName, category, restaurantName, starred, flag } = req.body as {
     foodName?: unknown;

@@ -6,3 +6,6 @@ export const getRestaurants = () =>
 
 export const patchRestaurant = (id: number, data: { name: string }) =>
   axios.patch<{ id: number; name: string }>(`/api/restaurants/${id}`, data).then(r => r.data);
+
+export const deleteRestaurant = (id: number) =>
+  axios.delete(`/api/restaurants/${id}`).then(() => {});

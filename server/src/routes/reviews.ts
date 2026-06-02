@@ -67,4 +67,14 @@ router.put('/:id', async (req, res) => {
   res.json(review);
 });
 
+router.delete('/:id', async (req, res) => {
+  const id = Number(req.params.id);
+  if (isNaN(id)) {
+    res.status(400).json({ error: 'Invalid review id' });
+    return;
+  }
+  await prisma.review.delete({ where: { id } });
+  res.status(204).send();
+});
+
 export default router;

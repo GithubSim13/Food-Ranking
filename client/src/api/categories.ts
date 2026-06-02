@@ -8,3 +8,6 @@ export const renameCategory = (oldName: string, newName: string) =>
   axios
     .patch<{ updated: number }>(`/api/categories/${encodeURIComponent(oldName)}`, { name: newName })
     .then(r => r.data);
+
+export const deleteCategory = (name: string) =>
+  axios.delete(`/api/categories/${encodeURIComponent(name)}`).then(() => {});

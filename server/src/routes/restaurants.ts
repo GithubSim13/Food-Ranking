@@ -35,4 +35,19 @@ router.patch('/:id', async (req, res) => {
   res.json(restaurant);
 });
 
+router.delete('/:id', async (req, res) => {
+  const id = Number(req.params.id);
+  if (isNaN(id)) {
+    res.status(400).json({ error: 'Invalid restaurant id' });
+    return;
+  }
+  const count = await prisma.entry.count({ where: { restaurantId: id } });
+  if (count > 0) {
+    res.status(400).json({ error: `Cannot delete: ${count} ${count === 1 ? 'entry belongs' : 'entries belong'} to this restaurant.` });
+    return;
+  }
+  await prisma.restaurant.delete({ where: { id } });
+  res.status(204).send();
+});
+
 export default router;

@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getEntry, patchEntry } from '../../api/entries'
+import { getEntry, patchEntry, deleteEntry } from '../../api/entries'
 import { patchRestaurant } from '../../api/restaurants'
 import FlagImage from '../common/FlagImage'
 import FlagPicker from '../common/FlagPicker'
-import { updateReview } from '../../api/reviews'
+import { updateReview, deleteReview } from '../../api/reviews'
 import ReviewForm from '../reviews/ReviewForm'
 import type { EntryDetail as EntryDetailType, Review } from '../../types'
 import { useToast } from '../../context/ToastContext'
@@ -24,6 +24,7 @@ interface ReviewCardProps {
 function ReviewCard({ review: r, onUpdated }: ReviewCardProps) {
   const { showToast } = useToast()
   const [isEditing, setIsEditing] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const [form, setForm] = useState({
     date: '',
     rating1: '',
@@ -48,6 +49,18 @@ function ReviewCard({ review: r, onUpdated }: ReviewCardProps) {
     },
     onError: () => {
       showToast('Failed to save review', 'error')
+    },
+  })
+
+  const { mutate: doDeleteReview, isPending: isDeletingReview } = useMutation({
+    mutationFn: () => deleteReview(r.id),
+    onSuccess: () => {
+      onUpdated()
+      showToast('Review deleted')
+    },
+    onError: () => {
+      showToast('Failed to delete review', 'error')
+      setConfirmDelete(false)
     },
   })
 
@@ -126,8 +139,26 @@ function ReviewCard({ review: r, onUpdated }: ReviewCardProps) {
         <div style={{ fontSize: '0.8rem', color: '#9ca3af' }}>
           {r.date ? new Date(r.date).toLocaleDateString() : 'No date'}
         </div>
-        <button onClick={startEdit} style={editBtnStyle}>Edit</button>
+        <div style={{ display: 'flex', gap: '0.375rem' }}>
+          <button onClick={startEdit} style={editBtnStyle}>Edit</button>
+          <button onClick={() => setConfirmDelete(true)} style={editBtnStyle}>Delete</button>
+        </div>
       </div>
+      {confirmDelete && (
+        <div style={{ marginBottom: '0.625rem', padding: '0.5rem 0.75rem', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.85rem' }}>
+          <span style={{ flex: 1, color: '#991b1b' }}>Delete this review?</span>
+          <button
+            onClick={() => doDeleteReview()}
+            disabled={isDeletingReview}
+            style={{ ...deleteBtnStyle, opacity: isDeletingReview ? 0.6 : 1 }}
+          >
+            {isDeletingReview ? 'Deleting…' : 'Confirm'}
+          </button>
+          <button onClick={() => setConfirmDelete(false)} disabled={isDeletingReview} style={editBtnStyle}>
+            Cancel
+          </button>
+        </div>
+      )}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', fontSize: '0.9rem' }}>
         {r.rating1 != null && <span>Taste <strong>{r.rating1}</strong></span>}
         {r.rating2 != null && <span>Value <strong>{r.rating2}</strong></span>}
@@ -160,8 +191,10 @@ export default function EntryDetail() {
   const entryId = Number(id)
   const queryClient = useQueryClient()
   const { showToast } = useToast()
+  const navigate = useNavigate()
 
   const [isEditingDetails, setIsEditingDetails] = useState(false)
+  const [confirmDeleteEntry, setConfirmDeleteEntry] = useState(false)
   const [editForm, setEditForm] = useState<EntryEditForm>({
     foodName: '',
     category: '',
@@ -225,6 +258,20 @@ export default function EntryDetail() {
     },
     onError: () => {
       showToast('Failed to update entry', 'error')
+    },
+  })
+
+  const { mutate: doDeleteEntry, isPending: isDeletingEntry } = useMutation({
+    mutationFn: () => deleteEntry(entryId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['entries'] })
+      queryClient.invalidateQueries({ queryKey: ['rankings'] })
+      showToast('Entry deleted')
+      navigate('/entries')
+    },
+    onError: () => {
+      showToast('Failed to delete entry', 'error')
+      setConfirmDeleteEntry(false)
     },
   })
 
@@ -331,7 +378,23 @@ export default function EntryDetail() {
                 {entry.category} · {entry.restaurant.name}
               </p>
               <button onClick={startEditDetails} style={editBtnStyle}>Edit</button>
+              <button onClick={() => setConfirmDeleteEntry(true)} style={editBtnStyle}>Delete</button>
             </div>
+            {confirmDeleteEntry && (
+              <div style={{ marginTop: '0.75rem', padding: '0.625rem 0.875rem', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.875rem' }}>
+                <span style={{ flex: 1, color: '#991b1b' }}>Are you sure? This will delete all reviews too.</span>
+                <button
+                  onClick={() => doDeleteEntry()}
+                  disabled={isDeletingEntry}
+                  style={{ ...deleteBtnStyle, opacity: isDeletingEntry ? 0.6 : 1 }}
+                >
+                  {isDeletingEntry ? 'Deleting…' : 'Confirm Delete'}
+                </button>
+                <button onClick={() => setConfirmDeleteEntry(false)} disabled={isDeletingEntry} style={editBtnStyle}>
+                  Cancel
+                </button>
+              </div>
+            )}
           </>
         )}
       </div>
@@ -407,4 +470,15 @@ const editBtnStyle: React.CSSProperties = {
   borderRadius: 4,
   cursor: 'pointer',
   fontSize: '0.75rem',
+}
+const deleteBtnStyle: React.CSSProperties = {
+  background: '#dc2626',
+  color: '#fff',
+  border: 'none',
+  padding: '0.3rem 0.7rem',
+  borderRadius: 5,
+  cursor: 'pointer',
+  fontSize: '0.8rem',
+  fontWeight: 500,
+  flexShrink: 0,
 }
