@@ -1,6 +1,6 @@
 import { useEffect, type ReactNode } from 'react'
 
-export default function Modal({ onClose, children }: { onClose: () => void; children: ReactNode }) {
+export default function Modal({ onClose, children, maxWidth = 800 }: { onClose: () => void; children: ReactNode; maxWidth?: number }) {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
@@ -31,7 +31,7 @@ export default function Modal({ onClose, children }: { onClose: () => void; chil
           border: '1px solid var(--line)',
           borderRadius: 12,
           width: '100%',
-          maxWidth: 800,
+          maxWidth,
           maxHeight: '90vh',
           overflowY: 'auto',
           padding: '1.5rem',

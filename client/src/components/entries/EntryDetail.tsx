@@ -1,14 +1,16 @@
-﻿import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getEntry, patchEntry, deleteEntry } from '../../api/entries'
+import { getEntry, patchEntry, deleteEntry, getEntries } from '../../api/entries'
 import { patchRestaurant } from '../../api/restaurants'
 import FlagImage from '../common/FlagImage'
 import FlagPicker from '../common/FlagPicker'
 import { updateReview, deleteReview } from '../../api/reviews'
 import ReviewForm from '../reviews/ReviewForm'
-import type { EntryDetail as EntryDetailType, Review } from '../../types'
+import type { Entry, EntryDetail as EntryDetailType, Review } from '../../types'
 import { useToast } from '../../context/ToastContext'
+
+// ─── helpers ──────────────────────────────────────────────────────────────────
 
 const EDIT_RATING_FIELDS = [
   { label: 'Taste', key: 'rating1' },
@@ -16,12 +18,122 @@ const EDIT_RATING_FIELDS = [
   { label: 'Consistency', key: 'rating3' },
 ] as const
 
+function avgField(
+  reviews: Entry['reviews'],
+  field: 'overallRating' | 'rating1' | 'rating2' | 'rating3',
+): number | null {
+  const vals = reviews.map(r => r[field]).filter((v): v is number => v !== null)
+  return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null
+}
+
+// ─── category comparison panel ────────────────────────────────────────────────
+
+function CategoryComparisonPanel({
+  currentEntryId,
+  category,
+}: {
+  currentEntryId: number
+  category: string
+}) {
+  const { data: entries = [] } = useQuery({
+    queryKey: ['entries'],
+    queryFn: getEntries,
+  })
+
+  const comparisons = entries
+    .filter(e => e.category === category && e.id !== currentEntryId)
+    .map(e => {
+      const overall = avgField(e.reviews, 'overallRating')
+      if (overall === null) return null
+      return {
+        id: e.id,
+        foodName: e.foodName,
+        overall,
+        taste: avgField(e.reviews, 'rating1'),
+        value: avgField(e.reviews, 'rating2'),
+        consistency: avgField(e.reviews, 'rating3'),
+      }
+    })
+    .filter((e): e is NonNullable<typeof e> => e !== null)
+    .sort((a, b) => b.overall - a.overall)
+
+  const fmt1 = (v: number | null) => (v != null ? v.toFixed(1) : '—')
+
+  return (
+    <div style={{
+      width: 264,
+      flexShrink: 0,
+      background: 'var(--surface)',
+      border: '1px solid var(--line)',
+      borderRadius: 10,
+      padding: '1rem',
+      alignSelf: 'flex-start',
+      maxHeight: '70vh',
+      overflowY: 'auto',
+    }}>
+      <p style={{
+        fontFamily: 'var(--font-mono)',
+        fontSize: '0.6rem',
+        fontWeight: 700,
+        textTransform: 'uppercase',
+        letterSpacing: '0.1em',
+        color: 'var(--ink-mute)',
+        marginBottom: '0.75rem',
+        opacity: 0.8,
+      }}>
+        {category} · others
+      </p>
+
+      {comparisons.length === 0 ? (
+        <p style={{ fontSize: '0.82rem', color: 'var(--ink-mute)' }}>
+          No other rated entries in this category.
+        </p>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          {comparisons.map((c, i) => (
+            <div
+              key={c.id}
+              style={{
+                padding: '0.5rem 0.625rem',
+                background: 'var(--paper)',
+                borderRadius: 8,
+                border: '1px solid var(--line)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.375rem', marginBottom: '0.3rem' }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: 'var(--ink-mute)', width: 14, flexShrink: 0 }}>
+                  {i + 1}
+                </span>
+                <span style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--ink)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {c.foodName}
+                </span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '0.9rem', color: 'var(--accent)', flexShrink: 0 }}>
+                  {c.overall.toFixed(2)}
+                </span>
+              </div>
+              <div style={{ display: 'flex', gap: '0.625rem', fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--ink-mute)', paddingLeft: 18 }}>
+                <span>T {fmt1(c.taste)}</span>
+                <span>V {fmt1(c.value)}</span>
+                <span>C {fmt1(c.consistency)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── review card ──────────────────────────────────────────────────────────────
+
 interface ReviewCardProps {
   review: Review
   onUpdated: () => void
+  onEditStart: () => void
+  onEditEnd: () => void
 }
 
-function ReviewCard({ review: r, onUpdated }: ReviewCardProps) {
+function ReviewCard({ review: r, onUpdated, onEditStart, onEditEnd }: ReviewCardProps) {
   const { showToast } = useToast()
   const [isEditing, setIsEditing] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -33,6 +145,16 @@ function ReviewCard({ review: r, onUpdated }: ReviewCardProps) {
     notes: '',
     retroactive: false,
   })
+
+  // If the card unmounts while editing (e.g. the review was deleted by a
+  // concurrent action), make sure the parent panel state is cleaned up.
+  useEffect(() => {
+    return () => {
+      if (isEditing) onEditEnd()
+    }
+    // onEditEnd is a stable function; isEditing captured at unmount time via closure
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const { mutate, isPending } = useMutation({
     mutationFn: () =>
@@ -46,6 +168,7 @@ function ReviewCard({ review: r, onUpdated }: ReviewCardProps) {
       }),
     onSuccess: () => {
       setIsEditing(false)
+      onEditEnd()
       onUpdated()
       showToast('Review saved')
     },
@@ -76,6 +199,7 @@ function ReviewCard({ review: r, onUpdated }: ReviewCardProps) {
       retroactive: r.retroactive,
     })
     setIsEditing(true)
+    onEditStart()
   }
 
   if (isEditing) {
@@ -132,7 +256,7 @@ function ReviewCard({ review: r, onUpdated }: ReviewCardProps) {
               {isPending ? 'Saving…' : 'Save'}
             </button>
             <button
-              onClick={() => setIsEditing(false)}
+              onClick={() => { setIsEditing(false); onEditEnd() }}
               disabled={isPending}
               style={{ ...cancelBtnStyle, opacity: isPending ? 0.6 : 1 }}
             >
@@ -197,6 +321,8 @@ function ReviewCard({ review: r, onUpdated }: ReviewCardProps) {
   )
 }
 
+// ─── entry edit form shape ────────────────────────────────────────────────────
+
 interface EntryEditForm {
   foodName: string
   category: string
@@ -204,7 +330,13 @@ interface EntryEditForm {
   restaurantName: string
 }
 
-export default function EntryDetail() {
+// ─── main component ───────────────────────────────────────────────────────────
+
+interface EntryDetailProps {
+  onPanelChange?: (open: boolean) => void
+}
+
+export default function EntryDetail({ onPanelChange }: EntryDetailProps = {}) {
   const { id } = useParams<{ id: string }>()
   const entryId = Number(id)
   const queryClient = useQueryClient()
@@ -220,10 +352,30 @@ export default function EntryDetail() {
     restaurantName: '',
   })
 
+  // Track which review (if any) is currently in inline-edit mode
+  const [editingReviewId, setEditingReviewId] = useState<number | null>(null)
+  // Toggle for the Add Review form
+  const [isAddingReview, setIsAddingReview] = useState(false)
+
+  const panelOpen = isAddingReview || editingReviewId !== null
+
+  useEffect(() => {
+    onPanelChange?.(panelOpen)
+  }, [panelOpen, onPanelChange])
+
   const { data: entry, isLoading } = useQuery({
     queryKey: ['entries', entryId],
     queryFn: () => getEntry(entryId),
   })
+
+  // If a review was deleted while its card was in edit mode, clear the stale id
+  useEffect(() => {
+    if (editingReviewId !== null && entry) {
+      if (!entry.reviews.some(r => r.id === editingReviewId)) {
+        setEditingReviewId(null)
+      }
+    }
+  }, [entry, editingReviewId])
 
   const { mutate: toggleStar, isPending: isTogglingStar } = useMutation({
     mutationFn: () => patchEntry(entryId, { starred: !(entry?.starred ?? false) }),
@@ -309,8 +461,9 @@ export default function EntryDetail() {
   }
 
   return (
-    <div style={{ maxWidth: 600 }}>
-      <div style={{ marginBottom: '2rem' }}>
+    <div>
+      {/* ── Entry header (always max 600) ── */}
+      <div style={{ maxWidth: 600, marginBottom: '2rem' }}>
         {isEditingDetails ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <div>
@@ -417,29 +570,63 @@ export default function EntryDetail() {
         )}
       </div>
 
-      <section style={{ marginBottom: '2rem' }}>
-        <h3 style={{ fontWeight: 600, marginBottom: '0.75rem' }}>Reviews</h3>
-        {entry.reviews.length === 0 ? (
-          <p style={{ color: 'var(--ink-mute)', fontSize: '0.9rem' }}>No reviews yet.</p>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-            {entry.reviews.map(r => (
-              <ReviewCard key={r.id} review={r} onUpdated={onReviewUpdated} />
-            ))}
-          </div>
-        )}
-      </section>
+      {/* ── Reviews + Add Review + Comparison Panel ── */}
+      <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
+        {/* Left column — reviews and add-review form */}
+        <div style={{ flex: 1, minWidth: 0, maxWidth: 600 }}>
+          <section style={{ marginBottom: '2rem' }}>
+            <h3 style={{ fontWeight: 600, marginBottom: '0.75rem' }}>Reviews</h3>
+            {entry.reviews.length === 0 ? (
+              <p style={{ color: 'var(--ink-mute)', fontSize: '0.9rem' }}>No reviews yet.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+                {entry.reviews.map(r => (
+                  <ReviewCard
+                    key={r.id}
+                    review={r}
+                    onUpdated={onReviewUpdated}
+                    onEditStart={() => setEditingReviewId(r.id)}
+                    onEditEnd={() => setEditingReviewId(null)}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
 
-      <section>
-        <h3 style={{ fontWeight: 600, marginBottom: '0.75rem' }}>Add Review</h3>
-        <ReviewForm
-          entryId={entry.id}
-          onSuccess={() => queryClient.invalidateQueries({ queryKey: ['entries', entryId] })}
-        />
-      </section>
+          <section>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+              <h3 style={{ fontWeight: 600 }}>Add Review</h3>
+              {isAddingReview ? (
+                <button onClick={() => setIsAddingReview(false)} style={editBtnStyle}>Cancel</button>
+              ) : (
+                <button onClick={() => setIsAddingReview(true)} style={editBtnStyle}>+ Add</button>
+              )}
+            </div>
+            {isAddingReview && (
+              <ReviewForm
+                entryId={entry.id}
+                onSuccess={() => {
+                  onReviewUpdated()
+                  setIsAddingReview(false)
+                }}
+              />
+            )}
+          </section>
+        </div>
+
+        {/* Right column — comparison panel (visible when any review form is open) */}
+        {panelOpen && (
+          <CategoryComparisonPanel
+            currentEntryId={entry.id}
+            category={entry.category}
+          />
+        )}
+      </div>
     </div>
   )
 }
+
+// ─── style constants ──────────────────────────────────────────────────────────
 
 const cardStyle: React.CSSProperties = {
   background: 'var(--paper-2)',
