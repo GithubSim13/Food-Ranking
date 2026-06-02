@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { getRankings } from '../../api/rankings'
+import FlagImage from '../common/FlagImage'
 
 export default function RankingsPage() {
   const navigate = useNavigate()
@@ -63,8 +64,8 @@ export default function RankingsPage() {
                     {i + 1}
                   </span>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600, color: entry.starred ? '#92400E' : undefined }}>
-                      {entry.flag && <span style={{ marginRight: '0.35rem' }}>{entry.flag}</span>}
+                    <div style={{ fontWeight: 600, color: entry.starred ? '#92400E' : undefined, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <FlagImage code={entry.flag} />
                       {entry.foodName}
                     </div>
                     <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>{entry.restaurant}</div>

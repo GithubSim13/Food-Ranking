@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { getCategories, renameCategory } from '../../api/categories'
 import { getEntries } from '../../api/entries'
+import FlagImage from '../common/FlagImage'
 
 export default function CategoriesPage() {
   const navigate = useNavigate()
@@ -132,8 +133,8 @@ export default function CategoriesPage() {
                       alignItems: 'center',
                     }}
                   >
-                    <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>
-                      {e.flag && <span style={{ marginRight: '0.3rem' }}>{e.flag}</span>}
+                    <span style={{ fontSize: '0.9rem', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <FlagImage code={e.flag} />
                       {e.foodName}
                     </span>
                     <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{e.restaurant.name}</span>

@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getEntry, patchEntry } from '../../api/entries'
 import { patchRestaurant } from '../../api/restaurants'
+import FlagImage from '../common/FlagImage'
 import { updateReview } from '../../api/reviews'
 import ReviewForm from '../reviews/ReviewForm'
 import type { EntryDetail as EntryDetailType, Review } from '../../types'
@@ -282,8 +283,8 @@ export default function EntryDetail() {
         ) : (
           <>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.25rem' }}>
-              <h2 style={{ fontSize: '1.5rem', fontWeight: 700 }}>
-                {entry.flag && <span style={{ marginRight: '0.35rem' }}>{entry.flag}</span>}
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <FlagImage code={entry.flag} style={{ width: '1.1em' }} />
                 {entry.foodName}
               </h2>
               <button
