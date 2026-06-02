@@ -39,6 +39,11 @@ npm run db:generate  # regenerate Prisma client after schema changes
 npx ts-node src/scripts/import.ts <path-to-entries.md>           # normal import
 npx ts-node src/scripts/import.ts <path-to-entries.md> --clear   # wipe + reimport
 ```
+
+### One-off scripts (`/server`)
+```bash
+npx ts-node src/scripts/setAllRetroactive.ts   # sets retroactive = true on all existing reviews (already run)
+```
 Safe to re-run: upserts entries, backfills reviews and flags for entries that have none yet.
 
 `--clear` deletes in FK-safe order (Reviews → Entries → Restaurants), prints a confirmation with counts, then runs the full import.
@@ -153,7 +158,7 @@ client/src/
     reviews/
       ReviewForm.tsx    # add review: Taste/Value/Consistency (1–10) + date + notes + retroactive checkbox
     rankings/
-      RankingsPage.tsx  # /rankings — grouped by category, drag-and-drop reorder via @dnd-kit (gated behind Edit Rankings mode)
+      RankingsPage.tsx  # /rankings — grouped by category; rated entries sorted by overallRating desc (automatic); unrated entries below, drag-and-drop reorder via @dnd-kit (gated behind Edit Rankings mode); search bar + scope filters (Everything/Starred/Abroad/Home)
     categories/
       CategoriesPage.tsx  # /categories — accordion list, inline rename, delete (blocked if entries exist)
     restaurants/
@@ -182,7 +187,9 @@ client/src/
 - **Flag display**: `FlagImage` renders SVG flags everywhere. Falls back to raw text for unknown codes; renders nothing for null.
 - **FlagPicker**: searchable dropdown, dark themed — type country name or ISO code. Arrow-key navigation, Enter/Escape/click-outside support.
 - **Entry detail modal**: clicking an entry card anywhere opens `EntryDetail` inside `Modal.tsx`. URL updates to `/entries/:id`. ESC or backdrop closes. Direct navigation renders as full page.
-- **Rankings drag-and-drop**: gated behind "Edit Rankings" button. Save persists order via `PATCH /api/rankings/reorder`; Cancel restores snapshot.
+- **Rankings drag-and-drop**: only applies to unrated entries. Gated behind "Edit Rankings" button. Save persists order via `PATCH /api/rankings/reorder`; Cancel restores snapshot. Rated entries always sort by `overallRating` desc automatically — `manualRank` is ignored for them (values left in DB, not wiped).
+- **Rankings search + filters**: same search bar and scope filter pills as Entries page (Everything / ★ Starred / Abroad / Home). Category groups with zero matches are hidden.
+- **Category Comparison Panel**: visible on entry detail when a review form is open (new or edit). Shows other rated entries in the same category sorted by `overallRating` desc. Displays food name, overallRating, and Taste/Value/Consistency breakdowns (— if null). Unrated entries hidden. Panel appears to the right; modal expands wider to accommodate it.
 - **Category combo box**: on new entry form, shows existing categories as dropdown, allows free-text new category.
 - **Home dashboard**: stat grid, top 5 podium, Hall of Fame/Shame, Reigning Champion, Fresh off the fork, Top Tables, Regulars, Logging pace bar chart, Best value. All computed client-side from cached `['entries']` query. Date-dependent sections (Logging pace, Fresh off the fork) use the earliest non-null `review.date` per entry — entries with no dated reviews are excluded from pace and sorted last in recency.
 - **Sidebar**: primary nav (Home, Entries, Rankings) + EXPLORE section (Categories, Restaurants). Footer shows total foods rated + avg rating.
@@ -231,4 +238,9 @@ Default to low or medium effort unless the task is explicitly complex. Only use 
 - [x] Home dashboard date fix — Logging pace and Fresh off the fork use review.date, not createdAt
 - [x] Review.retroactive flag — checkbox on form, badge on review card, persisted via POST/PUT reviews
 - [x] Weighted overallRating — Taste 60%, Consistency 30%, Value 10%; weights redistributed for partial ratings
+- [x] Codebase audit — dead code, redundancy, type safety gaps, CSS variable consistency
+- [x] setAllRetroactive script — all 494 imported reviews marked retroactive = true
+- [x] Rankings sorting — rated entries auto-sort by overallRating desc; drag-and-drop restricted to unrated entries only
+- [x] Rankings search + scope filters (Everything / Starred / Abroad / Home) — category groups hidden when no matches
+- [x] Category Comparison Panel — shown on entry detail when review form is open; rated entries in same category sorted by overallRating desc; Taste/Value/Consistency breakdowns displayed
 - [ ] Capacitor mobile wrapper
