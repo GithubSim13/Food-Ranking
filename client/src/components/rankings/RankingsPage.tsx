@@ -21,6 +21,74 @@ import FlagImage from '../common/FlagImage'
 import { useToast } from '../../context/ToastContext'
 import type { RankedEntry } from '../../types'
 
+// ─── sort helpers ─────────────────────────────────────────────────────────────
+
+function sortedRated(entries: RankedEntry[]): RankedEntry[] {
+  return [...entries]
+    .filter(e => e.avgRating !== null)
+    .sort((a, b) => b.avgRating! - a.avgRating!)
+}
+
+function sortedUnrated(entries: RankedEntry[]): RankedEntry[] {
+  return [...entries]
+    .filter(e => e.avgRating === null)
+    .sort((a, b) => {
+      if (a.manualRank !== null && b.manualRank !== null) return a.manualRank - b.manualRank
+      if (a.manualRank !== null) return -1
+      if (b.manualRank !== null) return 1
+      return a.foodName.localeCompare(b.foodName)
+    })
+}
+
+// ─── rated row (static, always navigable, no dnd) ────────────────────────────
+
+function RatedEntryRow({ entry, index }: { entry: RankedEntry; index: number }) {
+  const navigate = useNavigate()
+  const location = useLocation()
+  return (
+    <div
+      onClick={() => navigate(`/entries/${entry.id}`, { state: { background: location } })}
+      style={{
+        background: entry.starred ? 'var(--gold-wash)' : 'var(--surface)',
+        border: entry.starred ? '1px solid var(--gold)' : '1px solid var(--line)',
+        borderRadius: 14,
+        padding: '0.75rem 1rem',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '1rem',
+        cursor: 'pointer',
+        userSelect: 'none',
+      }}
+    >
+      <span style={{ width: 24, textAlign: 'center', fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--ink-mute)', flexShrink: 0, fontSize: '0.8rem' }}>
+        {index + 1}
+      </span>
+
+      <div style={{ flex: 1 }}>
+        <div style={{ fontWeight: 600, color: entry.starred ? 'var(--gold)' : 'var(--ink)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+          <FlagImage code={entry.flag} />
+          {entry.foodName}
+        </div>
+        <div style={{ fontSize: '0.8rem', color: 'var(--ink-mute)' }}>{entry.restaurant}</div>
+      </div>
+
+      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.2rem', fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '1rem', color: 'var(--accent)' }}>
+          {entry.starred && <span style={{ fontSize: '0.85rem', color: 'var(--gold)' }}>★</span>}
+          {entry.avgRating!.toFixed(2)}
+        </div>
+        {entry.reviewCount > 0 && (
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--ink-mute)' }}>
+            {entry.reviewCount} review{entry.reviewCount !== 1 ? 's' : ''}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─── sortable row (unrated entries, drag-and-drop) ────────────────────────────
+
 interface SortableEntryRowProps {
   entry: RankedEntry
   index: number
@@ -82,9 +150,8 @@ function SortableEntryRow({ entry, index, isEditing }: SortableEntryRowProps) {
       </div>
 
       <div style={{ textAlign: 'right', flexShrink: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.2rem', fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '1rem', color: entry.avgRating != null ? 'var(--accent)' : 'var(--ink-mute)' }}>
-          {entry.starred && entry.avgRating != null && <span style={{ fontSize: '0.85rem', color: 'var(--gold)' }}>★</span>}
-          {entry.avgRating != null ? entry.avgRating.toFixed(2) : 'Unrated'}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.2rem', fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '1rem', color: 'var(--ink-mute)' }}>
+          Unrated
         </div>
         {entry.reviewCount > 0 && (
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--ink-mute)' }}>
@@ -96,14 +163,17 @@ function SortableEntryRow({ entry, index, isEditing }: SortableEntryRowProps) {
   )
 }
 
+// ─── category section ─────────────────────────────────────────────────────────
+
 interface CategorySectionProps {
   category: string
-  entries: RankedEntry[]
+  ratedEntries: RankedEntry[]
+  unratedEntries: RankedEntry[]
   isEditing: boolean
   onReorder: (category: string, newEntries: RankedEntry[]) => void
 }
 
-function CategorySection({ category, entries, isEditing, onReorder }: CategorySectionProps) {
+function CategorySection({ category, ratedEntries, unratedEntries, isEditing, onReorder }: CategorySectionProps) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   )
@@ -111,9 +181,9 @@ function CategorySection({ category, entries, isEditing, onReorder }: CategorySe
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event
     if (!over || active.id === over.id) return
-    const oldIndex = entries.findIndex(e => e.id === active.id)
-    const newIndex = entries.findIndex(e => e.id === over.id)
-    onReorder(category, arrayMove(entries, oldIndex, newIndex))
+    const oldIndex = unratedEntries.findIndex(e => e.id === active.id)
+    const newIndex = unratedEntries.findIndex(e => e.id === over.id)
+    onReorder(category, arrayMove(unratedEntries, oldIndex, newIndex))
   }
 
   return (
@@ -130,18 +200,32 @@ function CategorySection({ category, entries, isEditing, onReorder }: CategorySe
       }}>
         {category}
       </h3>
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={entries.map(e => e.id)} strategy={verticalListSortingStrategy}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            {entries.map((entry, i) => (
-              <SortableEntryRow key={entry.id} entry={entry} index={i} isEditing={isEditing} />
-            ))}
-          </div>
-        </SortableContext>
-      </DndContext>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        {ratedEntries.map((entry, i) => (
+          <RatedEntryRow key={entry.id} entry={entry} index={i} />
+        ))}
+        {unratedEntries.length > 0 && (
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={unratedEntries.map(e => e.id)} strategy={verticalListSortingStrategy}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {unratedEntries.map((entry, i) => (
+                  <SortableEntryRow
+                    key={entry.id}
+                    entry={entry}
+                    index={ratedEntries.length + i}
+                    isEditing={isEditing}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        )}
+      </div>
     </section>
   )
 }
+
+// ─── page ─────────────────────────────────────────────────────────────────────
 
 export default function RankingsPage() {
   const queryClient = useQueryClient()
@@ -154,12 +238,18 @@ export default function RankingsPage() {
 
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  // localOrder holds only unrated entries per category (the draggable subset)
   const [localOrder, setLocalOrder] = useState<Record<string, RankedEntry[]>>({})
   const [snapshot, setSnapshot] = useState<Record<string, RankedEntry[]>>({})
 
+  // Keep localOrder in sync with server data (unrated only) when not editing
   useEffect(() => {
     if (!isEditing && rankings) {
-      setLocalOrder({ ...rankings })
+      setLocalOrder(
+        Object.fromEntries(
+          Object.entries(rankings).map(([cat, entries]) => [cat, sortedUnrated(entries)])
+        )
+      )
     }
   }, [rankings, isEditing])
 
@@ -202,9 +292,22 @@ export default function RankingsPage() {
 
   if (isLoading) return <p style={{ color: 'var(--ink-mute)' }}>Loading…</p>
 
-  const categories = Object.entries(localOrder)
+  // Rated entries always come from server data sorted by avgRating desc.
+  // Unrated entries come from localOrder (drag state) if initialised, else derive
+  // directly from rankings to avoid a one-render flash on first load.
+  const categoryKeys = Object.keys(rankings ?? {})
+  const displayCategories = categoryKeys
+    .map(cat => {
+      const all = (rankings ?? {})[cat] ?? []
+      return {
+        category: cat,
+        ratedEntries: sortedRated(all),
+        unratedEntries: cat in localOrder ? localOrder[cat] : sortedUnrated(all),
+      }
+    })
+    .filter(c => c.ratedEntries.length > 0 || c.unratedEntries.length > 0)
 
-  if (categories.length === 0) {
+  if (displayCategories.length === 0) {
     return (
       <div>
         <p style={kickerStyle}>The board</p>
@@ -216,6 +319,8 @@ export default function RankingsPage() {
     )
   }
 
+  const hasUnrated = displayCategories.some(c => c.unratedEntries.length > 0)
+
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
@@ -223,26 +328,28 @@ export default function RankingsPage() {
           <p style={kickerStyle}>The board</p>
           <h2 style={pageTitleStyle}>Rankings</h2>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-          {isEditing ? (
-            <>
-              <button
-                onClick={saveEdit}
-                disabled={isSaving}
-                style={{ ...primaryBtnStyle, opacity: isSaving ? 0.6 : 1 }}
-              >
-                {isSaving ? 'Saving…' : 'Save Changes'}
+        {hasUnrated && (
+          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+            {isEditing ? (
+              <>
+                <button
+                  onClick={saveEdit}
+                  disabled={isSaving}
+                  style={{ ...primaryBtnStyle, opacity: isSaving ? 0.6 : 1 }}
+                >
+                  {isSaving ? 'Saving…' : 'Save Changes'}
+                </button>
+                <button onClick={cancelEdit} disabled={isSaving} style={secondaryBtnStyle}>
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <button onClick={enterEdit} style={secondaryBtnStyle}>
+                Edit Rankings
               </button>
-              <button onClick={cancelEdit} disabled={isSaving} style={secondaryBtnStyle}>
-                Cancel
-              </button>
-            </>
-          ) : (
-            <button onClick={enterEdit} style={secondaryBtnStyle}>
-              Edit Rankings
-            </button>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
 
       {isEditing && (
@@ -260,16 +367,17 @@ export default function RankingsPage() {
           opacity: 0.9,
         }}>
           <span>⠿</span>
-          Drag entries to reorder within each category
+          Drag unrated entries to reorder within each category
         </div>
       )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-        {categories.map(([category, entries]) => (
+        {displayCategories.map(({ category, ratedEntries, unratedEntries }) => (
           <CategorySection
             key={category}
             category={category}
-            entries={entries}
+            ratedEntries={ratedEntries}
+            unratedEntries={unratedEntries}
             isEditing={isEditing}
             onReorder={handleReorder}
           />
@@ -278,6 +386,8 @@ export default function RankingsPage() {
     </div>
   )
 }
+
+// ─── style constants ──────────────────────────────────────────────────────────
 
 const kickerStyle: React.CSSProperties = {
   fontFamily: 'var(--font-mono)',
