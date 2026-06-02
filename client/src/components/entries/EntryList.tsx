@@ -3,8 +3,9 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { getEntries } from '../../api/entries'
 import EntryCard from './EntryCard'
+import { SearchAndScopeBar, pillStyle, matchesScope } from '../common/SearchAndScopeBar'
+import type { Scope } from '../common/SearchAndScopeBar'
 
-type Scope = 'all' | 'starred' | 'abroad' | 'home'
 type Sort = 'recent' | 'rated' | 'az'
 
 function avgRating(reviews: { overallRating: number | null }[]): number | null {
@@ -31,10 +32,7 @@ export default function EntryList() {
       e.category.toLowerCase().includes(q) ||
       e.restaurant.name.toLowerCase().includes(q)
     if (!matchesSearch) return false
-    if (scope === 'starred') return e.starred
-    if (scope === 'abroad') return e.flag !== null
-    if (scope === 'home') return e.flag === null
-    return true
+    return matchesScope(e, scope)
   })
 
   const sorted = [...scoped].sort((a, b) => {
@@ -46,13 +44,6 @@ export default function EntryList() {
     }
     return b.id - a.id
   })
-
-  const scopePills: { key: Scope; label: string }[] = [
-    { key: 'all', label: 'Everything' },
-    { key: 'starred', label: '★ Starred' },
-    { key: 'abroad', label: 'Abroad' },
-    { key: 'home', label: 'Home' },
-  ]
 
   const sortPills: { key: Sort; label: string }[] = [
     { key: 'recent', label: 'Most recent' },
@@ -73,30 +64,21 @@ export default function EntryList() {
         </button>
       </div>
 
-      {/* Search */}
-      <input
-        value={search}
-        onChange={e => setSearch(e.target.value)}
-        placeholder="Search by name, category, or restaurant…"
-        style={inputStyle}
+      <SearchAndScopeBar
+        search={search}
+        onSearchChange={setSearch}
+        scope={scope}
+        onScopeChange={setScope}
+        searchPlaceholder="Search by name, category, or restaurant…"
       />
 
-      {/* Filter + sort row */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-        <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap' }}>
-          {scopePills.map(p => (
-            <button key={p.key} onClick={() => setScope(p.key)} style={pillStyle(scope === p.key)}>
-              {p.label}
-            </button>
-          ))}
-        </div>
-        <div style={{ display: 'flex', gap: '0.375rem' }}>
-          {sortPills.map(p => (
-            <button key={p.key} onClick={() => setSort(p.key)} style={pillStyle(sort === p.key)}>
-              {p.label}
-            </button>
-          ))}
-        </div>
+      {/* Sort pills */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.375rem', marginBottom: '1rem' }}>
+        {sortPills.map(p => (
+          <button key={p.key} onClick={() => setSort(p.key)} style={pillStyle(sort === p.key)}>
+            {p.label}
+          </button>
+        ))}
       </div>
 
       {isLoading ? (
@@ -130,17 +112,6 @@ const pageTitleStyle: React.CSSProperties = {
   color: 'var(--ink)',
 }
 
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  padding: '0.5rem 0.75rem',
-  border: '1px solid var(--line)',
-  borderRadius: 8,
-  marginBottom: '0.75rem',
-  background: 'var(--surface)',
-  color: 'var(--ink)',
-  outline: 'none',
-}
-
 const primaryBtnStyle: React.CSSProperties = {
   background: 'var(--accent)',
   color: 'var(--accent-ink)',
@@ -150,17 +121,4 @@ const primaryBtnStyle: React.CSSProperties = {
   cursor: 'pointer',
   fontWeight: 600,
   fontSize: '0.875rem',
-}
-
-function pillStyle(active: boolean): React.CSSProperties {
-  return {
-    background: active ? 'var(--accent)' : 'var(--surface)',
-    color: active ? 'var(--accent-ink)' : 'var(--ink-mute)',
-    border: active ? 'none' : '1px solid var(--line)',
-    padding: '0.3rem 0.75rem',
-    borderRadius: 20,
-    cursor: 'pointer',
-    fontSize: '0.8rem',
-    fontWeight: active ? 600 : 400,
-  }
 }

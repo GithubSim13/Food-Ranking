@@ -19,6 +19,8 @@ import { CSS } from '@dnd-kit/utilities'
 import { getRankings, reorderCategory } from '../../api/rankings'
 import FlagImage from '../common/FlagImage'
 import { useToast } from '../../context/ToastContext'
+import { SearchAndScopeBar, matchesScope } from '../common/SearchAndScopeBar'
+import type { Scope } from '../common/SearchAndScopeBar'
 import type { RankedEntry } from '../../types'
 
 // ─── sort helpers ─────────────────────────────────────────────────────────────
@@ -236,6 +238,8 @@ export default function RankingsPage() {
     queryFn: getRankings,
   })
 
+  const [search, setSearch] = useState('')
+  const [scope, setScope] = useState<Scope>('all')
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   // localOrder holds only unrated entries per category (the draggable subset)
@@ -319,6 +323,28 @@ export default function RankingsPage() {
     )
   }
 
+  function matchesEntry(entry: RankedEntry): boolean {
+    const q = search.toLowerCase()
+    if (q.length > 0) {
+      const hit =
+        entry.foodName.toLowerCase().includes(q) ||
+        entry.category.toLowerCase().includes(q) ||
+        entry.restaurant.toLowerCase().includes(q)
+      if (!hit) return false
+    }
+    return matchesScope(entry, scope)
+  }
+
+  const filteredCategories = displayCategories
+    .map(({ category, ratedEntries, unratedEntries }) => ({
+      category,
+      ratedEntries: ratedEntries.filter(matchesEntry),
+      unratedEntries: unratedEntries.filter(matchesEntry),
+    }))
+    .filter(c => c.ratedEntries.length > 0 || c.unratedEntries.length > 0)
+
+  // Edit Rankings button is gated on overall unrated presence, not the filtered view,
+  // so the button stays visible while a filter is active.
   const hasUnrated = displayCategories.some(c => c.unratedEntries.length > 0)
 
   return (
@@ -352,6 +378,14 @@ export default function RankingsPage() {
         )}
       </div>
 
+      <SearchAndScopeBar
+        search={search}
+        onSearchChange={setSearch}
+        scope={scope}
+        onScopeChange={setScope}
+        searchPlaceholder="Search by name, category, or restaurant…"
+      />
+
       {isEditing && (
         <div style={{
           marginBottom: '1.25rem',
@@ -371,8 +405,12 @@ export default function RankingsPage() {
         </div>
       )}
 
+      {filteredCategories.length === 0 && (search.length > 0 || scope !== 'all') && (
+        <p style={{ color: 'var(--ink-mute)', marginTop: '0.5rem' }}>No entries match your search.</p>
+      )}
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-        {displayCategories.map(({ category, ratedEntries, unratedEntries }) => (
+        {filteredCategories.map(({ category, ratedEntries, unratedEntries }) => (
           <CategorySection
             key={category}
             category={category}
