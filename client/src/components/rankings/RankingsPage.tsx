@@ -1,10 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { getRankings } from '../../api/rankings'
 import FlagImage from '../common/FlagImage'
 
 export default function RankingsPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { data: rankings, isLoading } = useQuery({
     queryKey: ['rankings'],
     queryFn: getRankings,
@@ -45,7 +46,7 @@ export default function RankingsPage() {
               {entries.map((entry, i) => (
                 <div
                   key={entry.id}
-                  onClick={() => navigate(`/entries/${entry.id}`)}
+                  onClick={() => navigate(`/entries/${entry.id}`, { state: { background: location } })}
                   style={{
                     background: entry.starred ? '#FEF3C7' : '#fff',
                     border: entry.starred ? '2px solid #F59E0B' : '1px solid #e5e7eb',

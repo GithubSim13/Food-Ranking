@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import type { Entry } from '../../types'
 import FlagImage from '../common/FlagImage'
 
@@ -10,11 +10,12 @@ function avgOverallRating(reviews: { overallRating: number | null }[]) {
 
 export default function EntryCard({ entry }: { entry: Entry }) {
   const navigate = useNavigate()
+  const location = useLocation()
   const avg = avgOverallRating(entry.reviews)
 
   return (
     <div
-      onClick={() => navigate(`/entries/${entry.id}`)}
+      onClick={() => navigate(`/entries/${entry.id}`, { state: { background: location } })}
       style={{
         background: entry.starred ? '#FEF3C7' : '#fff',
         border: entry.starred ? '2px solid #F59E0B' : '1px solid #e5e7eb',

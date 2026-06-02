@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { getCategories, renameCategory } from '../../api/categories'
 import { getEntries } from '../../api/entries'
 import FlagImage from '../common/FlagImage'
 
 export default function CategoriesPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const queryClient = useQueryClient()
 
   const { data: categories = [], isLoading } = useQuery({
@@ -121,7 +122,7 @@ export default function CategoriesPage() {
                 {categoryEntries.map(e => (
                   <div
                     key={e.id}
-                    onClick={() => navigate(`/entries/${e.id}`)}
+                    onClick={() => navigate(`/entries/${e.id}`, { state: { background: location } })}
                     style={{
                       padding: '0.5rem 0.75rem',
                       background: e.starred ? '#FEF3C7' : '#f9fafb',
