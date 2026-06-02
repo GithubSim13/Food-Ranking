@@ -63,7 +63,10 @@ export default function RankingsPage() {
                     {i + 1}
                   </span>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600, color: entry.starred ? '#92400E' : undefined }}>{entry.foodName}</div>
+                    <div style={{ fontWeight: 600, color: entry.starred ? '#92400E' : undefined }}>
+                      {entry.flag && <span style={{ marginRight: '0.35rem' }}>{entry.flag}</span>}
+                      {entry.foodName}
+                    </div>
                     <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>{entry.restaurant}</div>
                   </div>
                   <div style={{ textAlign: 'right', flexShrink: 0 }}>

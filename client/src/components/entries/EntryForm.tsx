@@ -20,6 +20,7 @@ export default function EntryForm() {
   const [category, setCategory] = useState('')
   const [restaurantName, setRestaurantName] = useState('')
   const [starred, setStarred] = useState(false)
+  const [flag, setFlag] = useState('')
 
   const debouncedName = useDebounce(foodName, 300)
 
@@ -42,7 +43,10 @@ export default function EntryForm() {
       <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1.5rem' }}>New Entry</h2>
 
       <form
-        onSubmit={e => { e.preventDefault(); mutate({ foodName, category, restaurantName, starred }) }}
+        onSubmit={e => {
+          e.preventDefault()
+          mutate({ foodName, category, restaurantName, starred, flag: flag || null })
+        }}
         style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
       >
         <div>
@@ -77,6 +81,16 @@ export default function EntryForm() {
         <div>
           <label style={labelStyle}>Restaurant Name</label>
           <input value={restaurantName} onChange={e => setRestaurantName(e.target.value)} required style={inputStyle} />
+        </div>
+
+        <div>
+          <label style={labelStyle}>Country Flag <span style={{ color: '#9ca3af', fontWeight: 400 }}>(optional, e.g. 🇯🇵)</span></label>
+          <input
+            value={flag}
+            onChange={e => setFlag(e.target.value)}
+            placeholder="🇯🇵"
+            style={{ ...inputStyle, maxWidth: 120 }}
+          />
         </div>
 
         <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.95rem' }}>

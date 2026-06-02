@@ -25,6 +25,7 @@ router.get('/', async (_req, res) => {
         foodName: e.foodName,
         category: e.category,
         starred: e.starred,
+        flag: e.flag,
         restaurant: e.restaurant.name,
         avgRating,
         reviewCount: ratings.length,

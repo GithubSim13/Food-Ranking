@@ -16,6 +16,7 @@ export interface Entry {
   category: string;
   restaurantId: number;
   starred: boolean;
+  flag: string | null;
   createdAt: string;
   updatedAt: string;
   restaurant: { name: string };
@@ -31,9 +32,21 @@ export interface RankedEntry {
   foodName: string;
   category: string;
   starred: boolean;
+  flag: string | null;
   restaurant: string;
   avgRating: number | null;
   reviewCount: number;
 }
 
 export type Rankings = Record<string, RankedEntry[]>;
+
+export interface CategorySummary {
+  name: string;
+  entryCount: number;
+}
+
+export interface RestaurantSummary {
+  id: number;
+  name: string;
+  entryCount: number;
+}

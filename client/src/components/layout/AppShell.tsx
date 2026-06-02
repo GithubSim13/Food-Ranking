@@ -33,6 +33,12 @@ export default function AppShell() {
         <NavLink to="/rankings" style={({ isActive }) => linkStyle(isActive)}>
           Rankings
         </NavLink>
+        <NavLink to="/categories" style={({ isActive }) => linkStyle(isActive)}>
+          Categories
+        </NavLink>
+        <NavLink to="/restaurants" style={({ isActive }) => linkStyle(isActive)}>
+          Restaurants
+        </NavLink>
       </nav>
       <main style={{ flex: 1, padding: '2rem', overflowY: 'auto' }}>
         <Outlet />

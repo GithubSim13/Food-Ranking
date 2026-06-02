@@ -49,11 +49,17 @@ router.patch('/:id', async (req, res) => {
     return;
   }
 
-  const { starred, foodName, category } = req.body;
-  const data: { starred?: boolean; foodName?: string; category?: string } = {};
+  const { starred, foodName, category, flag } = req.body as {
+    starred?: unknown;
+    foodName?: unknown;
+    category?: unknown;
+    flag?: unknown;
+  };
+  const data: { starred?: boolean; foodName?: string; category?: string; flag?: string | null } = {};
   if (starred !== undefined) data.starred = Boolean(starred);
   if (foodName !== undefined) data.foodName = String(foodName);
   if (category !== undefined) data.category = String(category);
+  if (flag !== undefined) data.flag = flag === null ? null : String(flag);
 
   const entry = await prisma.entry.update({
     where: { id },
@@ -65,24 +71,31 @@ router.patch('/:id', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-  const { foodName, category, restaurantName, starred } = req.body;
+  const { foodName, category, restaurantName, starred, flag } = req.body as {
+    foodName?: unknown;
+    category?: unknown;
+    restaurantName?: unknown;
+    starred?: unknown;
+    flag?: unknown;
+  };
 
   if (!foodName || !category || !restaurantName) {
     res.status(400).json({ error: 'foodName, category, and restaurantName are required' });
     return;
   }
 
-  let restaurant = await prisma.restaurant.findFirst({ where: { name: restaurantName } });
+  let restaurant = await prisma.restaurant.findFirst({ where: { name: String(restaurantName) } });
   if (!restaurant) {
-    restaurant = await prisma.restaurant.create({ data: { name: restaurantName } });
+    restaurant = await prisma.restaurant.create({ data: { name: String(restaurantName) } });
   }
 
   const entry = await prisma.entry.create({
     data: {
-      foodName,
-      category,
+      foodName: String(foodName),
+      category: String(category),
       restaurantId: restaurant.id,
-      starred: starred ?? false,
+      starred: Boolean(starred ?? false),
+      flag: flag != null ? String(flag) : null,
     },
     include: { restaurant: { select: { name: true } } },
   });

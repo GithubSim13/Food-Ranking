@@ -10,12 +10,15 @@ export const getEntry = (id: number) =>
 export const searchEntries = (q: string) =>
   axios.get<Entry[]>(`/api/entries/search?q=${encodeURIComponent(q)}`).then(r => r.data);
 
-export const patchEntry = (id: number, data: { starred?: boolean; foodName?: string; category?: string }) =>
-  axios.patch<Omit<Entry, 'reviews'>>(`/api/entries/${id}`, data).then(r => r.data);
+export const patchEntry = (
+  id: number,
+  data: { starred?: boolean; foodName?: string; category?: string; flag?: string | null }
+) => axios.patch<Omit<Entry, 'reviews'>>(`/api/entries/${id}`, data).then(r => r.data);
 
 export const createEntry = (data: {
   foodName: string;
   category: string;
   restaurantName: string;
   starred: boolean;
+  flag?: string | null;
 }) => axios.post<EntryDetail>('/api/entries', data).then(r => r.data);

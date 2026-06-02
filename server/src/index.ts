@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 import entriesRouter from './routes/entries';
 import rankingsRouter from './routes/rankings';
 import reviewsRouter from './routes/reviews';
+import restaurantsRouter from './routes/restaurants';
+import categoriesRouter from './routes/categories';
 
 dotenv.config();
 
@@ -20,6 +22,8 @@ app.get('/', (_req, res) => {
 app.use('/api/entries', entriesRouter);
 app.use('/api/rankings', rankingsRouter);
 app.use('/api/reviews', reviewsRouter);
+app.use('/api/restaurants', restaurantsRouter);
+app.use('/api/categories', categoriesRouter);
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

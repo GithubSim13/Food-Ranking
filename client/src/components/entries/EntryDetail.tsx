@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getEntry, patchEntry } from '../../api/entries'
+import { patchRestaurant } from '../../api/restaurants'
 import { updateReview } from '../../api/reviews'
 import ReviewForm from '../reviews/ReviewForm'
 import type { EntryDetail as EntryDetailType, Review } from '../../types'
@@ -139,10 +140,25 @@ function ReviewCard({ review: r, onUpdated }: ReviewCardProps) {
   )
 }
 
+interface EntryEditForm {
+  foodName: string
+  category: string
+  flag: string
+  restaurantName: string
+}
+
 export default function EntryDetail() {
   const { id } = useParams<{ id: string }>()
   const entryId = Number(id)
   const queryClient = useQueryClient()
+
+  const [isEditingDetails, setIsEditingDetails] = useState(false)
+  const [editForm, setEditForm] = useState<EntryEditForm>({
+    foodName: '',
+    category: '',
+    flag: '',
+    restaurantName: '',
+  })
 
   const { data: entry, isLoading } = useQuery({
     queryKey: ['entries', entryId],
@@ -167,37 +183,135 @@ export default function EntryDetail() {
     },
   })
 
+  const { mutate: saveDetails, isPending: isSavingDetails } = useMutation({
+    mutationFn: async (form: EntryEditForm) => {
+      const entryPatch: { foodName?: string; category?: string; flag?: string | null } = {}
+      if (form.foodName !== entry!.foodName) entryPatch.foodName = form.foodName
+      if (form.category !== entry!.category) entryPatch.category = form.category
+      if ((form.flag || null) !== entry!.flag) entryPatch.flag = form.flag || null
+
+      const promises: Promise<unknown>[] = []
+      if (Object.keys(entryPatch).length > 0) {
+        promises.push(patchEntry(entryId, entryPatch))
+      }
+      if (form.restaurantName !== entry!.restaurant.name) {
+        promises.push(patchRestaurant(entry!.restaurantId, { name: form.restaurantName }))
+      }
+      await Promise.all(promises)
+    },
+    onSuccess: () => {
+      setIsEditingDetails(false)
+      queryClient.invalidateQueries({ queryKey: ['entries', entryId] })
+      queryClient.invalidateQueries({ queryKey: ['entries'] })
+      queryClient.invalidateQueries({ queryKey: ['restaurants'] })
+    },
+  })
+
   if (isLoading) return <p style={{ color: '#6b7280' }}>Loading…</p>
   if (!entry) return <p style={{ color: '#6b7280' }}>Entry not found.</p>
 
   const onReviewUpdated = () => queryClient.invalidateQueries({ queryKey: ['entries', entryId] })
 
+  const startEditDetails = () => {
+    setEditForm({
+      foodName: entry.foodName,
+      category: entry.category,
+      flag: entry.flag ?? '',
+      restaurantName: entry.restaurant.name,
+    })
+    setIsEditingDetails(true)
+  }
+
   return (
     <div style={{ maxWidth: 600 }}>
       <div style={{ marginBottom: '2rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.25rem' }}>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 700 }}>{entry.foodName}</h2>
-          <button
-            onClick={() => toggleStar()}
-            disabled={isTogglingStar}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              cursor: isTogglingStar ? 'default' : 'pointer',
-              padding: '0.2rem 0.4rem',
-              borderRadius: 4,
-              fontSize: '0.9rem',
-              fontWeight: 600,
-              color: entry.starred ? '#F59E0B' : '#9ca3af',
-              opacity: isTogglingStar ? 0.5 : 1,
-            }}
-          >
-            {entry.starred ? '★ Starred' : '☆ Add Star'}
-          </button>
-        </div>
-        <p style={{ color: '#6b7280', fontSize: '0.9rem' }}>
-          {entry.category} · {entry.restaurant.name}
-        </p>
+        {isEditingDetails ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '0.75rem', alignItems: 'end' }}>
+              <div>
+                <label style={labelStyle}>Food Name</label>
+                <input
+                  value={editForm.foodName}
+                  onChange={e => setEditForm(f => ({ ...f, foodName: e.target.value }))}
+                  style={inputStyle}
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Flag</label>
+                <input
+                  value={editForm.flag}
+                  onChange={e => setEditForm(f => ({ ...f, flag: e.target.value }))}
+                  placeholder="🇯🇵"
+                  style={{ ...inputStyle, width: 80 }}
+                />
+              </div>
+            </div>
+            <div>
+              <label style={labelStyle}>Category</label>
+              <input
+                value={editForm.category}
+                onChange={e => setEditForm(f => ({ ...f, category: e.target.value }))}
+                style={inputStyle}
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Restaurant</label>
+              <input
+                value={editForm.restaurantName}
+                onChange={e => setEditForm(f => ({ ...f, restaurantName: e.target.value }))}
+                style={inputStyle}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button
+                onClick={() => saveDetails(editForm)}
+                disabled={isSavingDetails}
+                style={{ ...saveBtnStyle, opacity: isSavingDetails ? 0.6 : 1 }}
+              >
+                {isSavingDetails ? 'Saving…' : 'Save'}
+              </button>
+              <button
+                onClick={() => setIsEditingDetails(false)}
+                disabled={isSavingDetails}
+                style={{ ...cancelBtnStyle, opacity: isSavingDetails ? 0.6 : 1 }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.25rem' }}>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 700 }}>
+                {entry.flag && <span style={{ marginRight: '0.35rem' }}>{entry.flag}</span>}
+                {entry.foodName}
+              </h2>
+              <button
+                onClick={() => toggleStar()}
+                disabled={isTogglingStar}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: isTogglingStar ? 'default' : 'pointer',
+                  padding: '0.2rem 0.4rem',
+                  borderRadius: 4,
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  color: entry.starred ? '#F59E0B' : '#9ca3af',
+                  opacity: isTogglingStar ? 0.5 : 1,
+                }}
+              >
+                {entry.starred ? '★ Starred' : '☆ Add Star'}
+              </button>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <p style={{ color: '#6b7280', fontSize: '0.9rem', margin: 0 }}>
+                {entry.category} · {entry.restaurant.name}
+              </p>
+              <button onClick={startEditDetails} style={editBtnStyle}>Edit</button>
+            </div>
+          </>
+        )}
       </div>
 
       <section style={{ marginBottom: '2rem' }}>

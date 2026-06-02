@@ -31,6 +31,7 @@ export default function EntryCard({ entry }: { entry: Entry }) {
     >
       <div>
         <div style={{ fontWeight: 600, color: entry.starred ? '#92400E' : undefined }}>
+          {entry.flag && <span style={{ marginRight: '0.35rem' }}>{entry.flag}</span>}
           {entry.foodName}
         </div>
         <div style={{ fontSize: '0.85rem', color: '#6b7280', marginTop: '0.2rem' }}>
