@@ -46,31 +46,36 @@ export default function RankingsPage() {
                   key={entry.id}
                   onClick={() => navigate(`/entries/${entry.id}`)}
                   style={{
-                    background: '#fff',
-                    border: '1px solid #e5e7eb',
+                    background: entry.starred ? '#FEF3C7' : '#fff',
+                    border: entry.starred ? '2px solid #F59E0B' : '1px solid #e5e7eb',
                     borderRadius: 8,
                     padding: '0.75rem 1rem',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '1rem',
+                    boxShadow: entry.starred
+                      ? '0 0 0 3px #FDE68A, 0 4px 12px rgba(245, 158, 11, 0.25)'
+                      : 'none',
                   }}
                 >
                   <span style={{ width: 24, textAlign: 'center', fontWeight: 700, color: '#9ca3af', flexShrink: 0 }}>
                     {i + 1}
                   </span>
                   <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontWeight: 600 }}>
-                      {entry.foodName}
-                      {entry.starred && <span>⭐</span>}
-                    </div>
+                    <div style={{ fontWeight: 600, color: entry.starred ? '#92400E' : undefined }}>{entry.foodName}</div>
                     <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>{entry.restaurant}</div>
                   </div>
                   <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                    <div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#2563eb' }}>{entry.avgRating}</div>
-                    <div style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
-                      {entry.reviewCount} review{entry.reviewCount !== 1 ? 's' : ''}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.2rem', fontWeight: 700, fontSize: '1.1rem', color: entry.avgRating != null ? '#2563eb' : '#9ca3af' }}>
+                      {entry.starred && entry.avgRating != null && <span style={{ fontSize: '0.9rem', color: '#F59E0B' }}>★</span>}
+                      {entry.avgRating != null ? entry.avgRating.toFixed(2) : 'Unrated'}
                     </div>
+                    {entry.reviewCount > 0 && (
+                      <div style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
+                        {entry.reviewCount} review{entry.reviewCount !== 1 ? 's' : ''}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}

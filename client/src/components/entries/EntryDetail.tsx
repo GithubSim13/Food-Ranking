@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getEntry } from '../../api/entries'
+import { getEntry, patchEntry } from '../../api/entries'
 import { updateReview } from '../../api/reviews'
 import ReviewForm from '../reviews/ReviewForm'
-import type { Review } from '../../types'
+import type { EntryDetail as EntryDetailType, Review } from '../../types'
 
 const EDIT_RATING_FIELDS = [
   { label: 'Taste', key: 'rating1' },
@@ -124,12 +124,17 @@ function ReviewCard({ review: r, onUpdated }: ReviewCardProps) {
         {r.rating2 != null && <span>Value <strong>{r.rating2}</strong></span>}
         {r.rating3 != null && <span>Consistency <strong>{r.rating3}</strong></span>}
         <span style={{ color: '#2563eb' }}>
-          Overall <strong>{r.overallRating != null ? r.overallRating : 'Unrated'}</strong>
+          Overall <strong>{r.overallRating != null ? r.overallRating.toFixed(2) : 'Unrated'}</strong>
         </span>
       </div>
-      {r.notes && (
-        <p style={{ marginTop: '0.5rem', fontSize: '0.9rem', color: '#374151' }}>{r.notes}</p>
-      )}
+      {r.notes && (() => {
+        const lines = r.notes.split('\n').filter(l => l.trim() !== '')
+        return lines.length > 0 ? (
+          <ul style={{ marginTop: '0.5rem', marginBottom: 0, paddingLeft: '1.25rem', fontSize: '0.9rem', color: '#374151' }}>
+            {lines.map((line, i) => <li key={i}>{line}</li>)}
+          </ul>
+        ) : null
+      })()}
     </div>
   )
 }
@@ -144,6 +149,24 @@ export default function EntryDetail() {
     queryFn: () => getEntry(entryId),
   })
 
+  const { mutate: toggleStar, isPending: isTogglingStar } = useMutation({
+    mutationFn: () => patchEntry(entryId, { starred: !(entry?.starred ?? false) }),
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ['entries', entryId] })
+      const prev = queryClient.getQueryData<EntryDetailType>(['entries', entryId])
+      queryClient.setQueryData(['entries', entryId], (old: EntryDetailType | undefined) =>
+        old ? { ...old, starred: !old.starred } : old
+      )
+      return { prev }
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(['entries', entryId], ctx.prev)
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['entries', entryId] })
+    },
+  })
+
   if (isLoading) return <p style={{ color: '#6b7280' }}>Loading…</p>
   if (!entry) return <p style={{ color: '#6b7280' }}>Entry not found.</p>
 
@@ -152,9 +175,25 @@ export default function EntryDetail() {
   return (
     <div style={{ maxWidth: 600 }}>
       <div style={{ marginBottom: '2rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.25rem' }}>
           <h2 style={{ fontSize: '1.5rem', fontWeight: 700 }}>{entry.foodName}</h2>
-          {entry.starred && <span title="Worth trying once in a lifetime">⭐</span>}
+          <button
+            onClick={() => toggleStar()}
+            disabled={isTogglingStar}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              cursor: isTogglingStar ? 'default' : 'pointer',
+              padding: '0.2rem 0.4rem',
+              borderRadius: 4,
+              fontSize: '0.9rem',
+              fontWeight: 600,
+              color: entry.starred ? '#F59E0B' : '#9ca3af',
+              opacity: isTogglingStar ? 0.5 : 1,
+            }}
+          >
+            {entry.starred ? '★ Starred' : '☆ Add Star'}
+          </button>
         </div>
         <p style={{ color: '#6b7280', fontSize: '0.9rem' }}>
           {entry.category} · {entry.restaurant.name}

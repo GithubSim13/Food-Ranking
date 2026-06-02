@@ -40,6 +40,28 @@ router.get('/:id', async (req, res) => {
   res.json(entry);
 });
 
+router.patch('/:id', async (req, res) => {
+  const id = Number(req.params.id);
+  if (isNaN(id)) {
+    res.status(400).json({ error: 'Invalid entry id' });
+    return;
+  }
+
+  const { starred, foodName, category } = req.body;
+  const data: { starred?: boolean; foodName?: string; category?: string } = {};
+  if (starred !== undefined) data.starred = Boolean(starred);
+  if (foodName !== undefined) data.foodName = String(foodName);
+  if (category !== undefined) data.category = String(category);
+
+  const entry = await prisma.entry.update({
+    where: { id },
+    data,
+    include: { restaurant: { select: { name: true } } },
+  });
+
+  res.json(entry);
+});
+
 router.post('/', async (req, res) => {
   const { foodName, category, restaurantName, starred } = req.body;
 

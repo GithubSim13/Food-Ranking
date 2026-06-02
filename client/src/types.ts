@@ -32,7 +32,7 @@ export interface RankedEntry {
   category: string;
   starred: boolean;
   restaurant: string;
-  avgRating: number;
+  avgRating: number | null;
   reviewCount: number;
 }
 
