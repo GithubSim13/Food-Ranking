@@ -4,11 +4,13 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { getRestaurants, patchRestaurant } from '../../api/restaurants'
 import { getEntries } from '../../api/entries'
 import FlagImage from '../common/FlagImage'
+import { useToast } from '../../context/ToastContext'
 
 export default function RestaurantsPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const queryClient = useQueryClient()
+  const { showToast } = useToast()
 
   const { data: restaurants = [], isLoading } = useQuery({
     queryKey: ['restaurants'],
@@ -29,6 +31,10 @@ export default function RestaurantsPage() {
       queryClient.invalidateQueries({ queryKey: ['restaurants'] })
       queryClient.invalidateQueries({ queryKey: ['entries'] })
       setEditingId(null)
+      showToast('Restaurant renamed')
+    },
+    onError: () => {
+      showToast('Failed to rename restaurant', 'error')
     },
   })
 

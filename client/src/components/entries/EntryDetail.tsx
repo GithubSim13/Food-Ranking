@@ -8,6 +8,7 @@ import FlagPicker from '../common/FlagPicker'
 import { updateReview } from '../../api/reviews'
 import ReviewForm from '../reviews/ReviewForm'
 import type { EntryDetail as EntryDetailType, Review } from '../../types'
+import { useToast } from '../../context/ToastContext'
 
 const EDIT_RATING_FIELDS = [
   { label: 'Taste', key: 'rating1' },
@@ -21,6 +22,7 @@ interface ReviewCardProps {
 }
 
 function ReviewCard({ review: r, onUpdated }: ReviewCardProps) {
+  const { showToast } = useToast()
   const [isEditing, setIsEditing] = useState(false)
   const [form, setForm] = useState({
     date: '',
@@ -42,6 +44,10 @@ function ReviewCard({ review: r, onUpdated }: ReviewCardProps) {
     onSuccess: () => {
       setIsEditing(false)
       onUpdated()
+      showToast('Review saved')
+    },
+    onError: () => {
+      showToast('Failed to save review', 'error')
     },
   })
 
@@ -153,6 +159,7 @@ export default function EntryDetail() {
   const { id } = useParams<{ id: string }>()
   const entryId = Number(id)
   const queryClient = useQueryClient()
+  const { showToast } = useToast()
 
   const [isEditingDetails, setIsEditingDetails] = useState(false)
   const [editForm, setEditForm] = useState<EntryEditForm>({
@@ -170,18 +177,24 @@ export default function EntryDetail() {
   const { mutate: toggleStar, isPending: isTogglingStar } = useMutation({
     mutationFn: () => patchEntry(entryId, { starred: !(entry?.starred ?? false) }),
     onMutate: async () => {
+      const newStarred = !(entry?.starred ?? false)
       await queryClient.cancelQueries({ queryKey: ['entries', entryId] })
       const prev = queryClient.getQueryData<EntryDetailType>(['entries', entryId])
       queryClient.setQueryData(['entries', entryId], (old: EntryDetailType | undefined) =>
         old ? { ...old, starred: !old.starred } : old
       )
-      return { prev }
+      return { prev, newStarred }
     },
     onError: (_err, _vars, ctx) => {
       if (ctx?.prev) queryClient.setQueryData(['entries', entryId], ctx.prev)
+      showToast('Failed to update star', 'error')
+    },
+    onSuccess: (_data, _vars, ctx) => {
+      showToast(ctx?.newStarred ? 'Starred ★' : 'Unstarred')
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['entries', entryId] })
+      queryClient.invalidateQueries({ queryKey: ['entries'] })
     },
   })
 
@@ -206,6 +219,12 @@ export default function EntryDetail() {
       queryClient.invalidateQueries({ queryKey: ['entries', entryId] })
       queryClient.invalidateQueries({ queryKey: ['entries'] })
       queryClient.invalidateQueries({ queryKey: ['restaurants'] })
+      queryClient.invalidateQueries({ queryKey: ['categories'] })
+      queryClient.invalidateQueries({ queryKey: ['rankings'] })
+      showToast('Entry updated')
+    },
+    onError: () => {
+      showToast('Failed to update entry', 'error')
     },
   })
 

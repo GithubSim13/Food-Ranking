@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { getCategories, renameCategory } from '../../api/categories'
 import { getEntries } from '../../api/entries'
 import FlagImage from '../common/FlagImage'
+import { useToast } from '../../context/ToastContext'
 
 export default function CategoriesPage() {
   const navigate = useNavigate()
@@ -19,6 +20,7 @@ export default function CategoriesPage() {
     queryFn: getEntries,
   })
 
+  const { showToast } = useToast()
   const [selected, setSelected] = useState<string | null>(null)
   const [editingCategory, setEditingCategory] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
@@ -30,6 +32,10 @@ export default function CategoriesPage() {
       queryClient.invalidateQueries({ queryKey: ['entries'] })
       if (selected === from) setSelected(to)
       setEditingCategory(null)
+      showToast('Category renamed')
+    },
+    onError: () => {
+      showToast('Failed to rename category', 'error')
     },
   })
 
