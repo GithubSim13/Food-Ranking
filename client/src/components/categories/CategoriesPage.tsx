@@ -62,11 +62,12 @@ export default function CategoriesPage() {
     ? allEntries.filter(e => e.category === selected)
     : []
 
-  if (isLoading) return <p style={{ color: '#6b7280' }}>Loading…</p>
+  if (isLoading) return <p style={{ color: 'var(--ink-mute)' }}>Loading…</p>
 
   return (
     <div style={{ maxWidth: 600 }}>
-      <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1.5rem' }}>Categories</h2>
+      <p style={kickerStyle}>Browse by</p>
+      <h2 style={{ ...pageTitleStyle, marginBottom: '1.5rem' }}>Categories</h2>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
         {categories.map(cat => (
           <div key={cat.name}>
@@ -75,9 +76,9 @@ export default function CategoriesPage() {
               alignItems: 'center',
               gap: '0.75rem',
               padding: '0.625rem 0.875rem',
-              background: selected === cat.name ? '#eff6ff' : '#fff',
-              border: selected === cat.name ? '1px solid #bfdbfe' : '1px solid #e5e7eb',
-              borderRadius: 8,
+              background: selected === cat.name ? 'var(--accent-wash)' : 'var(--surface)',
+              border: selected === cat.name ? '1px solid var(--accent)' : '1px solid var(--line)',
+              borderRadius: 12,
             }}>
               {editingCategory === cat.name ? (
                 <>
@@ -94,14 +95,14 @@ export default function CategoriesPage() {
                   <button
                     onClick={() => doRename({ from: cat.name, to: renameValue.trim() })}
                     disabled={isRenaming || !renameValue.trim()}
-                    style={{ ...smallSaveBtnStyle, opacity: isRenaming ? 0.6 : 1 }}
+                    style={{ ...smallPrimaryBtnStyle, opacity: isRenaming ? 0.6 : 1 }}
                   >
                     Save
                   </button>
                   <button
                     onClick={() => setEditingCategory(null)}
                     disabled={isRenaming}
-                    style={smallCancelBtnStyle}
+                    style={smallSecondaryBtnStyle}
                   >
                     Cancel
                   </button>
@@ -123,17 +124,17 @@ export default function CategoriesPage() {
                       gap: '0.5rem',
                     }}
                   >
-                    <span style={{ fontWeight: 500, color: selected === cat.name ? '#1d4ed8' : '#111827' }}>
+                    <span style={{ fontWeight: 500, color: selected === cat.name ? 'var(--accent)' : 'var(--ink)' }}>
                       {cat.name}
                     </span>
-                    <span style={{ fontSize: '0.8rem', color: '#9ca3af', flexShrink: 0 }}>
-                      {cat.entryCount} {cat.entryCount === 1 ? 'entry' : 'entries'}
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--ink-mute)', flexShrink: 0 }}>
+                      {cat.entryCount}
                     </span>
                   </button>
-                  <button onClick={() => startRename(cat.name)} style={editBtnStyle}>
+                  <button onClick={() => startRename(cat.name)} style={smallSecondaryBtnStyle}>
                     Rename
                   </button>
-                  <button onClick={() => setDeletingCategory(cat.name)} style={editBtnStyle}>
+                  <button onClick={() => setDeletingCategory(cat.name)} style={smallSecondaryBtnStyle}>
                     Delete
                   </button>
                 </>
@@ -141,17 +142,17 @@ export default function CategoriesPage() {
             </div>
 
             {deletingCategory === cat.name && (
-              <div style={{ marginTop: '0.25rem', padding: '0.5rem 0.875rem', background: cat.entryCount > 0 ? '#fffbeb' : '#fef2f2', border: `1px solid ${cat.entryCount > 0 ? '#fde68a' : '#fecaca'}`, borderRadius: 6, display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.85rem' }}>
+              <div style={{ marginTop: '0.25rem', padding: '0.5rem 0.875rem', background: cat.entryCount > 0 ? 'var(--gold-wash)' : '#2a1515', border: `1px solid ${cat.entryCount > 0 ? 'var(--gold)' : '#7f1d1d'}`, borderRadius: 8, display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.85rem' }}>
                 {cat.entryCount > 0 ? (
                   <>
-                    <span style={{ flex: 1, color: '#92400e' }}>
+                    <span style={{ flex: 1, color: 'var(--gold)' }}>
                       Cannot delete: this category has {cat.entryCount} {cat.entryCount === 1 ? 'entry' : 'entries'} assigned to it.
                     </span>
-                    <button onClick={() => setDeletingCategory(null)} style={smallCancelBtnStyle}>Close</button>
+                    <button onClick={() => setDeletingCategory(null)} style={smallSecondaryBtnStyle}>Close</button>
                   </>
                 ) : (
                   <>
-                    <span style={{ flex: 1, color: '#991b1b' }}>Delete this category?</span>
+                    <span style={{ flex: 1, color: '#fca5a5' }}>Delete this category?</span>
                     <button
                       onClick={() => doDelete(cat.name)}
                       disabled={isDeleting}
@@ -159,7 +160,7 @@ export default function CategoriesPage() {
                     >
                       {isDeleting ? 'Deleting…' : 'Confirm'}
                     </button>
-                    <button onClick={() => setDeletingCategory(null)} disabled={isDeleting} style={smallCancelBtnStyle}>
+                    <button onClick={() => setDeletingCategory(null)} disabled={isDeleting} style={smallSecondaryBtnStyle}>
                       Cancel
                     </button>
                   </>
@@ -175,20 +176,20 @@ export default function CategoriesPage() {
                     onClick={() => navigate(`/entries/${e.id}`, { state: { background: location } })}
                     style={{
                       padding: '0.5rem 0.75rem',
-                      background: e.starred ? '#FEF3C7' : '#f9fafb',
-                      border: e.starred ? '1px solid #F59E0B' : '1px solid #e5e7eb',
-                      borderRadius: 6,
+                      background: e.starred ? 'var(--gold-wash)' : 'var(--paper)',
+                      border: e.starred ? '1px solid var(--gold)' : '1px solid var(--line-soft)',
+                      borderRadius: 8,
                       cursor: 'pointer',
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center',
                     }}
                   >
-                    <span style={{ fontSize: '0.9rem', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 500, color: e.starred ? 'var(--gold)' : 'var(--ink)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                       <FlagImage code={e.flag} />
                       {e.foodName}
                     </span>
-                    <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{e.restaurant.name}</span>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--ink-mute)' }}>{e.restaurant.name}</span>
                   </div>
                 ))}
               </div>
@@ -200,52 +201,65 @@ export default function CategoriesPage() {
   )
 }
 
+const kickerStyle: React.CSSProperties = {
+  fontFamily: 'var(--font-mono)',
+  fontSize: 11,
+  textTransform: 'uppercase',
+  letterSpacing: '0.08em',
+  color: 'var(--ink-mute)',
+  marginBottom: '0.25rem',
+}
+
+const pageTitleStyle: React.CSSProperties = {
+  fontFamily: 'var(--font-display)',
+  fontWeight: 800,
+  fontSize: '2rem',
+  letterSpacing: '-0.03em',
+  color: 'var(--ink)',
+}
+
 const inputStyle: React.CSSProperties = {
   flex: 1,
   padding: '0.3rem 0.6rem',
-  border: '1px solid #d1d5db',
-  borderRadius: 5,
+  border: '1px solid var(--line)',
+  borderRadius: 6,
   fontSize: '0.9rem',
+  background: 'var(--paper)',
+  color: 'var(--ink)',
+  outline: 'none',
 }
-const editBtnStyle: React.CSSProperties = {
-  background: 'transparent',
-  color: '#6b7280',
-  border: '1px solid #d1d5db',
+
+const smallPrimaryBtnStyle: React.CSSProperties = {
+  background: 'var(--accent)',
+  color: 'var(--accent-ink)',
+  border: 'none',
+  padding: '0.3rem 0.7rem',
+  borderRadius: 6,
+  cursor: 'pointer',
+  fontSize: '0.8rem',
+  fontWeight: 600,
+  flexShrink: 0,
+}
+
+const smallSecondaryBtnStyle: React.CSSProperties = {
+  background: 'var(--surface)',
+  color: 'var(--ink-mute)',
+  border: '1px solid var(--line)',
   padding: '0.2rem 0.6rem',
-  borderRadius: 4,
+  borderRadius: 6,
   cursor: 'pointer',
   fontSize: '0.75rem',
   flexShrink: 0,
 }
-const smallSaveBtnStyle: React.CSSProperties = {
-  background: '#2563eb',
-  color: '#fff',
-  border: 'none',
-  padding: '0.3rem 0.7rem',
-  borderRadius: 5,
-  cursor: 'pointer',
-  fontSize: '0.8rem',
-  fontWeight: 500,
-  flexShrink: 0,
-}
-const smallCancelBtnStyle: React.CSSProperties = {
-  background: 'transparent',
-  color: '#6b7280',
-  border: '1px solid #d1d5db',
-  padding: '0.3rem 0.7rem',
-  borderRadius: 5,
-  cursor: 'pointer',
-  fontSize: '0.8rem',
-  flexShrink: 0,
-}
+
 const smallDeleteBtnStyle: React.CSSProperties = {
   background: '#dc2626',
   color: '#fff',
   border: 'none',
   padding: '0.3rem 0.7rem',
-  borderRadius: 5,
+  borderRadius: 6,
   cursor: 'pointer',
   fontSize: '0.8rem',
-  fontWeight: 500,
+  fontWeight: 600,
   flexShrink: 0,
 }

@@ -4,11 +4,31 @@
   padding: 0;
 }
 
+:root {
+  --paper: #16131c;
+  --paper-2: #1e1928;
+  --surface: #251f30;
+  --ink: #f1ecf4;
+  --ink-mute: #9a8ca8;
+  --line: #352c44;
+  --line-soft: #2c2438;
+  --accent: #a06ee6;
+  --accent-2: #8d57d6;
+  --accent-ink: #ffffff;
+  --accent-wash: #2c2138;
+  --gold: #e7b54a;
+  --gold-wash: #352c1c;
+
+  --font-display: 'Bricolage Grotesque', sans-serif;
+  --font-body: 'Hanken Grotesk', sans-serif;
+  --font-mono: 'Space Mono', monospace;
+}
+
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-body);
   font-size: 16px;
-  color: #111827;
-  background: #f9fafb;
+  color: var(--ink);
+  background: var(--paper);
   -webkit-font-smoothing: antialiased;
 }
 

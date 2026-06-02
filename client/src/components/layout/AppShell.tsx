@@ -1,49 +1,113 @@
 import { Outlet, NavLink } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { getEntries } from '../../api/entries'
 
-const linkStyle = (isActive: boolean): React.CSSProperties => ({
-  display: 'block',
-  padding: '0.45rem 0.75rem',
-  borderRadius: 6,
-  textDecoration: 'none',
-  fontSize: '0.95rem',
-  fontWeight: isActive ? 600 : 400,
-  color: isActive ? '#2563eb' : '#374151',
-  background: isActive ? '#eff6ff' : 'transparent',
-})
+function navLinkStyle({ isActive }: { isActive: boolean }): React.CSSProperties {
+  return {
+    display: 'block',
+    padding: '0.45rem 0.75rem',
+    borderRadius: 8,
+    textDecoration: 'none',
+    fontSize: '0.9rem',
+    fontWeight: isActive ? 600 : 400,
+    color: isActive ? 'var(--accent)' : 'var(--ink-mute)',
+    background: isActive ? 'var(--accent-wash)' : 'transparent',
+  }
+}
 
 export default function AppShell() {
+  const { data: entries = [] } = useQuery({
+    queryKey: ['entries'],
+    queryFn: getEntries,
+  })
+
+  const entryCount = entries.length
+  const allRatings = entries.flatMap(e =>
+    e.reviews.map(r => r.overallRating).filter((r): r is number => r !== null)
+  )
+  const avgRating = allRatings.length
+    ? (allRatings.reduce((a, b) => a + b, 0) / allRatings.length).toFixed(1)
+    : null
+
   return (
     <div style={{ display: 'flex', height: '100vh' }}>
       <nav style={{
-        width: 200,
+        width: 220,
         flexShrink: 0,
-        padding: '1.5rem 1rem',
-        borderRight: '1px solid #e5e7eb',
-        background: '#fff',
+        padding: '1.25rem 0.875rem',
+        borderRight: '1px solid var(--line)',
+        background: 'var(--paper-2)',
         display: 'flex',
         flexDirection: 'column',
-        gap: '0.25rem',
+        gap: '0.125rem',
       }}>
-        <p style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '1.25rem', color: '#111827' }}>
-          Food Ranking
+        {/* Brand mark */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '1.5rem', padding: '0 0.25rem' }}>
+          <div style={{
+            width: 32,
+            height: 32,
+            borderRadius: 8,
+            background: 'var(--accent-wash)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontFamily: 'var(--font-display)',
+            fontWeight: 800,
+            fontSize: '1.1rem',
+            color: 'var(--accent)',
+            flexShrink: 0,
+          }}>
+            F
+          </div>
+          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '0.95rem', color: 'var(--ink)' }}>
+            Food Ranking
+          </span>
+        </div>
+
+        {/* Primary nav */}
+        <NavLink to="/" end style={navLinkStyle}>Home</NavLink>
+        <NavLink to="/entries" style={navLinkStyle}>Entries</NavLink>
+        <NavLink to="/rankings" style={navLinkStyle}>Rankings</NavLink>
+
+        {/* Explore section */}
+        <p style={{
+          fontFamily: 'var(--font-mono)',
+          fontSize: '0.65rem',
+          fontWeight: 700,
+          textTransform: 'uppercase',
+          letterSpacing: '0.1em',
+          color: 'var(--ink-mute)',
+          padding: '0 0.75rem',
+          marginTop: '1.25rem',
+          marginBottom: '0.25rem',
+          opacity: 0.6,
+        }}>
+          Explore
         </p>
-        <NavLink to="/entries" style={({ isActive }) => linkStyle(isActive)}>
-          Entries
-        </NavLink>
-        <NavLink to="/starred" style={({ isActive }) => linkStyle(isActive)}>
-          ★ Starred
-        </NavLink>
-        <NavLink to="/rankings" style={({ isActive }) => linkStyle(isActive)}>
-          Rankings
-        </NavLink>
-        <NavLink to="/categories" style={({ isActive }) => linkStyle(isActive)}>
-          Categories
-        </NavLink>
-        <NavLink to="/restaurants" style={({ isActive }) => linkStyle(isActive)}>
-          Restaurants
-        </NavLink>
+        <NavLink to="/categories" style={navLinkStyle}>Categories</NavLink>
+        <NavLink to="/restaurants" style={navLinkStyle}>Restaurants</NavLink>
+
+        {/* Spacer */}
+        <div style={{ flex: 1 }} />
+
+        {/* Footer stats */}
+        {entryCount > 0 && (
+          <div style={{
+            padding: '0.75rem',
+            borderTop: '1px solid var(--line-soft)',
+            marginTop: '0.5rem',
+          }}>
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--ink-mute)', lineHeight: 1.6 }}>
+              <span style={{ display: 'block' }}>{entryCount} foods rated</span>
+              {avgRating && (
+                <span style={{ display: 'block' }}>avg {avgRating} / 10</span>
+              )}
+            </p>
+          </div>
+        )}
       </nav>
-      <main style={{ flex: 1, padding: '2rem', overflowY: 'auto' }}>
+
+      <main style={{ flex: 1, padding: '2rem 2.5rem', overflowY: 'auto', background: 'var(--paper)' }}>
         <Outlet />
       </main>
     </div>

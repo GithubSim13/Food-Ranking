@@ -1,11 +1,11 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import AppShell from './components/layout/AppShell'
+import HomePage from './components/home/HomePage'
 import EntryList from './components/entries/EntryList'
 import EntryForm from './components/entries/EntryForm'
 import EntryDetail from './components/entries/EntryDetail'
 import EntryModal from './components/entries/EntryModal'
 import RankingsPage from './components/rankings/RankingsPage'
-import StarredPage from './components/starred/StarredPage'
 import CategoriesPage from './components/categories/CategoriesPage'
 import RestaurantsPage from './components/restaurants/RestaurantsPage'
 
@@ -17,11 +17,11 @@ export default function App() {
     <>
       <Routes location={background ?? location}>
         <Route path="/" element={<AppShell />}>
-          <Route index element={<Navigate to="/entries" replace />} />
+          <Route index element={<HomePage />} />
           <Route path="entries" element={<EntryList />} />
           <Route path="entries/new" element={<EntryForm />} />
           <Route path="entries/:id" element={<EntryDetail />} />
-          <Route path="starred" element={<StarredPage />} />
+          <Route path="starred" element={<Navigate to="/entries" replace />} />
           <Route path="rankings" element={<RankingsPage />} />
           <Route path="categories" element={<CategoriesPage />} />
           <Route path="restaurants" element={<RestaurantsPage />} />
