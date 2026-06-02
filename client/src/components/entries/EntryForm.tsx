@@ -62,10 +62,10 @@ function CategoryCombo({ value, onChange }: CategoryComboProps) {
           margin: '2px 0 0',
           padding: 0,
           listStyle: 'none',
-          background: '#fff',
-          border: '1px solid #d1d5db',
+          background: 'var(--surface)',
+          border: '1px solid var(--line)',
           borderRadius: 6,
-          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
           maxHeight: 200,
           overflowY: 'auto',
         }}>
@@ -77,11 +77,11 @@ function CategoryCombo({ value, onChange }: CategoryComboProps) {
                 padding: '0.45rem 0.75rem',
                 cursor: 'pointer',
                 fontSize: '0.9rem',
-                background: name === value ? '#eff6ff' : undefined,
-                color: name === value ? '#1d4ed8' : '#111827',
+                background: name === value ? 'var(--paper-2)' : undefined,
+                color: name === value ? 'var(--accent)' : 'var(--ink)',
               }}
-              onMouseEnter={e => (e.currentTarget.style.background = '#f3f4f6')}
-              onMouseLeave={e => (e.currentTarget.style.background = name === value ? '#eff6ff' : '')}
+              onMouseEnter={e => (e.currentTarget.style.background = 'var(--paper-2)')}
+              onMouseLeave={e => (e.currentTarget.style.background = name === value ? 'var(--paper-2)' : '')}
             >
               {name}
             </li>
@@ -141,23 +141,23 @@ export default function EntryForm() {
             <div style={{
               marginTop: '0.4rem',
               padding: '0.5rem 0.75rem',
-              background: '#fef9c3',
-              border: '1px solid #fbbf24',
+              background: 'rgba(251,191,36,0.1)',
+              border: '1px solid rgba(251,191,36,0.35)',
               borderRadius: 6,
               fontSize: '0.85rem',
-              color: '#92400e',
+              color: 'var(--ink)',
             }}>
-              <div style={{ fontWeight: 600, marginBottom: '0.3rem' }}>
+              <div style={{ fontWeight: 600, marginBottom: '0.3rem', color: '#fbbf24' }}>
                 Possible duplicate{dupes.length > 1 ? 's' : ''}:
               </div>
               <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
                 {dupes.map(d => (
                   <li key={d.id} style={{ display: 'flex', gap: '0.4rem', alignItems: 'baseline' }}>
                     <span style={{ fontWeight: 600 }}>{d.foodName}</span>
-                    <span style={{ color: '#b45309' }}>·</span>
+                    <span style={{ color: 'var(--ink-mute)' }}>·</span>
                     <span>{d.restaurant.name}</span>
-                    <span style={{ color: '#b45309' }}>·</span>
-                    <span style={{ color: '#78350f' }}>{d.category}</span>
+                    <span style={{ color: 'var(--ink-mute)' }}>·</span>
+                    <span style={{ color: 'var(--ink-mute)' }}>{d.category}</span>
                   </li>
                 ))}
               </ul>
@@ -176,7 +176,7 @@ export default function EntryForm() {
         </div>
 
         <div>
-          <label style={labelStyle}>Country <span style={{ color: '#9ca3af', fontWeight: 400 }}>(optional)</span></label>
+          <label style={labelStyle}>Country <span style={{ color: 'var(--ink-mute)', fontWeight: 400 }}>(optional)</span></label>
           <FlagPicker value={flag} onChange={setFlag} />
         </div>
 
@@ -198,16 +198,19 @@ const labelStyle: React.CSSProperties = {
   fontWeight: 500,
   fontSize: '0.9rem',
   marginBottom: '0.3rem',
+  color: 'var(--ink)',
 }
 const inputStyle: React.CSSProperties = {
   width: '100%',
   padding: '0.5rem 0.75rem',
-  border: '1px solid #d1d5db',
+  background: 'var(--paper)',
+  color: 'var(--ink)',
+  border: '1px solid var(--line)',
   borderRadius: 6,
   boxSizing: 'border-box',
 }
 const btnStyle: React.CSSProperties = {
-  background: '#2563eb',
+  background: 'var(--accent)',
   color: '#fff',
   border: 'none',
   padding: '0.6rem 1rem',

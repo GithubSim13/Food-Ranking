@@ -98,16 +98,19 @@ const labelStyle: React.CSSProperties = {
   fontWeight: 500,
   fontSize: '0.85rem',
   marginBottom: '0.25rem',
+  color: 'var(--ink)',
 }
 const inputStyle: React.CSSProperties = {
   width: '100%',
   padding: '0.45rem 0.65rem',
-  border: '1px solid #d1d5db',
+  background: 'var(--paper)',
+  color: 'var(--ink)',
+  border: '1px solid var(--line)',
   borderRadius: 6,
   boxSizing: 'border-box',
 }
 const btnStyle: React.CSSProperties = {
-  background: '#2563eb',
+  background: 'var(--accent)',
   color: '#fff',
   border: 'none',
   padding: '0.55rem 1rem',

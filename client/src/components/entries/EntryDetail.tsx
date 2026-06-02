@@ -148,7 +148,7 @@ function ReviewCard({ review: r, onUpdated }: ReviewCardProps) {
     <div style={cardStyle}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>
+          <span style={{ fontSize: '0.8rem', color: 'var(--ink-mute)' }}>
             {r.date ? new Date(r.date).toLocaleDateString() : 'No date'}
           </span>
           {r.retroactive && (
@@ -163,8 +163,8 @@ function ReviewCard({ review: r, onUpdated }: ReviewCardProps) {
         </div>
       </div>
       {confirmDelete && (
-        <div style={{ marginBottom: '0.625rem', padding: '0.5rem 0.75rem', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.85rem' }}>
-          <span style={{ flex: 1, color: '#991b1b' }}>Delete this review?</span>
+        <div style={{ marginBottom: '0.625rem', padding: '0.5rem 0.75rem', background: 'rgba(220,38,38,0.12)', border: '1px solid rgba(220,38,38,0.3)', borderRadius: 6, display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.85rem' }}>
+          <span style={{ flex: 1, color: '#f87171' }}>Delete this review?</span>
           <button
             onClick={() => doDeleteReview()}
             disabled={isDeletingReview}
@@ -181,14 +181,14 @@ function ReviewCard({ review: r, onUpdated }: ReviewCardProps) {
         {r.rating1 != null && <span>Taste <strong>{r.rating1}</strong></span>}
         {r.rating2 != null && <span>Value <strong>{r.rating2}</strong></span>}
         {r.rating3 != null && <span>Consistency <strong>{r.rating3}</strong></span>}
-        <span style={{ color: '#2563eb' }}>
+        <span style={{ color: 'var(--accent)' }}>
           Overall <strong>{r.overallRating != null ? r.overallRating.toFixed(2) : 'Unrated'}</strong>
         </span>
       </div>
       {r.notes && (() => {
         const lines = r.notes.split('\n').filter(l => l.trim() !== '')
         return lines.length > 0 ? (
-          <ul style={{ marginTop: '0.5rem', marginBottom: 0, paddingLeft: '1.25rem', fontSize: '0.9rem', color: '#374151' }}>
+          <ul style={{ marginTop: '0.5rem', marginBottom: 0, paddingLeft: '1.25rem', fontSize: '0.9rem', color: 'var(--ink)' }}>
             {lines.map((line, i) => <li key={i}>{line}</li>)}
           </ul>
         ) : null
@@ -293,8 +293,8 @@ export default function EntryDetail() {
     },
   })
 
-  if (isLoading) return <p style={{ color: '#6b7280' }}>Loading…</p>
-  if (!entry) return <p style={{ color: '#6b7280' }}>Entry not found.</p>
+  if (isLoading) return <p style={{ color: 'var(--ink-mute)' }}>Loading…</p>
+  if (!entry) return <p style={{ color: 'var(--ink-mute)' }}>Entry not found.</p>
 
   const onReviewUpdated = () => queryClient.invalidateQueries({ queryKey: ['entries', entryId] })
 
@@ -372,35 +372,35 @@ export default function EntryDetail() {
                 onClick={() => toggleStar()}
                 disabled={isTogglingStar}
                 style={{
-                  background: entry.starred ? '#FEF3C7' : '#f9fafb',
-                  border: entry.starred ? '2px solid #F59E0B' : '2px solid #d1d5db',
+                  background: entry.starred ? 'var(--gold-wash)' : 'var(--surface)',
+                  border: entry.starred ? '2px solid var(--gold)' : '2px solid var(--line)',
                   cursor: isTogglingStar ? 'default' : 'pointer',
                   padding: '0.4rem 0.875rem',
                   borderRadius: 8,
                   fontSize: '1rem',
                   fontWeight: 700,
-                  color: entry.starred ? '#B45309' : '#6b7280',
+                  color: entry.starred ? 'var(--gold)' : 'var(--ink-mute)',
                   opacity: isTogglingStar ? 0.5 : 1,
                   display: 'flex',
                   alignItems: 'center',
                   gap: '0.35rem',
                   transition: 'all 0.15s',
-                  boxShadow: entry.starred ? '0 0 0 3px #FDE68A' : 'none',
+                  boxShadow: 'none',
                 }}
               >
                 {entry.starred ? '★ Starred' : '☆ Star'}
               </button>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <p style={{ color: '#6b7280', fontSize: '0.9rem', margin: 0 }}>
+              <p style={{ color: 'var(--ink-mute)', fontSize: '0.9rem', margin: 0 }}>
                 {entry.category} · {entry.restaurant.name}
               </p>
               <button onClick={startEditDetails} style={editBtnStyle}>Edit</button>
               <button onClick={() => setConfirmDeleteEntry(true)} style={editBtnStyle}>Delete</button>
             </div>
             {confirmDeleteEntry && (
-              <div style={{ marginTop: '0.75rem', padding: '0.625rem 0.875rem', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.875rem' }}>
-                <span style={{ flex: 1, color: '#991b1b' }}>Are you sure? This will delete all reviews too.</span>
+              <div style={{ marginTop: '0.75rem', padding: '0.625rem 0.875rem', background: 'rgba(220,38,38,0.12)', border: '1px solid rgba(220,38,38,0.3)', borderRadius: 8, display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.875rem' }}>
+                <span style={{ flex: 1, color: '#f87171' }}>Are you sure? This will delete all reviews too.</span>
                 <button
                   onClick={() => doDeleteEntry()}
                   disabled={isDeletingEntry}
@@ -420,7 +420,7 @@ export default function EntryDetail() {
       <section style={{ marginBottom: '2rem' }}>
         <h3 style={{ fontWeight: 600, marginBottom: '0.75rem' }}>Reviews</h3>
         {entry.reviews.length === 0 ? (
-          <p style={{ color: '#6b7280', fontSize: '0.9rem' }}>No reviews yet.</p>
+          <p style={{ color: 'var(--ink-mute)', fontSize: '0.9rem' }}>No reviews yet.</p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
             {entry.reviews.map(r => (
@@ -442,8 +442,8 @@ export default function EntryDetail() {
 }
 
 const cardStyle: React.CSSProperties = {
-  background: '#fff',
-  border: '1px solid #e5e7eb',
+  background: 'var(--paper-2)',
+  border: '1px solid var(--line)',
   borderRadius: 8,
   padding: '0.875rem 1rem',
 }
@@ -452,16 +452,19 @@ const labelStyle: React.CSSProperties = {
   fontWeight: 500,
   fontSize: '0.85rem',
   marginBottom: '0.25rem',
+  color: 'var(--ink)',
 }
 const inputStyle: React.CSSProperties = {
   width: '100%',
   padding: '0.45rem 0.65rem',
-  border: '1px solid #d1d5db',
+  background: 'var(--paper)',
+  color: 'var(--ink)',
+  border: '1px solid var(--line)',
   borderRadius: 6,
   boxSizing: 'border-box',
 }
 const saveBtnStyle: React.CSSProperties = {
-  background: '#2563eb',
+  background: 'var(--accent)',
   color: '#fff',
   border: 'none',
   padding: '0.45rem 0.875rem',
@@ -472,8 +475,8 @@ const saveBtnStyle: React.CSSProperties = {
 }
 const cancelBtnStyle: React.CSSProperties = {
   background: 'transparent',
-  color: '#6b7280',
-  border: '1px solid #d1d5db',
+  color: 'var(--ink-mute)',
+  border: '1px solid var(--line)',
   padding: '0.45rem 0.875rem',
   borderRadius: 6,
   cursor: 'pointer',
@@ -482,8 +485,8 @@ const cancelBtnStyle: React.CSSProperties = {
 }
 const editBtnStyle: React.CSSProperties = {
   background: 'transparent',
-  color: '#6b7280',
-  border: '1px solid #d1d5db',
+  color: 'var(--ink-mute)',
+  border: '1px solid var(--line)',
   padding: '0.2rem 0.6rem',
   borderRadius: 4,
   cursor: 'pointer',

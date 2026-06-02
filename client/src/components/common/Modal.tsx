@@ -15,7 +15,7 @@ export default function Modal({ onClose, children }: { onClose: () => void; chil
       style={{
         position: 'fixed',
         inset: 0,
-        background: 'rgba(0, 0, 0, 0.5)',
+        background: 'rgba(0, 0, 0, 0.6)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -26,7 +26,9 @@ export default function Modal({ onClose, children }: { onClose: () => void; chil
       <div
         onClick={e => e.stopPropagation()}
         style={{
-          background: '#fff',
+          background: 'var(--surface)',
+          color: 'var(--ink)',
+          border: '1px solid var(--line)',
           borderRadius: 12,
           width: '100%',
           maxWidth: 800,

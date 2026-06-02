@@ -121,7 +121,9 @@ export default function FlagPicker({ value, onChange }: Props) {
             width: '100%',
             padding: '0.45rem 2.25rem 0.45rem',
             paddingLeft: value && !isOpen ? '2.25rem' : '0.65rem',
-            border: '1px solid #d1d5db',
+            background: 'var(--paper)',
+            color: 'var(--ink)',
+            border: '1px solid var(--line)',
             borderRadius: 6,
             boxSizing: 'border-box',
             fontSize: '0.9rem',
@@ -140,7 +142,7 @@ export default function FlagPicker({ value, onChange }: Props) {
               background: 'none',
               border: 'none',
               cursor: 'pointer',
-              color: '#9ca3af',
+              color: 'var(--ink-mute)',
               fontSize: '0.85rem',
               padding: '0.1rem 0.25rem',
               lineHeight: 1,
@@ -160,10 +162,10 @@ export default function FlagPicker({ value, onChange }: Props) {
             top: 'calc(100% + 2px)',
             left: 0,
             right: 0,
-            background: '#fff',
-            border: '1px solid #d1d5db',
+            background: 'var(--surface)',
+            border: '1px solid var(--line)',
             borderRadius: 6,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
             zIndex: 200,
             maxHeight: 228,
             overflowY: 'auto',
@@ -184,19 +186,19 @@ export default function FlagPicker({ value, onChange }: Props) {
               padding: '0.45rem 0.75rem',
               cursor: 'pointer',
               fontSize: '0.875rem',
-              color: '#6b7280',
-              borderBottom: '1px solid #f3f4f6',
-              background: value === null ? '#eff6ff' : 'transparent',
+              color: 'var(--ink-mute)',
+              borderBottom: '1px solid var(--line)',
+              background: value === null ? 'var(--accent-wash)' : 'transparent',
             }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#f9fafb' }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = value === null ? '#eff6ff' : 'transparent' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--paper-2)' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = value === null ? 'var(--accent-wash)' : 'transparent' }}
           >
             <span style={{ width: '1.4em', textAlign: 'center', fontSize: '0.75rem' }}>✕</span>
             No flag (local)
           </li>
 
           {filtered.length === 0 ? (
-            <li style={{ padding: '0.6rem 0.75rem', fontSize: '0.875rem', color: '#9ca3af' }}>
+            <li style={{ padding: '0.6rem 0.75rem', fontSize: '0.875rem', color: 'var(--ink-mute)' }}>
               No countries match
             </li>
           ) : (
@@ -213,19 +215,19 @@ export default function FlagPicker({ value, onChange }: Props) {
                   padding: '0.45rem 0.75rem',
                   cursor: 'pointer',
                   fontSize: '0.875rem',
-                  background: idx === activeIndex ? '#eff6ff' : value === country.code ? '#f0fdf4' : 'transparent',
+                  background: idx === activeIndex ? 'var(--paper-2)' : value === country.code ? 'var(--accent-wash)' : 'transparent',
                 }}
                 onMouseEnter={e => {
                   setActiveIndex(idx)
-                  ;(e.currentTarget as HTMLElement).style.background = '#eff6ff'
+                  ;(e.currentTarget as HTMLElement).style.background = 'var(--paper-2)'
                 }}
                 onMouseLeave={e => {
-                  ;(e.currentTarget as HTMLElement).style.background = idx === activeIndex ? '#eff6ff' : value === country.code ? '#f0fdf4' : 'transparent'
+                  ;(e.currentTarget as HTMLElement).style.background = idx === activeIndex ? 'var(--paper-2)' : value === country.code ? 'var(--accent-wash)' : 'transparent'
                 }}
               >
                 <FlagSvg code={country.code} />
                 <span style={{ flex: 1 }}>{country.name}</span>
-                <span style={{ color: '#9ca3af', fontSize: '0.75rem' }}>{country.code}</span>
+                <span style={{ color: 'var(--ink-mute)', fontSize: '0.75rem' }}>{country.code}</span>
               </li>
             ))
           )}
