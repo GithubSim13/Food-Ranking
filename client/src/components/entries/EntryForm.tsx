@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createEntry, searchEntries } from '../../api/entries'
 import { getCategories } from '../../api/categories'
 import FlagPicker from '../common/FlagPicker'
+import { useToast } from '../../context/ToastContext'
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value)
@@ -95,6 +96,7 @@ function CategoryCombo({ value, onChange }: CategoryComboProps) {
 export default function EntryForm() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { showToast } = useToast()
 
   const [foodName, setFoodName] = useState('')
   const [category, setCategory] = useState('')
@@ -115,6 +117,9 @@ export default function EntryForm() {
     onSuccess: entry => {
       queryClient.invalidateQueries({ queryKey: ['entries'] })
       navigate(`/entries/${entry.id}`)
+    },
+    onError: () => {
+      showToast('Failed to save entry', 'error')
     },
   })
 

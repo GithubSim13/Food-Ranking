@@ -22,8 +22,8 @@ function computeOverallRating(
 router.post('/', async (req, res) => {
   const { entryId, date, notes, rating1, rating2, rating3, retroactive } = req.body;
 
-  if (!entryId) {
-    res.status(400).json({ error: 'entryId is required' });
+  if (!entryId || isNaN(Number(entryId))) {
+    res.status(400).json({ error: 'entryId is required and must be a number' });
     return;
   }
 

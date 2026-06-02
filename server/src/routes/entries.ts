@@ -26,6 +26,10 @@ router.get('/', async (_req, res) => {
 
 router.get('/:id', async (req, res) => {
   const id = Number(req.params.id);
+  if (isNaN(id)) {
+    res.status(400).json({ error: 'Invalid entry id' });
+    return;
+  }
   const entry = await prisma.entry.findUnique({
     where: { id },
     include: {

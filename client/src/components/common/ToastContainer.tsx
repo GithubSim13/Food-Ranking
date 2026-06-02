@@ -1,9 +1,8 @@
-import { useContext } from 'react'
-import { ToastContext } from '../../context/ToastContext'
+import { useToast } from '../../context/ToastContext'
 import { Toast } from './Toast'
 
 export function ToastContainer() {
-  const { toasts, dismiss } = useContext(ToastContext)
+  const { toasts, dismiss } = useToast()
   if (toasts.length === 0) return null
   return (
     <div style={{

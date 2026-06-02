@@ -159,9 +159,7 @@ export default function RankingsPage() {
 
   useEffect(() => {
     if (!isEditing && rankings) {
-      setLocalOrder(
-        Object.fromEntries(Object.entries(rankings).map(([cat, entries]) => [cat, entries]))
-      )
+      setLocalOrder({ ...rankings })
     }
   }, [rankings, isEditing])
 

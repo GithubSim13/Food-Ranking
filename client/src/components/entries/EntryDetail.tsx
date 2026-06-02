@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getEntry, patchEntry, deleteEntry } from '../../api/entries'
@@ -115,7 +115,7 @@ function ReviewCard({ review: r, onUpdated }: ReviewCardProps) {
               style={{ ...inputStyle, resize: 'vertical' }}
             />
           </div>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--ink-mute, #6b7280)', cursor: 'pointer' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--ink-mute)', cursor: 'pointer' }}>
             <input
               type="checkbox"
               checked={form.retroactive}
@@ -152,7 +152,7 @@ function ReviewCard({ review: r, onUpdated }: ReviewCardProps) {
             {r.date ? new Date(r.date).toLocaleDateString() : 'No date'}
           </span>
           {r.retroactive && (
-            <span style={{ fontSize: '0.7rem', fontFamily: 'var(--font-mono, monospace)', color: 'var(--ink-mute, #9ca3af)', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+            <span style={{ fontSize: '0.7rem', fontFamily: 'var(--font-mono)', color: 'var(--ink-mute)', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
               &#x1F559; ratings added later
             </span>
           )}
@@ -216,7 +216,7 @@ export default function EntryDetail() {
   const [editForm, setEditForm] = useState<EntryEditForm>({
     foodName: '',
     category: '',
-    flag: '',
+    flag: null,
     restaurantName: '',
   })
 

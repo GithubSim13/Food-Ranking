@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { createReview } from '../../api/reviews'
+import { useToast } from '../../context/ToastContext'
 
 interface Props {
   entryId: number
@@ -14,6 +15,7 @@ const RATING_FIELDS = [
 ] as const
 
 export default function ReviewForm({ entryId, onSuccess }: Props) {
+  const { showToast } = useToast()
   const today = new Date().toISOString().split('T')[0]
   const [date, setDate] = useState(today)
   const [ratings, setRatings] = useState({ rating1: '', rating2: '', rating3: '' })
@@ -28,6 +30,9 @@ export default function ReviewForm({ entryId, onSuccess }: Props) {
       setNotes('')
       setRetroactive(false)
       onSuccess()
+    },
+    onError: () => {
+      showToast('Failed to save review', 'error')
     },
   })
 
@@ -77,7 +82,7 @@ export default function ReviewForm({ entryId, onSuccess }: Props) {
         />
       </div>
 
-      <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: '#6b7280', cursor: 'pointer' }}>
+      <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--ink-mute)', cursor: 'pointer' }}>
         <input
           type="checkbox"
           checked={retroactive}

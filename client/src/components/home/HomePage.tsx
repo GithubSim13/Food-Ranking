@@ -206,6 +206,8 @@ export default function HomePage() {
   // hall of fame / shame
   const famEntry = byScore[0]
   const shameEntry = byScore.length > 1 ? byScore[byScore.length - 1] : null
+  const famAvg = famEntry ? entryAvg(famEntry) : null
+  const shameAvg = shameEntry ? entryAvg(shameEntry) : null
 
   const openEntry = (id: number) => navigate(`/entries/${id}`, { state: { background: location } })
 
@@ -297,9 +299,9 @@ export default function HomePage() {
             <div style={{ fontSize: '0.82rem', color: 'var(--ink-mute)', marginBottom: '0.5rem' }}>
               {famEntry.restaurant.name} · {famEntry.category}
             </div>
-            {entryAvg(famEntry) != null && (
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '2rem', fontWeight: 700, color: scoreColor(entryAvg(famEntry)!), lineHeight: 1 }}>
-                {entryAvg(famEntry)!.toFixed(2)}
+            {famAvg != null && (
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '2rem', fontWeight: 700, color: scoreColor(famAvg), lineHeight: 1 }}>
+                {famAvg.toFixed(2)}
               </div>
             )}
           </div>
@@ -317,9 +319,9 @@ export default function HomePage() {
               <div style={{ fontSize: '0.82rem', color: 'var(--ink-mute)', marginBottom: '0.5rem' }}>
                 {shameEntry.restaurant.name} · {shameEntry.category}
               </div>
-              {entryAvg(shameEntry) != null && (
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '2rem', fontWeight: 700, color: scoreColor(entryAvg(shameEntry)!), lineHeight: 1 }}>
-                  {entryAvg(shameEntry)!.toFixed(2)}
+              {shameAvg != null && (
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '2rem', fontWeight: 700, color: scoreColor(shameAvg), lineHeight: 1 }}>
+                  {shameAvg.toFixed(2)}
                 </div>
               )}
             </div>
@@ -343,9 +345,9 @@ export default function HomePage() {
             <div style={{ fontSize: '0.88rem', color: 'var(--ink-mute)', marginBottom: '0.75rem' }}>
               {famEntry.restaurant.name} · {famEntry.category}
             </div>
-            {entryAvg(famEntry) != null && (
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '2.5rem', fontWeight: 700, color: scoreColor(entryAvg(famEntry)!), lineHeight: 1 }}>
-                {entryAvg(famEntry)!.toFixed(2)}
+            {famAvg != null && (
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '2.5rem', fontWeight: 700, color: scoreColor(famAvg), lineHeight: 1 }}>
+                {famAvg.toFixed(2)}
               </div>
             )}
           </div>
