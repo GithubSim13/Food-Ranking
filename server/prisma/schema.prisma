@@ -30,7 +30,7 @@ model Review {
   id            Int       @id @default(autoincrement())
   entryId       Int
   entry         Entry     @relation(fields: [entryId], references: [id])
-  date          DateTime
+  date          DateTime?
   notes         String?
   rating1       Float?
   rating2       Float?

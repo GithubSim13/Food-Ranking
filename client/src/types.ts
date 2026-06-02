@@ -1,7 +1,7 @@
 export interface Review {
   id: number;
   entryId: number;
-  date: string;
+  date: string | null;
   notes: string | null;
   rating1: number | null;
   rating2: number | null;
