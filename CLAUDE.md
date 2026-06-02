@@ -195,5 +195,5 @@ Default to low or medium effort unless the task is explicitly complex. Only use 
 - [x] Restaurants sidebar tab (/restaurants) — list, filter, rename
 - [x] Country flag support — `Entry.flag` ISO code, SVG rendering via FlagImage, FlagPicker for input
 - [x] Entry detail opens as modal overlay (React Router background-location pattern); direct URL still works as full page
-- [ ] Rankings drag-and-drop reorder per category (`Entry.manualRank`, `@dnd-kit`, `PATCH /api/rankings/reorder`)
+- [x] Rankings drag-and-drop reorder per category (`Entry.manualRank`, `@dnd-kit`, `PATCH /api/rankings/reorder`)
 - [ ] Capacitor mobile wrapper

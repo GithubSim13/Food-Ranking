@@ -36,6 +36,7 @@ export interface RankedEntry {
   restaurant: string;
   avgRating: number | null;
   reviewCount: number;
+  manualRank: number | null;
 }
 
 export type Rankings = Record<string, RankedEntry[]>;
