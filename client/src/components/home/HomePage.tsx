@@ -173,10 +173,13 @@ export default function HomePage() {
   const regulars = [...restAggs].sort((a, b) => b.visits - a.visits).slice(0, 5)
   const topRatedRest = topTables[0] ?? null
 
-  // monthly pace (by entry.createdAt)
+  // monthly pace (by earliest non-null review date)
   const byMonth = new Map<string, number>()
   entries.forEach(e => {
-    const key = e.createdAt.slice(0, 7)
+    const dates = e.reviews.map(r => r.date).filter((d): d is string => d !== null)
+    if (dates.length === 0) return
+    const earliest = dates.sort()[0]
+    const key = earliest.slice(0, 7)
     byMonth.set(key, (byMonth.get(key) ?? 0) + 1)
   })
   const monthKeys = Array.from(byMonth.keys()).sort()

@@ -21,7 +21,7 @@ export interface Entry {
   createdAt: string;
   updatedAt: string;
   restaurant: { name: string };
-  reviews: Pick<Review, 'overallRating'>[];
+  reviews: Pick<Review, 'overallRating' | 'date'>[];
 }
 
 export interface EntryDetail extends Omit<Entry, 'reviews'> {
