@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createEntry, searchEntries } from '../../api/entries'
+import FlagPicker from '../common/FlagPicker'
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value)
@@ -20,7 +21,7 @@ export default function EntryForm() {
   const [category, setCategory] = useState('')
   const [restaurantName, setRestaurantName] = useState('')
   const [starred, setStarred] = useState(false)
-  const [flag, setFlag] = useState('')
+  const [flag, setFlag] = useState<string | null>(null)
 
   const debouncedName = useDebounce(foodName, 300)
 
@@ -45,7 +46,7 @@ export default function EntryForm() {
       <form
         onSubmit={e => {
           e.preventDefault()
-          mutate({ foodName, category, restaurantName, starred, flag: flag || null })
+          mutate({ foodName, category, restaurantName, starred, flag })
         }}
         style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
       >
@@ -84,13 +85,8 @@ export default function EntryForm() {
         </div>
 
         <div>
-          <label style={labelStyle}>Country Flag <span style={{ color: '#9ca3af', fontWeight: 400 }}>(optional, e.g. 🇯🇵)</span></label>
-          <input
-            value={flag}
-            onChange={e => setFlag(e.target.value)}
-            placeholder="🇯🇵"
-            style={{ ...inputStyle, maxWidth: 120 }}
-          />
+          <label style={labelStyle}>Country <span style={{ color: '#9ca3af', fontWeight: 400 }}>(optional)</span></label>
+          <FlagPicker value={flag} onChange={setFlag} />
         </div>
 
         <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.95rem' }}>

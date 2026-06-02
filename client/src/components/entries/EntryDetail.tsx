@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getEntry, patchEntry } from '../../api/entries'
 import { patchRestaurant } from '../../api/restaurants'
 import FlagImage from '../common/FlagImage'
+import FlagPicker from '../common/FlagPicker'
 import { updateReview } from '../../api/reviews'
 import ReviewForm from '../reviews/ReviewForm'
 import type { EntryDetail as EntryDetailType, Review } from '../../types'
@@ -144,7 +145,7 @@ function ReviewCard({ review: r, onUpdated }: ReviewCardProps) {
 interface EntryEditForm {
   foodName: string
   category: string
-  flag: string
+  flag: string | null
   restaurantName: string
 }
 
@@ -189,7 +190,7 @@ export default function EntryDetail() {
       const entryPatch: { foodName?: string; category?: string; flag?: string | null } = {}
       if (form.foodName !== entry!.foodName) entryPatch.foodName = form.foodName
       if (form.category !== entry!.category) entryPatch.category = form.category
-      if ((form.flag || null) !== entry!.flag) entryPatch.flag = form.flag || null
+      if (form.flag !== entry!.flag) entryPatch.flag = form.flag
 
       const promises: Promise<unknown>[] = []
       if (Object.keys(entryPatch).length > 0) {
@@ -217,7 +218,7 @@ export default function EntryDetail() {
     setEditForm({
       foodName: entry.foodName,
       category: entry.category,
-      flag: entry.flag ?? '',
+      flag: entry.flag,
       restaurantName: entry.restaurant.name,
     })
     setIsEditingDetails(true)
@@ -228,24 +229,20 @@ export default function EntryDetail() {
       <div style={{ marginBottom: '2rem' }}>
         {isEditingDetails ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '0.75rem', alignItems: 'end' }}>
-              <div>
-                <label style={labelStyle}>Food Name</label>
-                <input
-                  value={editForm.foodName}
-                  onChange={e => setEditForm(f => ({ ...f, foodName: e.target.value }))}
-                  style={inputStyle}
-                />
-              </div>
-              <div>
-                <label style={labelStyle}>Flag</label>
-                <input
-                  value={editForm.flag}
-                  onChange={e => setEditForm(f => ({ ...f, flag: e.target.value }))}
-                  placeholder="🇯🇵"
-                  style={{ ...inputStyle, width: 80 }}
-                />
-              </div>
+            <div>
+              <label style={labelStyle}>Food Name</label>
+              <input
+                value={editForm.foodName}
+                onChange={e => setEditForm(f => ({ ...f, foodName: e.target.value }))}
+                style={inputStyle}
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Country</label>
+              <FlagPicker
+                value={editForm.flag}
+                onChange={code => setEditForm(f => ({ ...f, flag: code }))}
+              />
             </div>
             <div>
               <label style={labelStyle}>Category</label>
