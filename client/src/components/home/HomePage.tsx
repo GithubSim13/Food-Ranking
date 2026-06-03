@@ -89,14 +89,14 @@ export default function HomePage() {
   const avgRating = ratedEntryAvgs.length ? ratedEntryAvgs.reduce((a, b) => a + b, 0) / ratedEntryAvgs.length : null
 
   // ── top 5 ──────────────────────────────────────────────────────────────────
-  type Top5Entry = { id: number; name: string; flag: string | null; score: number; starred: boolean }
+  type Top5Entry = { id: number; name: string; flag: string | null; score: number; starred: boolean; category: string; restaurant: string; reviewCount: number }
   const top5: Top5Entry[] = [...entries]
     .map(e => {
       let score: number | null = null
       for (let i = e.reviews.length - 1; i >= 0; i--) {
         if (e.reviews[i].overallRating !== null) { score = e.reviews[i].overallRating!; break }
       }
-      return { id: e.id, name: e.foodName, flag: e.flag, score, starred: e.starred }
+      return { id: e.id, name: e.foodName, flag: e.flag, score, starred: e.starred, category: e.category, restaurant: e.restaurant.name, reviewCount: e.reviews.length }
     })
     .filter((e): e is Top5Entry => e.score !== null)
     .sort((a, b) => b.score - a.score)
@@ -233,7 +233,7 @@ export default function HomePage() {
   }
 
   // ── podium layout ──────────────────────────────────────────────────────────
-  const PODIUM_CONTAINER_H = 180
+  const PODIUM_CONTAINER_H = 320
   const podiumOrder = (p1 && p2 && p3) ? [
     p4 ? { entry: p4, rank: 4, height: Math.round(PODIUM_CONTAINER_H * 0.28), barColor: '#1a1728', scoreOpacity: 0.35 } : null,
     { entry: p2, rank: 2, height: Math.round(PODIUM_CONTAINER_H * 0.50), barColor: '#2a2240', scoreOpacity: 0.55 },
@@ -307,17 +307,36 @@ export default function HomePage() {
                 background: barColor,
                 borderRadius: '6px 6px 0 0',
                 display: 'flex',
+                flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
+                gap: 4,
+                overflow: 'hidden',
+                padding: '0.5rem 0.25rem',
               }}>
+                <span style={{ fontSize: rank === 1 ? '1.1rem' : '0.9rem', lineHeight: 1 }}>
+                  {rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '🏅'}
+                </span>
                 <span style={{
                   fontFamily: 'var(--font-mono)',
                   fontWeight: 700,
                   fontSize: rank === 1 ? '1.5rem' : '1.1rem',
                   color: `rgba(255,255,255,${scoreOpacity})`,
+                  lineHeight: 1,
                 }}>
                   {rank}
                 </span>
+                {rank <= 3 && <>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: `rgba(255,255,255,${scoreOpacity * 0.65})`, textAlign: 'center', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>
+                    {entry.category}
+                  </span>
+                  <span style={{ fontFamily: 'Hanken Grotesk, sans-serif', fontSize: '10px', color: `rgba(255,255,255,${scoreOpacity * 0.8})`, textAlign: 'center', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>
+                    {entry.restaurant}
+                  </span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: `rgba(255,255,255,${scoreOpacity * 0.55})`, textAlign: 'center', lineHeight: 1.3 }}>
+                    {entry.reviewCount} {entry.reviewCount === 1 ? 'review' : 'reviews'}
+                  </span>
+                </>}
               </div>
             </div>
           ))}
