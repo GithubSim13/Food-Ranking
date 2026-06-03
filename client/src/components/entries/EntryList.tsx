@@ -70,16 +70,16 @@ export default function EntryList() {
         scope={scope}
         onScopeChange={setScope}
         searchPlaceholder="Search by name, category, or restaurant…"
+        rightSlot={
+          <div style={{ display: 'flex', gap: '0.375rem' }}>
+            {sortPills.map(p => (
+              <button key={p.key} onClick={() => setSort(p.key)} style={pillStyle(sort === p.key)}>
+                {p.label}
+              </button>
+            ))}
+          </div>
+        }
       />
-
-      {/* Sort pills */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.375rem', marginBottom: '1rem' }}>
-        {sortPills.map(p => (
-          <button key={p.key} onClick={() => setSort(p.key)} style={pillStyle(sort === p.key)}>
-            {p.label}
-          </button>
-        ))}
-      </div>
 
       {isLoading ? (
         <p style={{ color: 'var(--ink-mute)' }}>Loading…</p>

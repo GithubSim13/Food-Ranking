@@ -29,6 +29,7 @@ interface Props {
   scope: Scope
   onScopeChange: (s: Scope) => void
   searchPlaceholder?: string
+  rightSlot?: React.ReactNode
 }
 
 const SCOPE_PILLS: { key: Scope; label: string }[] = [
@@ -44,6 +45,7 @@ export function SearchAndScopeBar({
   scope,
   onScopeChange,
   searchPlaceholder = 'Search…',
+  rightSlot,
 }: Props) {
   return (
     <>
@@ -63,12 +65,15 @@ export function SearchAndScopeBar({
           boxSizing: 'border-box',
         }}
       />
-      <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
-        {SCOPE_PILLS.map(p => (
-          <button key={p.key} onClick={() => onScopeChange(p.key)} style={pillStyle(scope === p.key)}>
-            {p.label}
-          </button>
-        ))}
+      <div style={{ display: 'flex', justifyContent: rightSlot ? 'space-between' : undefined, alignItems: 'center', gap: '0.375rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+        <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap' }}>
+          {SCOPE_PILLS.map(p => (
+            <button key={p.key} onClick={() => onScopeChange(p.key)} style={pillStyle(scope === p.key)}>
+              {p.label}
+            </button>
+          ))}
+        </div>
+        {rightSlot}
       </div>
     </>
   )
