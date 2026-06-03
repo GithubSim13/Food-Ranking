@@ -2,16 +2,25 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import type { Entry } from '../../types'
 import FlagImage from '../common/FlagImage'
 
-function avgOverallRating(reviews: { overallRating: number | null }[]) {
-  const ratings = reviews.map(r => r.overallRating).filter((r): r is number => r !== null)
-  if (!ratings.length) return null
-  return (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(2)
+function latestRating(reviews: { overallRating: number | null; date: string | null }[]): string | null {
+  const sorted = [...reviews].map((r, i) => ({ r, i }))
+    .sort((a, b) => {
+      if (a.r.date && b.r.date) {
+        const diff = new Date(b.r.date).getTime() - new Date(a.r.date).getTime()
+        return diff !== 0 ? diff : b.i - a.i
+      }
+      if (a.r.date) return -1
+      if (b.r.date) return 1
+      return b.i - a.i
+    })
+  const found = sorted.find(({ r }) => r.overallRating !== null)
+  return found ? found.r.overallRating!.toFixed(2) : null
 }
 
 export default function EntryCard({ entry }: { entry: Entry }) {
   const navigate = useNavigate()
   const location = useLocation()
-  const avg = avgOverallRating(entry.reviews)
+  const avg = latestRating(entry.reviews)
 
   return (
     <div

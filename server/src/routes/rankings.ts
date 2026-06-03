@@ -7,18 +7,21 @@ router.get('/', async (_req, res) => {
   const entries = await prisma.entry.findMany({
     include: {
       restaurant: { select: { name: true } },
-      reviews: { select: { overallRating: true } },
+      reviews: { select: { overallRating: true, date: true, createdAt: true } },
     },
   });
 
   const ranked = entries.map(e => {
-    const ratings = e.reviews
-      .map(r => r.overallRating)
-      .filter((r): r is number => r !== null);
-    const avgRating =
-      ratings.length > 0
-        ? Math.round((ratings.reduce((a, b) => a + b, 0) / ratings.length) * 100) / 100
-        : null;
+    const sorted = [...e.reviews].sort((a, b) => {
+      if (a.date && b.date) {
+        const diff = new Date(b.date).getTime() - new Date(a.date).getTime();
+        return diff !== 0 ? diff : new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      }
+      if (a.date) return -1;
+      if (b.date) return 1;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+    const avgRating = sorted.find(r => r.overallRating !== null)?.overallRating ?? null;
     return {
       id: e.id,
       foodName: e.foodName,
@@ -27,7 +30,7 @@ router.get('/', async (_req, res) => {
       flag: e.flag,
       restaurant: e.restaurant.name,
       avgRating,
-      reviewCount: ratings.length,
+      reviewCount: e.reviews.length,
       manualRank: e.manualRank,
     };
   });

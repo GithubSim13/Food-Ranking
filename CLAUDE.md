@@ -271,4 +271,11 @@ Default to low or medium effort unless the task is explicitly complex. Only use 
 - [x] Home dashboard analytics logic — Hall of Fame → "⭐ Starred Picks" (top 5 starred by overallRating desc, list format); Hall of Shame → "💀 Hall of Shame" (bottom 5 rated, list format); Reigning Champion → most reviewed entry (reviews.length desc, tiebreak overallRating), shows "tried N times"
 - [x] Scrollbar theming — custom dark scrollbars globally in index.css (6px, purple thumb #3a2f5e, hover #6c47d4, track #1c1826); Firefox + Chromium
 - [x] Entries page filter layout — scope pills and sort pills aligned on same row via flex justify-content: space-between
+- [x] Modal backdrop close fix — uses onMouseDown/onMouseUp pair with a ref; modal content has stopPropagation on onMouseDown; prevents close when click-dragging to select text
+- [x] Review edit textarea auto-height — Notes textarea auto-resizes to content on edit open and on change; overflow hidden to prevent scrollbar flicker
+- [x] Cache invalidation fix — onReviewUpdated in EntryDetail.tsx now invalidates both ['entries'] and ['rankings']; all other mutations in EntryDetail audited for same
+- [x] Sticky search bar — SearchAndScopeBar uses position: sticky, top: -<main-padding>, paddingTop: <main-padding> to cover the scroll container's padding gap; opaque background, border-bottom, box-shadow for visual separation
+- [x] Sticky category headers on Rankings — CategorySection headers use position: sticky with top set via CSS variable --search-bar-height; SearchAndScopeBar sets --search-bar-height on :root via ResizeObserver
+- [x] Rankings categories sorted alphabetically — GET /api/rankings sorts category keys case-insensitively before building response
+- [ ] Error boundaries on Home dashboard — each section should fail independently without crashing the whole page
 - [ ] Capacitor mobile wrapper

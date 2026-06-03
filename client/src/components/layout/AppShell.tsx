@@ -22,11 +22,23 @@ export default function AppShell() {
   })
 
   const entryCount = entries.length
-  const allRatings = entries.flatMap(e =>
-    e.reviews.map(r => r.overallRating).filter((r): r is number => r !== null)
-  )
-  const avgRating = allRatings.length
-    ? (allRatings.reduce((a, b) => a + b, 0) / allRatings.length).toFixed(1)
+  const perEntryLatest = entries
+    .map(e => {
+      const sorted = [...e.reviews].map((r, i) => ({ r, i }))
+        .sort((a, b) => {
+          if (a.r.date && b.r.date) {
+            const diff = new Date(b.r.date).getTime() - new Date(a.r.date).getTime()
+            return diff !== 0 ? diff : b.i - a.i
+          }
+          if (a.r.date) return -1
+          if (b.r.date) return 1
+          return b.i - a.i
+        })
+      return sorted.find(({ r }) => r.overallRating !== null)?.r.overallRating ?? null
+    })
+    .filter((v): v is number => v !== null)
+  const avgRating = perEntryLatest.length
+    ? (perEntryLatest.reduce((a, b) => a + b, 0) / perEntryLatest.length).toFixed(1)
     : null
 
   return (

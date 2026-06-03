@@ -2,9 +2,18 @@ import { useQuery } from '@tanstack/react-query'
 import { getEntries } from '../../api/entries'
 import EntryCard from '../entries/EntryCard'
 
-function avgRating(reviews: { overallRating: number | null }[]): number | null {
-  const ratings = reviews.map(r => r.overallRating).filter((r): r is number => r !== null)
-  return ratings.length ? ratings.reduce((a, b) => a + b, 0) / ratings.length : null
+function latestRating(reviews: { overallRating: number | null; date: string | null }[]): number | null {
+  const sorted = [...reviews].map((r, i) => ({ r, i }))
+    .sort((a, b) => {
+      if (a.r.date && b.r.date) {
+        const diff = new Date(b.r.date).getTime() - new Date(a.r.date).getTime()
+        return diff !== 0 ? diff : b.i - a.i
+      }
+      if (a.r.date) return -1
+      if (b.r.date) return 1
+      return b.i - a.i
+    })
+  return sorted.find(({ r }) => r.overallRating !== null)?.r.overallRating ?? null
 }
 
 export default function StarredPage() {
@@ -36,8 +45,8 @@ export default function StarredPage() {
   const categories = Object.keys(byCategory).sort()
   for (const cat of categories) {
     byCategory[cat].sort((a, b) => {
-      const ra = avgRating(a.reviews)
-      const rb = avgRating(b.reviews)
+      const ra = latestRating(a.reviews)
+      const rb = latestRating(b.reviews)
       if (ra !== null && rb !== null) return rb - ra
       if (ra !== null) return -1
       if (rb !== null) return 1

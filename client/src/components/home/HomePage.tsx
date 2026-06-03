@@ -10,14 +10,26 @@ function scoreColor(v: number): string {
   return `oklch(0.62 0.16 ${25 + ((v - 3) / 6.5) * 120})`
 }
 
-function entryAvg(e: Entry): number | null {
-  const vals = e.reviews.map(r => r.overallRating).filter((r): r is number => r !== null)
-  return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null
+function sortReviewsByDateDesc<T extends { date: string | null }>(reviews: T[]): T[] {
+  return [...reviews].map((r, i) => ({ r, i }))
+    .sort((a, b) => {
+      if (a.r.date && b.r.date) {
+        const diff = new Date(b.r.date).getTime() - new Date(a.r.date).getTime()
+        return diff !== 0 ? diff : b.i - a.i
+      }
+      if (a.r.date) return -1
+      if (b.r.date) return 1
+      return b.i - a.i
+    })
+    .map(({ r }) => r)
 }
 
-function ratingAvg(vals: (number | null)[]): number | null {
-  const filtered = vals.filter((v): v is number => v !== null)
-  return filtered.length ? filtered.reduce((a, b) => a + b, 0) / filtered.length : null
+function latestRating(reviews: Entry['reviews']): number | null {
+  return sortReviewsByDateDesc(reviews).find(r => r.overallRating !== null)?.overallRating ?? null
+}
+
+function latestRatedReview(reviews: Entry['reviews']): Entry['reviews'][0] | null {
+  return sortReviewsByDateDesc(reviews).find(r => r.overallRating !== null) ?? null
 }
 
 function formatDate(dateStr: string): string {
@@ -85,17 +97,14 @@ export default function HomePage() {
   const totalCategories = new Set(entries.map(e => e.category)).size
   const starredCount = entries.filter(e => e.starred).length
   const distinctRestCount = new Set(entries.map(e => e.restaurantId)).size
-  const ratedEntryAvgs = entries.map(e => entryAvg(e)).filter((v): v is number => v !== null)
-  const avgRating = ratedEntryAvgs.length ? ratedEntryAvgs.reduce((a, b) => a + b, 0) / ratedEntryAvgs.length : null
+  const ratedEntryLatest = entries.map(e => latestRating(e.reviews)).filter((v): v is number => v !== null)
+  const avgRating = ratedEntryLatest.length ? ratedEntryLatest.reduce((a, b) => a + b, 0) / ratedEntryLatest.length : null
 
   // ── top 5 ──────────────────────────────────────────────────────────────────
   type Top5Entry = { id: number; name: string; flag: string | null; score: number; starred: boolean; category: string; restaurant: string; reviewCount: number }
   const top5: Top5Entry[] = [...entries]
     .map(e => {
-      let score: number | null = null
-      for (let i = e.reviews.length - 1; i >= 0; i--) {
-        if (e.reviews[i].overallRating !== null) { score = e.reviews[i].overallRating!; break }
-      }
+      const score = latestRating(e.reviews)
       return { id: e.id, name: e.foodName, flag: e.flag, score, starred: e.starred, category: e.category, restaurant: e.restaurant.name, reviewCount: e.reviews.length }
     })
     .filter((e): e is Top5Entry => e.score !== null)
@@ -108,27 +117,27 @@ export default function HomePage() {
 
   const starredPicks: RatedEntry[] = entries
     .filter(e => e.starred)
-    .map(e => ({ id: e.id, name: e.foodName, flag: e.flag, avg: entryAvg(e) }))
+    .map(e => ({ id: e.id, name: e.foodName, flag: e.flag, avg: latestRating(e.reviews) }))
     .filter((x): x is RatedEntry => x.avg !== null)
     .sort((a, b) => b.avg - a.avg)
     .slice(0, 5)
 
   const shameList: RatedEntry[] = entries
     .filter(e => e.reviews.length > 0)
-    .map(e => ({ id: e.id, name: e.foodName, flag: e.flag, avg: entryAvg(e) }))
+    .map(e => ({ id: e.id, name: e.foodName, flag: e.flag, avg: latestRating(e.reviews) }))
     .filter((x): x is RatedEntry => x.avg !== null)
     .sort((a, b) => a.avg - b.avg)
     .slice(0, 5)
 
   // ── champion (most-reviewed entry, tiebreak by overallRating desc) ─────────
   const champData = [...entries]
-    .filter(e => e.reviews.length > 0)
-    .map(e => ({ entry: e, reviewCount: e.reviews.length, avg: entryAvg(e) }))
+    .filter(e => e.starred && e.reviews.length > 0)
+    .map(e => ({ entry: e, reviewCount: e.reviews.length, avg: latestRating(e.reviews) }))
     .sort((a, b) => b.reviewCount - a.reviewCount || (b.avg ?? 0) - (a.avg ?? 0))[0] ?? null
   const champEntry = champData?.entry ?? null
   const champScore = champData?.avg ?? null
   const champReviewCount = champData?.reviewCount ?? 0
-  const champLatestReview = champEntry ? champEntry.reviews[champEntry.reviews.length - 1] : null
+  const champLatestReview = champEntry ? latestRatedReview(champEntry.reviews) : null
   const champTaste = champLatestReview?.rating1 ?? null
   const champValue = champLatestReview?.rating2 ?? null
   const champConsistency = champLatestReview?.rating3 ?? null
@@ -161,9 +170,9 @@ export default function HomePage() {
       restMap.set(e.restaurantId, { name: e.restaurant.name, total: 0, ratedAvgs: [], valueScores: [], valueItems: [] })
     const bucket = restMap.get(e.restaurantId)!
     bucket.total++
-    const avg = entryAvg(e)
+    const avg = latestRating(e.reviews)
     if (avg !== null) bucket.ratedAvgs.push(avg)
-    const val = ratingAvg(e.reviews.map(r => r.rating2))
+    const val = latestRatedReview(e.reviews)?.rating2 ?? null
     if (val !== null) { bucket.valueScores.push(val); bucket.valueItems.push({ name: e.foodName, valueScore: val }) }
   })
 

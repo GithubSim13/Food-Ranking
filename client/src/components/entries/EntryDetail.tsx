@@ -18,12 +18,18 @@ const EDIT_RATING_FIELDS = [
   { label: 'Consistency', key: 'rating3' },
 ] as const
 
-function avgField(
-  reviews: Entry['reviews'],
-  field: 'overallRating' | 'rating1' | 'rating2' | 'rating3',
-): number | null {
-  const vals = reviews.map(r => r[field]).filter((v): v is number => v !== null)
-  return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null
+function latestRatedReview(reviews: Entry['reviews']): Entry['reviews'][0] | null {
+  const sorted = [...reviews].map((r, i) => ({ r, i }))
+    .sort((a, b) => {
+      if (a.r.date && b.r.date) {
+        const diff = new Date(b.r.date).getTime() - new Date(a.r.date).getTime()
+        return diff !== 0 ? diff : b.i - a.i
+      }
+      if (a.r.date) return -1
+      if (b.r.date) return 1
+      return b.i - a.i
+    })
+  return sorted.find(({ r }) => r.overallRating !== null)?.r ?? null
 }
 
 // ─── category comparison panel ────────────────────────────────────────────────
@@ -43,15 +49,15 @@ function CategoryComparisonPanel({
   const comparisons = entries
     .filter(e => e.category === category && e.id !== currentEntryId)
     .map(e => {
-      const overall = avgField(e.reviews, 'overallRating')
-      if (overall === null) return null
+      const latest = latestRatedReview(e.reviews)
+      if (latest === null) return null
       return {
         id: e.id,
         foodName: e.foodName,
-        overall,
-        taste: avgField(e.reviews, 'rating1'),
-        value: avgField(e.reviews, 'rating2'),
-        consistency: avgField(e.reviews, 'rating3'),
+        overall: latest.overallRating!,
+        taste: latest.rating1,
+        value: latest.rating2,
+        consistency: latest.rating3,
       }
     })
     .filter((e): e is NonNullable<typeof e> => e !== null)

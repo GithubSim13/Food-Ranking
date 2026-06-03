@@ -8,10 +8,18 @@ import type { Scope } from '../common/SearchAndScopeBar'
 
 type Sort = 'recent' | 'rated' | 'az'
 
-function avgRating(reviews: { overallRating: number | null }[]): number | null {
-  const vals = reviews.map(r => r.overallRating).filter((r): r is number => r !== null)
-  if (!vals.length) return null
-  return vals.reduce((a, b) => a + b, 0) / vals.length
+function latestRating(reviews: { overallRating: number | null; date: string | null }[]): number | null {
+  const sorted = [...reviews].map((r, i) => ({ r, i }))
+    .sort((a, b) => {
+      if (a.r.date && b.r.date) {
+        const diff = new Date(b.r.date).getTime() - new Date(a.r.date).getTime()
+        return diff !== 0 ? diff : b.i - a.i
+      }
+      if (a.r.date) return -1
+      if (b.r.date) return 1
+      return b.i - a.i
+    })
+  return sorted.find(({ r }) => r.overallRating !== null)?.r.overallRating ?? null
 }
 
 export default function EntryList() {
@@ -38,8 +46,8 @@ export default function EntryList() {
   const sorted = [...scoped].sort((a, b) => {
     if (sort === 'az') return a.foodName.localeCompare(b.foodName)
     if (sort === 'rated') {
-      const ra = avgRating(a.reviews) ?? -1
-      const rb = avgRating(b.reviews) ?? -1
+      const ra = latestRating(a.reviews) ?? -1
+      const rb = latestRating(b.reviews) ?? -1
       return rb - ra
     }
     return b.id - a.id
