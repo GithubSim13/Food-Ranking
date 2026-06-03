@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { getEntries } from '../../api/entries'
 import FlagImage from '../common/FlagImage'
 import { sortReviewsByDateDesc, latestRating, latestRatedReview, scoreColor } from '../../utils'
+import SectionErrorBoundary from '../common/SectionErrorBoundary'
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -268,6 +269,7 @@ export default function HomePage() {
       </div>
 
       {/* 3. Top 5 Podium */}
+      <SectionErrorBoundary title="Top 5">
       <Card style={{ marginBottom: '1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1rem', letterSpacing: '-0.02em', color: 'var(--ink)' }}>🏆 Top 5</div>
@@ -330,10 +332,12 @@ export default function HomePage() {
           ))}
         </div>
       </Card>
+      </SectionErrorBoundary>
 
       {/* 4. Starred Picks / Hall of Shame */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
         {/* Starred Picks */}
+        <SectionErrorBoundary title="Starred Picks">
         <div style={{ background: 'var(--surface)', borderLeft: '4px solid #1EA04F', borderRadius: 14, padding: '1.25rem 1.5rem' }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#1EA04F', marginBottom: '0.75rem' }}>⭐ Hall of Fame</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
@@ -347,8 +351,10 @@ export default function HomePage() {
             ))}
           </div>
         </div>
+        </SectionErrorBoundary>
 
         {/* Hall of Shame */}
+        <SectionErrorBoundary title="Hall of Shame">
         <div style={{ background: 'var(--surface)', borderLeft: '4px solid #bd5417', borderRadius: 14, padding: '1.25rem 1.5rem' }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#bd5417', marginBottom: '0.75rem' }}>💀 Hall of Shame</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
@@ -362,11 +368,13 @@ export default function HomePage() {
             ))}
           </div>
         </div>
+        </SectionErrorBoundary>
       </div>
 
       {/* 5. Reigning Champion / Fresh off the Fork */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
         {/* Reigning Champion */}
+        <SectionErrorBoundary title="Reigning Champion">
         <div onClick={() => champEntry && navigate(`/entries/${champEntry.id}`, { state: { background: location } })} style={{
           position: 'relative',
           background: '#6c47d4',
@@ -430,8 +438,10 @@ export default function HomePage() {
             </div>
           )}
         </div>
+        </SectionErrorBoundary>
 
         {/* Fresh off the Fork */}
+        <SectionErrorBoundary title="Fresh off the Fork">
         <Card style={{ display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.875rem' }}>
             <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1rem', letterSpacing: '-0.02em', color: 'var(--ink)' }}>🍴 Fresh off the fork</div>
@@ -447,11 +457,13 @@ export default function HomePage() {
             ))}
           </div>
         </Card>
+        </SectionErrorBoundary>
       </div>
 
       {/* 6. Top Tables / Regulars */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
         {/* Top Tables */}
+        <SectionErrorBoundary title="Top Tables">
         <Card>
           <SectionLabel>Top Tables</SectionLabel>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
@@ -460,8 +472,10 @@ export default function HomePage() {
             ))}
           </div>
         </Card>
+        </SectionErrorBoundary>
 
         {/* Regulars */}
+        <SectionErrorBoundary title="Regulars">
         <Card>
           <SectionLabel>Regulars</SectionLabel>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
@@ -474,11 +488,13 @@ export default function HomePage() {
             ))}
           </div>
         </Card>
+        </SectionErrorBoundary>
       </div>
 
       {/* 7. Logging Pace / Best Value */}
       <div style={{ display: 'grid', gridTemplateColumns: '3fr 2fr', gap: '1rem', marginBottom: '2rem' }}>
         {/* Logging Pace */}
+        <SectionErrorBoundary title="Logging Pace">
         <Card>
           <SectionLabel>Logging Pace</SectionLabel>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.3rem', marginBottom: '1.25rem' }}>
@@ -510,8 +526,10 @@ export default function HomePage() {
             Busiest was <span style={{ color: '#8b5cf6', fontWeight: 700 }}>{peakMonthLabel}</span> ({peakMonthCount} foods) · {loggingStreak}-month streak
           </div>
         </Card>
+        </SectionErrorBoundary>
 
         {/* Best Value */}
+        <SectionErrorBoundary title="Best Value Spot">
         <Card onClick={() => navigate('/restaurants')} style={{ display: 'flex', gap: '1.25rem', overflow: 'hidden' }}>
           {/* Left: summary */}
           <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', flexShrink: 0 }}>
@@ -538,6 +556,7 @@ export default function HomePage() {
             ))}
           </div>
         </Card>
+        </SectionErrorBoundary>
       </div>
 
     </div>

@@ -8,7 +8,7 @@ import FlagImage from '../common/FlagImage'
 import FlagPicker from '../common/FlagPicker'
 import { updateReview, deleteReview } from '../../api/reviews'
 import ReviewForm from '../reviews/ReviewForm'
-import type { Entry, EntryDetail as EntryDetailType, Review } from '../../types'
+import type { EntryDetail as EntryDetailType, Review } from '../../types'
 import { useToast } from '../../context/ToastContext'
 import { sortReviewsByDateDesc, latestRatedReview } from '../../utils'
 
@@ -490,6 +490,8 @@ export default function EntryDetail({ onPanelChange }: EntryDetailProps = {}) {
       </div>
     )
   }
+
+  if (!entry) return null
 
   const onReviewUpdated = () => {
     queryClient.invalidateQueries({ queryKey: ['entries'] })
