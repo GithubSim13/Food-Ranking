@@ -80,6 +80,7 @@ server/
     index.ts            # Express entry — mounts routers, health check
     lib/
       prisma.ts         # PrismaClient singleton
+      routeHelpers.ts   # shared route utilities: parseId() (validates integer param, returns 400 on bad input), restaurantNameSelect (reusable Prisma select fragment)
     routes/
       entries.ts        # /api/entries routes
       rankings.ts       # /api/rankings route
@@ -147,6 +148,9 @@ client/src/
       FlagImage.tsx     # renders SVG flag from country-flag-icons; null → nothing, unknown code → text fallback
       FlagPicker.tsx    # searchable country dropdown, dark themed; props: { value: string | null, onChange }
       countryList.ts    # static list of 250 { code, name } pairs (auto-generated, do not hand-edit)
+      Icons.tsx         # shared icon components: PencilIcon, TrashIcon, ChevronIcon, iconBtnStyle
+      SectionErrorBoundary.tsx  # class-based React error boundary; wraps each Home dashboard section; shows "Could not load [title]" fallback on error
+    NotFoundPage.tsx    # catch-all 404 page — "Page not found" with Go to Home button; matched by <Route path="*"> in App.tsx
     home/
       HomePage.tsx      # / — dashboard: greeting, stat grid, top 5 podium, Hall of Fame/Shame, Reigning Champion, Fresh off the fork, Top Tables, Regulars, Logging pace, Best value
     entries/
@@ -166,7 +170,9 @@ client/src/
   context/
     ToastContext.tsx    # ToastProvider + useToast() hook; showToast(message, variant?)
   types.ts              # Entry, EntryDetail, Review (includes retroactive), RankedEntry, Rankings, CategorySummary, RestaurantSummary
-  App.tsx               # routes + React Router background-location modal pattern for /entries/:id
+  utils.ts              # shared helpers: sortReviewsByDateDesc, latestRating, latestRatedReview, scoreColor
+  pageStyles.ts         # shared inline style objects: kickerStyle, pageTitleStyle, smallPrimaryBtnStyle, smallSecondaryBtnStyle, smallDeleteBtnStyle
+  App.tsx               # routes + React Router background-location modal pattern for /entries/:id; catch-all <Route path="*"> renders NotFoundPage
   main.tsx              # QueryClientProvider + BrowserRouter + ToastProvider + ToastContainer
 ```
 
@@ -187,6 +193,10 @@ client/src/
 - **Flag display**: `FlagImage` renders SVG flags everywhere. Falls back to raw text for unknown codes; renders nothing for null.
 - **FlagPicker**: searchable dropdown, dark themed — type country name or ISO code. Arrow-key navigation, Enter/Escape/click-outside support.
 - **Entry detail modal**: clicking an entry card anywhere opens `EntryDetail` inside `Modal.tsx`. URL updates to `/entries/:id`. ESC or backdrop closes. Direct navigation renders as full page.
+- **Error handling**: all 17 async route handlers wrapped in try/catch — DB failures return 500 instead of crashing the process; invalid IDs return 400; missing records return 404
+- **Entry detail error states**: GET /api/entries/:id returning 400 or 404 renders an "Entry not found" message with back button instead of infinite loading
+- **404 page**: unmatched routes render NotFoundPage via catch-all `<Route path="*">`
+- **Error boundaries**: each Home dashboard section wrapped in SectionErrorBoundary — a section crash shows a muted fallback without affecting the rest of the page
 - **Rankings drag-and-drop**: only applies to unrated entries. Gated behind "Edit Rankings" button. Save persists order via `PATCH /api/rankings/reorder`; Cancel restores snapshot. Rated entries always sort by `overallRating` desc automatically — `manualRank` is ignored for them (values left in DB, not wiped).
 - **Rankings search + filters**: same search bar and scope filter pills as Entries page (Everything / ★ Starred / Abroad / Home). Category groups with zero matches are hidden.
 - **Category Comparison Panel**: visible on entry detail when a review form is open (new or edit). Shows other rated entries in the same category sorted by `overallRating` desc. Displays food name, overallRating, and Taste/Value/Consistency breakdowns (— if null). Unrated entries hidden. Panel appears to the right; modal expands wider to accommodate it.
@@ -286,5 +296,9 @@ Default to low or medium effort unless the task is explicitly complex. Only use 
 - [x] Bug fix: Best Value Spot — now scans all reviews for most recent one with a non-null rating2 value, not just latest rated review
 - [x] Bug fix: Category Comparison Panel T/V/C — each sub-rating now independently finds latest non-null value across all reviews
 - [x] Bug fix: Rankings alphabetical order — client-side localeCompare sort added as guarantee regardless of server/cache insertion order
-- [ ] Error boundaries on Home dashboard — each section should fail independently without crashing the whole page
+- [x] Client codebase audit — extracted shared utils.ts (rating helpers), Icons.tsx (icon components), pageStyles.ts (page title/button styles); removed duplicated helpers across 7 files; added useMemo optimisations in CategoriesPage and RestaurantsPage
+- [x] Server codebase audit — extracted routeHelpers.ts (parseId, restaurantNameSelect); added try/catch to all 17 async handlers; all Prisma failures now return 500 instead of crashing
+- [x] Entry detail error states — 400 and 404 from GET /api/entries/:id both render "Entry not found" with back button; no more infinite loading
+- [x] Catch-all 404 page — NotFoundPage component; matched by <Route path="*"> in App.tsx
+- [x] Error boundaries on Home dashboard — SectionErrorBoundary wraps all 9 sections independently
 - [ ] Capacitor mobile wrapper
