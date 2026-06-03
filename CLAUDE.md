@@ -203,7 +203,7 @@ Sections (top to bottom) and how to compute each:
 |---------|-------------|
 | **Greeting** | Total entry count, distinct category count |
 | **Stat row** | Avg overallRating across all rated entries; total entries; count where `starred === true`; distinct restaurant count |
-| **Top 5 podium** | Top 5 entries by highest overallRating (latest review per entry); show name, flag (FlagImage), overallRating, starred boolean; podium bar order: 2nd left, 1st center, 3rd right |
+| **Top 5 podium** | Top 5 entries by highest overallRating (latest review per entry); all 5 shown as bars — order left to right: 4, 2, 1, 3, 5; bar heights: #1=65%, #2=50%, #3=40%, #4=28%, #5=18%; above each bar: entry name + score; inside bars 1–3: trophy emoji (🥇🥈🥉), rank number, category, restaurant name, review count; inside bars 4–5: medal emoji (🏅) and rank number only (too short for detail); clicking any bar opens entry modal via background-location pattern |
 | **Hall of Fame** | Single highest-rated entry that has a review with notes; show name, restaurant · category, overallRating (green), first line of notes as italic quote |
 | **Hall of Shame** | Single lowest-rated entry that has a review with notes; same fields, orange score |
 | **Reigning Champion** | Same entry as Hall of Fame; additionally show Taste / Value / Consistency breakdown from its most recent review (rating1, rating2, rating3) as a compact inline row below the quote |
@@ -265,6 +265,8 @@ Default to low or medium effort unless the task is explicitly complex. Only use 
 - [x] Rankings search + scope filters (Everything / Starred / Abroad / Home) — category groups hidden when no matches
 - [x] Category Comparison Panel — shown on entry detail when review form is open; rated entries in same category sorted by overallRating desc; Taste/Value/Consistency breakdowns displayed
 - [x] Home dashboard layout rebuilt (Session 1) — new section order, stat row compacted to 4 cards, Reigning Champion card, Best Value split card, Logging Pace bar chart; all placeholder values
-- [ ] Home dashboard data wiring (Session 2) — replace all hardcoded values with real computed data from ['entries'] query
+- [x] Home dashboard data wiring (Session 2) — all sections wired to real computed data from ['entries'] query; no new API calls
+- [x] Home dashboard interactivity — ALL RANKINGS/ALL ENTRIES links, podium bars, Hall of Fame/Shame, Reigning Champion, Fresh off the fork rows all navigate correctly; entry clicks use background-location modal pattern
+- [x] Home dashboard podium — all 5 entries shown as bars (order: 4,2,1,3,5); bars 1–3 show trophy + category + restaurant + review count inside; bars 4–5 show medal + rank only; Best Value split card with entry list on right
 - [ ] Home dashboard analytics logic — resolve redundancy between Hall of Fame, Reigning Champion, and Top 5 podium
 - [ ] Capacitor mobile wrapper

@@ -103,30 +103,31 @@ export default function HomePage() {
     .slice(0, 5)
   const [p1, p2, p3, p4, p5] = top5
 
-  // ── hall of fame / shame ───────────────────────────────────────────────────
-  const entriesWithNotes = entries.filter(e => e.reviews.some(r => r.notes && r.notes.trim() !== ''))
-  type RatedEntry = { entry: Entry; avg: number }
-  const ratedWithNotes: RatedEntry[] = entriesWithNotes
-    .map(e => ({ entry: e, avg: entryAvg(e) }))
+  // ── starred picks (hall of fame) / hall of shame ──────────────────────────
+  type RatedEntry = { id: number; name: string; flag: string | null; avg: number }
+
+  const starredPicks: RatedEntry[] = entries
+    .filter(e => e.starred)
+    .map(e => ({ id: e.id, name: e.foodName, flag: e.flag, avg: entryAvg(e) }))
     .filter((x): x is RatedEntry => x.avg !== null)
+    .sort((a, b) => b.avg - a.avg)
+    .slice(0, 5)
 
-  const fameData = ratedWithNotes.length
-    ? [...ratedWithNotes].sort((a, b) => b.avg - a.avg)[0]
-    : null
-  const fameNote = fameData
-    ? firstNoteLine(fameData.entry.reviews.find(r => r.notes && r.notes.trim() !== '')?.notes)
-    : ''
+  const shameList: RatedEntry[] = entries
+    .filter(e => e.reviews.length > 0)
+    .map(e => ({ id: e.id, name: e.foodName, flag: e.flag, avg: entryAvg(e) }))
+    .filter((x): x is RatedEntry => x.avg !== null)
+    .sort((a, b) => a.avg - b.avg)
+    .slice(0, 5)
 
-  const shameData = ratedWithNotes.length
-    ? [...ratedWithNotes].sort((a, b) => a.avg - b.avg)[0]
-    : null
-  const shameNote = shameData
-    ? firstNoteLine(shameData.entry.reviews.find(r => r.notes && r.notes.trim() !== '')?.notes)
-    : ''
-
-  // ── champion (= hall of fame entry) ───────────────────────────────────────
-  const champEntry = fameData?.entry ?? null
-  const champScore = fameData?.avg ?? null
+  // ── champion (most-reviewed entry, tiebreak by overallRating desc) ─────────
+  const champData = [...entries]
+    .filter(e => e.reviews.length > 0)
+    .map(e => ({ entry: e, reviewCount: e.reviews.length, avg: entryAvg(e) }))
+    .sort((a, b) => b.reviewCount - a.reviewCount || (b.avg ?? 0) - (a.avg ?? 0))[0] ?? null
+  const champEntry = champData?.entry ?? null
+  const champScore = champData?.avg ?? null
+  const champReviewCount = champData?.reviewCount ?? 0
   const champLatestReview = champEntry ? champEntry.reviews[champEntry.reviews.length - 1] : null
   const champTaste = champLatestReview?.rating1 ?? null
   const champValue = champLatestReview?.rating2 ?? null
@@ -343,34 +344,36 @@ export default function HomePage() {
         </div>
       </Card>
 
-      {/* 4. Hall of Fame / Hall of Shame */}
+      {/* 4. Starred Picks / Hall of Shame */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
-        {/* Hall of Fame */}
-        <div onClick={() => fameData && navigate(`/entries/${fameData.entry.id}`, { state: { background: location } })} style={{ background: 'var(--surface)', borderLeft: '4px solid #4caf82', borderRadius: 14, padding: '1.25rem 1.5rem', cursor: fameData ? 'pointer' : undefined }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#4caf82' }}>▲ Hall of Fame</div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1.5rem', fontWeight: 700, color: '#4caf82', lineHeight: 1 }}>{fameData ? fameData.avg.toFixed(2) : '—'}</div>
+        {/* Starred Picks */}
+        <div style={{ background: 'var(--surface)', borderLeft: '4px solid #4caf82', borderRadius: 14, padding: '1.25rem 1.5rem' }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#4caf82', marginBottom: '0.75rem' }}>⭐ Hall of Fame</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+            {starredPicks.map((e, i) => (
+              <div key={e.id} onClick={() => navigate(`/entries/${e.id}`, { state: { background: location } })} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.35rem 0.5rem', borderRadius: 6, background: 'var(--paper)', cursor: 'pointer' }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', color: 'var(--ink-mute)', width: 14, flexShrink: 0 }}>{i + 1}</span>
+                <FlagImage code={e.flag} />
+                <span style={{ flex: 1, fontSize: '0.88rem', color: 'var(--ink)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{e.name}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', fontWeight: 700, color: scoreColor(e.avg), flexShrink: 0 }}>{e.avg.toFixed(2)}</span>
+              </div>
+            ))}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.1rem', letterSpacing: '-0.02em', color: 'var(--ink)', marginBottom: '0.25rem' }}>
-            <FlagImage code={fameData?.entry.flag ?? null} />
-            {fameData?.entry.foodName ?? '—'}
-          </div>
-          <div style={{ fontSize: '0.8rem', color: 'var(--ink-mute)', marginBottom: '0.5rem' }}>{fameData?.entry.restaurant.name ?? '—'} · {fameData?.entry.category ?? '—'}</div>
-          <div style={{ fontSize: '0.82rem', color: 'var(--ink-mute)', fontStyle: 'italic' }}>"{fameNote}"</div>
         </div>
 
         {/* Hall of Shame */}
-        <div onClick={() => shameData && navigate(`/entries/${shameData.entry.id}`, { state: { background: location } })} style={{ background: 'var(--surface)', borderLeft: '4px solid #e07a40', borderRadius: 14, padding: '1.25rem 1.5rem', cursor: shameData ? 'pointer' : undefined }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#e07a40' }}>▼ Hall of Shame</div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1.5rem', fontWeight: 700, color: '#e07a40', lineHeight: 1 }}>{shameData ? shameData.avg.toFixed(2) : '—'}</div>
+        <div style={{ background: 'var(--surface)', borderLeft: '4px solid #e07a40', borderRadius: 14, padding: '1.25rem 1.5rem' }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#e07a40', marginBottom: '0.75rem' }}>💀 Hall of Shame</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+            {shameList.map((e, i) => (
+              <div key={e.id} onClick={() => navigate(`/entries/${e.id}`, { state: { background: location } })} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.35rem 0.5rem', borderRadius: 6, background: 'var(--paper)', cursor: 'pointer' }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', color: 'var(--ink-mute)', width: 14, flexShrink: 0 }}>{i + 1}</span>
+                <FlagImage code={e.flag} />
+                <span style={{ flex: 1, fontSize: '0.88rem', color: 'var(--ink)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{e.name}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', fontWeight: 700, color: scoreColor(e.avg), flexShrink: 0 }}>{e.avg.toFixed(2)}</span>
+              </div>
+            ))}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.1rem', letterSpacing: '-0.02em', color: 'var(--ink)', marginBottom: '0.25rem' }}>
-            <FlagImage code={shameData?.entry.flag ?? null} />
-            {shameData?.entry.foodName ?? '—'}
-          </div>
-          <div style={{ fontSize: '0.8rem', color: 'var(--ink-mute)', marginBottom: '0.5rem' }}>{shameData?.entry.restaurant.name ?? '—'} · {shameData?.entry.category ?? '—'}</div>
-          <div style={{ fontSize: '0.82rem', color: 'var(--ink-mute)', fontStyle: 'italic' }}>"{shameNote}"</div>
         </div>
       </div>
 
@@ -415,6 +418,9 @@ export default function HomePage() {
           </div>
           <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.55)' }}>
             {champEntry?.restaurant.name ?? '—'} · {champEntry?.category ?? '—'}
+          </div>
+          <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.45)' }}>
+            tried {champReviewCount} {champReviewCount === 1 ? 'time' : 'times'}
           </div>
           <div style={{ fontSize: '0.82rem', color: '#d4c0f8', fontStyle: 'italic' }}>
             {champNote ? `"${champNote}"` : ''}
