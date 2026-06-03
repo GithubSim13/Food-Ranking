@@ -22,6 +22,7 @@ export default function RestaurantsPage() {
   const [expanded, setExpanded] = useState<number | null>(null)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [renameValue, setRenameValue] = useState('')
+  const [renameError, setRenameError] = useState('')
   const [deletingRestaurant, setDeletingRestaurant] = useState<number | null>(null)
 
   const { mutate: doRename, isPending: isRenaming } = useMutation({
@@ -120,25 +121,34 @@ export default function RestaurantsPage() {
               }}>
                 {isEditing ? (
                   <>
-                    <input
-                      value={renameValue}
-                      onChange={e => setRenameValue(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') doRename({ id: rest.id, name: renameValue.trim() })
-                        if (e.key === 'Escape') setEditingId(null)
-                      }}
-                      autoFocus
-                      style={{ ...inputStyle, flex: 1 }}
-                    />
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                      <input
+                        value={renameValue}
+                        onChange={e => { setRenameValue(e.target.value); setRenameError('') }}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            if (!renameValue.trim()) { setRenameError('Name is required'); return }
+                            doRename({ id: rest.id, name: renameValue.trim() })
+                          }
+                          if (e.key === 'Escape') { setEditingId(null); setRenameError('') }
+                        }}
+                        autoFocus
+                        style={{ ...inputStyle, width: '100%' }}
+                      />
+                      {renameError && <p style={renameErrorStyle}>{renameError}</p>}
+                    </div>
                     <button
-                      onClick={() => doRename({ id: rest.id, name: renameValue.trim() })}
-                      disabled={isRenaming || !renameValue.trim()}
+                      onClick={() => {
+                        if (!renameValue.trim()) { setRenameError('Name is required'); return }
+                        doRename({ id: rest.id, name: renameValue.trim() })
+                      }}
+                      disabled={isRenaming}
                       style={{ ...smallPrimaryBtnStyle, opacity: isRenaming ? 0.6 : 1 }}
                     >
                       Save
                     </button>
                     <button
-                      onClick={() => setEditingId(null)}
+                      onClick={() => { setEditingId(null); setRenameError('') }}
                       disabled={isRenaming}
                       style={smallSecondaryBtnStyle}
                     >
@@ -217,7 +227,7 @@ export default function RestaurantsPage() {
 
                     {/* Icon buttons */}
                     <button
-                      onClick={e => { e.stopPropagation(); setRenameValue(rest.name); setEditingId(rest.id) }}
+                      onClick={e => { e.stopPropagation(); setRenameValue(rest.name); setRenameError(''); setEditingId(rest.id) }}
                       title="Rename"
                       style={iconBtnStyle}
                     >
@@ -371,5 +381,11 @@ const inputStyle: React.CSSProperties = {
   color: 'var(--ink)',
   outline: 'none',
   boxSizing: 'border-box',
+}
+const renameErrorStyle: React.CSSProperties = {
+  margin: '0',
+  fontSize: '0.8rem',
+  color: '#f87171',
+  fontFamily: 'var(--font-body)',
 }
 

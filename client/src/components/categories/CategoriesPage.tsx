@@ -19,6 +19,7 @@ export default function CategoriesPage() {
   const [search, setSearch] = useState('')
   const [editingCategory, setEditingCategory] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
+  const [renameError, setRenameError] = useState('')
   const [deletingCategory, setDeletingCategory] = useState<string | null>(null)
 
   const { mutate: doRename, isPending: isRenaming } = useMutation({
@@ -111,24 +112,31 @@ export default function CategoriesPage() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     <input
                       value={renameValue}
-                      onChange={e => setRenameValue(e.target.value)}
+                      onChange={e => { setRenameValue(e.target.value); setRenameError('') }}
                       onKeyDown={e => {
-                        if (e.key === 'Enter') doRename({ from: cat.name, to: renameValue.trim() })
-                        if (e.key === 'Escape') setEditingCategory(null)
+                        if (e.key === 'Enter') {
+                          if (!renameValue.trim()) { setRenameError('Name is required'); return }
+                          doRename({ from: cat.name, to: renameValue.trim() })
+                        }
+                        if (e.key === 'Escape') { setEditingCategory(null); setRenameError('') }
                       }}
                       autoFocus
                       style={inputStyle}
                     />
+                    {renameError && <p style={renameErrorStyle}>{renameError}</p>}
                     <div style={{ display: 'flex', gap: '0.4rem' }}>
                       <button
-                        onClick={() => doRename({ from: cat.name, to: renameValue.trim() })}
-                        disabled={isRenaming || !renameValue.trim()}
+                        onClick={() => {
+                          if (!renameValue.trim()) { setRenameError('Name is required'); return }
+                          doRename({ from: cat.name, to: renameValue.trim() })
+                        }}
+                        disabled={isRenaming}
                         style={{ ...smallPrimaryBtnStyle, flex: 1, opacity: isRenaming ? 0.6 : 1 }}
                       >
                         Save
                       </button>
                       <button
-                        onClick={() => setEditingCategory(null)}
+                        onClick={() => { setEditingCategory(null); setRenameError('') }}
                         disabled={isRenaming}
                         style={{ ...smallSecondaryBtnStyle, flex: 1 }}
                       >
@@ -140,7 +148,7 @@ export default function CategoriesPage() {
                   <>
                     <div style={{ position: 'absolute', top: '0.625rem', right: '0.625rem', display: 'flex', gap: '0.2rem' }}>
                       <button
-                        onClick={e => { e.stopPropagation(); setRenameValue(cat.name); setEditingCategory(cat.name) }}
+                        onClick={e => { e.stopPropagation(); setRenameValue(cat.name); setRenameError(''); setEditingCategory(cat.name) }}
                         title="Rename"
                         style={iconBtnStyle}
                       >
@@ -248,5 +256,11 @@ const inputStyle: React.CSSProperties = {
   color: 'var(--ink)',
   outline: 'none',
   boxSizing: 'border-box',
+}
+const renameErrorStyle: React.CSSProperties = {
+  margin: '0',
+  fontSize: '0.8rem',
+  color: '#f87171',
+  fontFamily: 'var(--font-body)',
 }
 

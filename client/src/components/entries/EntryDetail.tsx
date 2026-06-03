@@ -356,6 +356,7 @@ export default function EntryDetail({ onPanelChange }: EntryDetailProps = {}) {
     flag: null,
     restaurantName: '',
   })
+  const [editErrors, setEditErrors] = useState<Record<string, string>>({})
 
   // Track which review (if any) is currently in inline-edit mode
   const [editingReviewId, setEditingReviewId] = useState<number | null>(null)
@@ -505,6 +506,7 @@ export default function EntryDetail({ onPanelChange }: EntryDetailProps = {}) {
       flag: entry.flag,
       restaurantName: entry.restaurant.name,
     })
+    setEditErrors({})
     setIsEditingDetails(true)
   }
 
@@ -518,9 +520,10 @@ export default function EntryDetail({ onPanelChange }: EntryDetailProps = {}) {
               <label style={labelStyle}>Food Name</label>
               <input
                 value={editForm.foodName}
-                onChange={e => setEditForm(f => ({ ...f, foodName: e.target.value }))}
+                onChange={e => { setEditForm(f => ({ ...f, foodName: e.target.value })); setEditErrors(err => ({ ...err, foodName: '' })) }}
                 style={inputStyle}
               />
+              {editErrors.foodName && <p style={editErrorStyle}>{editErrors.foodName}</p>}
             </div>
             <div>
               <label style={labelStyle}>Country</label>
@@ -533,21 +536,30 @@ export default function EntryDetail({ onPanelChange }: EntryDetailProps = {}) {
               <label style={labelStyle}>Category</label>
               <input
                 value={editForm.category}
-                onChange={e => setEditForm(f => ({ ...f, category: e.target.value }))}
+                onChange={e => { setEditForm(f => ({ ...f, category: e.target.value })); setEditErrors(err => ({ ...err, category: '' })) }}
                 style={inputStyle}
               />
+              {editErrors.category && <p style={editErrorStyle}>{editErrors.category}</p>}
             </div>
             <div>
               <label style={labelStyle}>Restaurant</label>
               <input
                 value={editForm.restaurantName}
-                onChange={e => setEditForm(f => ({ ...f, restaurantName: e.target.value }))}
+                onChange={e => { setEditForm(f => ({ ...f, restaurantName: e.target.value })); setEditErrors(err => ({ ...err, restaurantName: '' })) }}
                 style={inputStyle}
               />
+              {editErrors.restaurantName && <p style={editErrorStyle}>{editErrors.restaurantName}</p>}
             </div>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <button
-                onClick={() => saveDetails(editForm)}
+                onClick={() => {
+                  const errs: Record<string, string> = {}
+                  if (!editForm.foodName.trim()) errs.foodName = 'Food name is required'
+                  if (!editForm.category.trim()) errs.category = 'Category is required'
+                  if (!editForm.restaurantName.trim()) errs.restaurantName = 'Restaurant name is required'
+                  if (Object.keys(errs).length > 0) { setEditErrors(errs); return }
+                  saveDetails(editForm)
+                }}
                 disabled={isSavingDetails}
                 style={{ ...saveBtnStyle, opacity: isSavingDetails ? 0.6 : 1 }}
               >
@@ -776,4 +788,10 @@ const errorRetryBtnStyle: React.CSSProperties = {
   cursor: 'pointer',
   fontSize: '0.875rem',
   fontWeight: 500,
+}
+const editErrorStyle: React.CSSProperties = {
+  margin: '0.3rem 0 0',
+  fontSize: '0.82rem',
+  color: '#f87171',
+  fontFamily: 'var(--font-body)',
 }

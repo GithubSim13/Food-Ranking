@@ -148,7 +148,6 @@ function CategoryCombo({ value, onChange }: CategoryComboProps) {
         value={value}
         onChange={e => { onChange(e.target.value); setOpen(true) }}
         onFocus={() => setOpen(true)}
-        required
         style={inputStyle}
         autoComplete="off"
       />
@@ -205,7 +204,6 @@ function RestaurantCombo({ value, onChange }: RestaurantComboProps) {
         value={value}
         onChange={e => { onChange(e.target.value); setOpen(true) }}
         onFocus={() => setOpen(true)}
-        required
         style={inputStyle}
         autoComplete="off"
       />
@@ -253,6 +251,7 @@ export default function EntryForm() {
   const notesRef = useRef<HTMLTextAreaElement>(null)
 
   const [isPending, setIsPending] = useState(false)
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
   const debouncedName = useDebounce(foodName, 300)
 
@@ -274,6 +273,11 @@ export default function EntryForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    const newErrors: Record<string, string> = {}
+    if (!foodName.trim()) newErrors.foodName = 'Food name is required'
+    if (!category.trim()) newErrors.category = 'Category is required'
+    if (!restaurantName.trim()) newErrors.restaurantName = 'Restaurant name is required'
+    if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return }
     setIsPending(true)
     try {
       const entry = await createEntry({ foodName, category, restaurantName, starred, flag })
@@ -320,10 +324,10 @@ export default function EntryForm() {
             <label style={labelStyle}>Food Name</label>
             <input
               value={foodName}
-              onChange={e => setFoodName(e.target.value)}
-              required
+              onChange={e => { setFoodName(e.target.value); setErrors(err => ({ ...err, foodName: '' })) }}
               style={inputStyle}
             />
+            {errors.foodName && <p style={errorStyle}>{errors.foodName}</p>}
             {dupes.length > 0 && (
               <div style={{
                 marginTop: '0.4rem',
@@ -354,12 +358,14 @@ export default function EntryForm() {
 
           <div>
             <label style={labelStyle}>Category</label>
-            <CategoryCombo value={category} onChange={setCategory} />
+            <CategoryCombo value={category} onChange={val => { setCategory(val); setErrors(err => ({ ...err, category: '' })) }} />
+            {errors.category && <p style={errorStyle}>{errors.category}</p>}
           </div>
 
           <div>
             <label style={labelStyle}>Restaurant Name</label>
-            <RestaurantCombo value={restaurantName} onChange={setRestaurantName} />
+            <RestaurantCombo value={restaurantName} onChange={val => { setRestaurantName(val); setErrors(err => ({ ...err, restaurantName: '' })) }} />
+            {errors.restaurantName && <p style={errorStyle}>{errors.restaurantName}</p>}
           </div>
 
           <div>
@@ -405,7 +411,16 @@ export default function EntryForm() {
                         min={0} max={10} step="any"
                         placeholder="–"
                         value={ratings[key]}
-                        onChange={e => setRatings(r => ({ ...r, [key]: e.target.value }))}
+                        onChange={e => {
+                          const raw = e.target.value
+                          if (raw === '') { setRatings(r => ({ ...r, [key]: '' })); return }
+                          const n = parseFloat(raw)
+                          if (!isNaN(n)) {
+                            if (n > 10) { setRatings(r => ({ ...r, [key]: '10' })); return }
+                            if (n < 0) { setRatings(r => ({ ...r, [key]: '0' })); return }
+                          }
+                          setRatings(r => ({ ...r, [key]: raw }))
+                        }}
                         style={reviewInputStyle}
                       />
                     </div>
@@ -501,4 +516,10 @@ const btnStyle: React.CSSProperties = {
   cursor: 'pointer',
   fontWeight: 500,
   alignSelf: 'flex-start',
+}
+const errorStyle: React.CSSProperties = {
+  margin: '0.3rem 0 0',
+  fontSize: '0.82rem',
+  color: '#f87171',
+  fontFamily: 'var(--font-body)',
 }
