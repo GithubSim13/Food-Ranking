@@ -304,7 +304,7 @@ export default function RankingsPage() {
   // Rated entries always come from server data sorted by avgRating desc.
   // Unrated entries come from localOrder (drag state) if initialised, else derive
   // directly from rankings to avoid a one-render flash on first load.
-  const categoryKeys = Object.keys(rankings ?? {})
+  const categoryKeys = Object.keys(rankings ?? {}).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
   const displayCategories = categoryKeys
     .map(cat => {
       const all = (rankings ?? {})[cat] ?? []

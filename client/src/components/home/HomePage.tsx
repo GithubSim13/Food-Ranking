@@ -175,7 +175,7 @@ export default function HomePage() {
     bucket.total++
     const avg = latestRating(e.reviews)
     if (avg !== null) bucket.ratedAvgs.push(avg)
-    const val = latestRatedReview(e.reviews)?.rating2 ?? null
+    const val = sortReviewsByDateDesc(e.reviews).find(r => r.rating2 !== null)?.rating2 ?? null
     if (val !== null) { bucket.valueScores.push(val); bucket.valueItems.push({ name: e.foodName, valueScore: val }) }
   })
 

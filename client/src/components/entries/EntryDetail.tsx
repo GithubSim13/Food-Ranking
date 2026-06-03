@@ -18,8 +18,8 @@ const EDIT_RATING_FIELDS = [
   { label: 'Consistency', key: 'rating3' },
 ] as const
 
-function latestRatedReview(reviews: Entry['reviews']): Entry['reviews'][0] | null {
-  const sorted = [...reviews].map((r, i) => ({ r, i }))
+function sortReviewsByDateDesc(reviews: Entry['reviews']): Entry['reviews'] {
+  return [...reviews].map((r, i) => ({ r, i }))
     .sort((a, b) => {
       if (a.r.date && b.r.date) {
         const diff = new Date(b.r.date).getTime() - new Date(a.r.date).getTime()
@@ -29,7 +29,11 @@ function latestRatedReview(reviews: Entry['reviews']): Entry['reviews'][0] | nul
       if (b.r.date) return 1
       return b.i - a.i
     })
-  return sorted.find(({ r }) => r.overallRating !== null)?.r ?? null
+    .map(({ r }) => r)
+}
+
+function latestRatedReview(reviews: Entry['reviews']): Entry['reviews'][0] | null {
+  return sortReviewsByDateDesc(reviews).find(r => r.overallRating !== null) ?? null
 }
 
 // ─── category comparison panel ────────────────────────────────────────────────
@@ -51,13 +55,14 @@ function CategoryComparisonPanel({
     .map(e => {
       const latest = latestRatedReview(e.reviews)
       if (latest === null) return null
+      const sorted = sortReviewsByDateDesc(e.reviews)
       return {
         id: e.id,
         foodName: e.foodName,
         overall: latest.overallRating!,
-        taste: latest.rating1,
-        value: latest.rating2,
-        consistency: latest.rating3,
+        taste: sorted.find(r => r.rating1 !== null)?.rating1 ?? null,
+        value: sorted.find(r => r.rating2 !== null)?.rating2 ?? null,
+        consistency: sorted.find(r => r.rating3 !== null)?.rating3 ?? null,
       }
     })
     .filter((e): e is NonNullable<typeof e> => e !== null)
