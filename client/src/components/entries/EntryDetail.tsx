@@ -226,10 +226,19 @@ function ReviewCard({ review: r, onUpdated, onEditStart, onEditEnd }: ReviewCard
                 <label style={labelStyle}>{label} (1–10)</label>
                 <input
                   type="number"
-                  min={1} max={10} step={0.1}
+                  min={0} max={10} step="any"
                   placeholder="–"
                   value={form[key]}
-                  onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+                  onChange={e => {
+                    const raw = e.target.value
+                    if (raw === '') { setForm(f => ({ ...f, [key]: '' })); return }
+                    const n = parseFloat(raw)
+                    if (!isNaN(n)) {
+                      if (n > 10) { setForm(f => ({ ...f, [key]: '10' })); return }
+                      if (n < 0) { setForm(f => ({ ...f, [key]: '0' })); return }
+                    }
+                    setForm(f => ({ ...f, [key]: raw }))
+                  }}
                   style={inputStyle}
                 />
               </div>

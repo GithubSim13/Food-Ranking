@@ -62,10 +62,19 @@ export default function ReviewForm({ entryId, onSuccess }: Props) {
             <label style={labelStyle}>{label} (1–10)</label>
             <input
               type="number"
-              min={1} max={10} step={0.1}
+              min={0} max={10} step="any"
               placeholder="–"
               value={ratings[key]}
-              onChange={e => setRatings(r => ({ ...r, [key]: e.target.value }))}
+              onChange={e => {
+                const raw = e.target.value
+                if (raw === '') { setRatings(r => ({ ...r, [key]: '' })); return }
+                const n = parseFloat(raw)
+                if (!isNaN(n)) {
+                  if (n > 10) { setRatings(r => ({ ...r, [key]: '10' })); return }
+                  if (n < 0) { setRatings(r => ({ ...r, [key]: '0' })); return }
+                }
+                setRatings(r => ({ ...r, [key]: raw }))
+              }}
               style={inputStyle}
             />
           </div>
