@@ -1,4 +1,7 @@
 import { Link } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { getEntries } from '../../api/entries'
+import type { Entry } from '../../types'
 import FlagImage from '../common/FlagImage'
 
 // ─── placeholder data ────────────────────────────────────────────────────────
@@ -80,6 +83,16 @@ function scoreColor(v: number): string {
   return `oklch(0.62 0.16 ${25 + ((v - 3) / 6.5) * 120})`
 }
 
+function entryAvg(e: Entry): number | null {
+  const vals = e.reviews.map(r => r.overallRating).filter((r): r is number => r !== null)
+  return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null
+}
+
+function ratingAvg(vals: (number | null)[]): number | null {
+  const filtered = vals.filter((v): v is number => v !== null)
+  return filtered.length ? filtered.reduce((a, b) => a + b, 0) / filtered.length : null
+}
+
 // ─── sub-components ──────────────────────────────────────────────────────────
 
 function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
@@ -125,6 +138,41 @@ function RankRow({ rank, name, visits, avg }: { rank: number; name: string; visi
 // ─── main component ───────────────────────────────────────────────────────────
 
 export default function HomePage() {
+  const { data: entries = [] } = useQuery({ queryKey: ['entries'], queryFn: getEntries })
+
+  // ── champion data ──────────────────────────────────────────────────────────
+  const rated = entries.filter(e => entryAvg(e) !== null)
+  const champEntry = rated.length
+    ? rated.reduce((best, e) => entryAvg(e)! > entryAvg(best)! ? e : best)
+    : null
+  const champScore = champEntry ? entryAvg(champEntry) : null
+  const champTaste = champEntry ? ratingAvg(champEntry.reviews.map(r => r.rating1)) : null
+  const champValue = champEntry ? ratingAvg(champEntry.reviews.map(r => r.rating2)) : null
+  const champConsistency = champEntry ? ratingAvg(champEntry.reviews.map(r => r.rating3)) : null
+  const champQuote = champEntry?.reviews.find(r => r.rating1 !== null) as { rating1: number | null } | undefined
+
+  // ── best value restaurant ──────────────────────────────────────────────────
+  type RestBucket = { name: string; visits: number; valueScores: number[]; items: { name: string; valueScore: number }[] }
+  const restMap = new Map<number, RestBucket>()
+  entries.forEach(e => {
+    if (!restMap.has(e.restaurantId))
+      restMap.set(e.restaurantId, { name: e.restaurant.name, visits: 0, valueScores: [], items: [] })
+    const bucket = restMap.get(e.restaurantId)!
+    bucket.visits++
+    const entryVal = ratingAvg(e.reviews.map(r => r.rating2))
+    if (entryVal !== null) {
+      bucket.valueScores.push(entryVal)
+      bucket.items.push({ name: e.foodName, valueScore: entryVal })
+    }
+  })
+  const bestValueRest = Array.from(restMap.values())
+    .filter(r => r.valueScores.length > 0)
+    .map(r => ({ ...r, avgValue: r.valueScores.reduce((a, b) => a + b, 0) / r.valueScores.length }))
+    .sort((a, b) => b.avgValue - a.avgValue)[0] ?? null
+  const bestValueItems = bestValueRest
+    ? [...bestValueRest.items].sort((a, b) => b.valueScore - a.valueScore).slice(0, 5)
+    : []
+
   const [p1, p2, p3, p4, p5] = TOP5
 
   const PODIUM_CONTAINER_H = 180
@@ -289,21 +337,38 @@ export default function HomePage() {
             padding: '0.25rem 0.6rem',
             borderRadius: 8,
           }}>
-            {CHAMPION.score.toFixed(2)}
+            {champScore != null ? champScore.toFixed(2) : CHAMPION.score.toFixed(2)}
           </div>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.7)' }}>
             ★ Reigning Champion
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.75rem', letterSpacing: '-0.03em', color: '#ffffff', flexWrap: 'wrap' as const }}>
-            <FlagImage code={CHAMPION.flag} />
-            {CHAMPION.name}
+            <FlagImage code={champEntry?.flag ?? CHAMPION.flag} />
+            {champEntry?.foodName ?? CHAMPION.name}
           </div>
           <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.55)' }}>
-            {CHAMPION.restaurant} · {CHAMPION.category}
+            {champEntry?.restaurant.name ?? CHAMPION.restaurant} · {champEntry?.category ?? CHAMPION.category}
           </div>
           <div style={{ fontSize: '0.82rem', color: '#d4c0f8', fontStyle: 'italic' }}>
             "Rich, umami-packed broth with perfectly chewy noodles."
           </div>
+          {/* Rating breakdown */}
+          {(champTaste != null || champValue != null || champConsistency != null) && (
+            <div style={{ display: 'flex', gap: '1.5rem', paddingTop: 4 }}>
+              {[
+                { label: 'Taste', value: champTaste },
+                { label: 'Value', value: champValue },
+                { label: 'Consistency', value: champConsistency },
+              ].map(({ label, value }) => (
+                <div key={label}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: '#c4abff', marginBottom: 2 }}>{label}</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.9rem', fontWeight: 700, color: '#ffffff' }}>
+                    {value != null ? value.toFixed(1) : '—'}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Fresh off the Fork */}
@@ -387,11 +452,43 @@ export default function HomePage() {
         </Card>
 
         {/* Best Value */}
-        <Card style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--ink-mute)', marginBottom: '0.5rem' }}>★ Best Value Spot</div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '3rem', fontWeight: 700, color: '#e6a817', lineHeight: 1, marginBottom: '0.5rem' }}>8.3</div>
-          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.05rem', color: 'var(--ink)', marginBottom: '0.3rem' }}>Zus Coffee</div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--ink-mute)' }}>avg Value score · 3 visits</div>
+        <Card style={{ display: 'flex', gap: '1.25rem' }}>
+          {/* Left: summary */}
+          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', flexShrink: 0 }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--ink-mute)', marginBottom: '0.4rem' }}>★ Best Value Spot</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '2.5rem', fontWeight: 700, color: '#e6a817', lineHeight: 1, marginBottom: '0.35rem' }}>
+              {bestValueRest ? bestValueRest.avgValue.toFixed(1) : '8.3'}
+            </div>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1rem', color: 'var(--ink)', marginBottom: '0.2rem' }}>
+              {bestValueRest?.name ?? 'Zus Coffee'}
+            </div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', color: 'var(--ink-mute)' }}>
+              avg Value score · {bestValueRest?.visits ?? 3} visits
+            </div>
+          </div>
+          {/* Divider */}
+          <div style={{ width: 1, background: 'var(--line)', flexShrink: 0, alignSelf: 'stretch' }} />
+          {/* Right: entry list */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.375rem', justifyContent: 'center' }}>
+            {bestValueItems.length > 0 ? bestValueItems.map((item, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.5rem', borderRadius: 6, background: 'var(--paper)' }}>
+                <span style={{ flex: 1, fontSize: '0.85rem', color: 'var(--ink)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{item.name}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', fontWeight: 700, color: scoreColor(item.valueScore), flexShrink: 0 }}>{item.valueScore.toFixed(1)}</span>
+              </div>
+            )) : (
+              // fallback placeholder rows
+              [
+                { name: 'Iced Caramel Latte', valueScore: 8.5 },
+                { name: 'Matcha Latte', valueScore: 8.3 },
+                { name: 'Cold Brew', valueScore: 8.1 },
+              ].map((item, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.5rem', borderRadius: 6, background: 'var(--paper)' }}>
+                  <span style={{ flex: 1, fontSize: '0.85rem', color: 'var(--ink)', fontWeight: 500 }}>{item.name}</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', fontWeight: 700, color: scoreColor(item.valueScore) }}>{item.valueScore.toFixed(1)}</span>
+                </div>
+              ))
+            )}
+          </div>
         </Card>
       </div>
 
