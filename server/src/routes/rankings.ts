@@ -45,10 +45,17 @@ router.get('/', async (_req, res) => {
     return a.foodName.localeCompare(b.foodName);
   });
 
-  const byCategory = ranked.reduce<Record<string, typeof ranked>>((acc, entry) => {
+  const grouped = ranked.reduce<Record<string, typeof ranked>>((acc, entry) => {
     (acc[entry.category] ??= []).push(entry);
     return acc;
   }, {});
+
+  const byCategory = Object.keys(grouped)
+    .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
+    .reduce((acc, key) => {
+      acc[key] = grouped[key];
+      return acc;
+    }, {} as Record<string, typeof ranked>);
 
   res.json(byCategory);
 });
