@@ -199,6 +199,11 @@ function CategorySection({ category, ratedEntries, unratedEntries, isEditing, on
         color: 'var(--ink-mute)',
         marginBottom: '0.625rem',
         opacity: 0.8,
+        position: 'sticky',
+        top: 'calc(var(--search-bar-height, 80px) - 2rem)',
+        zIndex: 9,
+        background: 'var(--paper)',
+        paddingTop: '0.25rem',
       }}>
         {category}
       </h3>

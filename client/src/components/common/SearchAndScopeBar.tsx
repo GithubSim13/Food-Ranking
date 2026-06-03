@@ -1,3 +1,5 @@
+import { useLayoutEffect, useRef } from 'react'
+
 export type Scope = 'all' | 'starred' | 'abroad' | 'home'
 
 export function pillStyle(active: boolean): React.CSSProperties {
@@ -47,8 +49,20 @@ export function SearchAndScopeBar({
   searchPlaceholder = 'Search…',
   rightSlot,
 }: Props) {
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  useLayoutEffect(() => {
+    const el = rootRef.current
+    if (!el) return
+    const update = () => document.documentElement.style.setProperty('--search-bar-height', el.offsetHeight + 'px')
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
   return (
-    <div style={{
+    <div ref={rootRef} style={{
       position: 'sticky',
       top: '-2rem',
       zIndex: 10,
