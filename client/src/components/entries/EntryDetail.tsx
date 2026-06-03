@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getEntry, patchEntry, deleteEntry, getEntries } from '../../api/entries'
@@ -136,6 +136,16 @@ interface ReviewCardProps {
 function ReviewCard({ review: r, onUpdated, onEditStart, onEditEnd }: ReviewCardProps) {
   const { showToast } = useToast()
   const [isEditing, setIsEditing] = useState(false)
+  const notesRef = useRef<HTMLTextAreaElement>(null)
+
+  const autoResize = (el: HTMLTextAreaElement) => {
+    el.style.height = 'auto'
+    el.style.height = el.scrollHeight + 'px'
+  }
+
+  useEffect(() => {
+    if (isEditing && notesRef.current) autoResize(notesRef.current)
+  }, [isEditing])
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [form, setForm] = useState({
     date: '',
@@ -233,10 +243,10 @@ function ReviewCard({ review: r, onUpdated, onEditStart, onEditEnd }: ReviewCard
           <div>
             <label style={labelStyle}>Notes</label>
             <textarea
+              ref={notesRef}
               value={form.notes}
-              onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-              rows={2}
-              style={{ ...inputStyle, resize: 'vertical' }}
+              onChange={e => { setForm(f => ({ ...f, notes: e.target.value })); autoResize(e.target) }}
+              style={{ ...inputStyle, resize: 'vertical', overflow: 'hidden' }}
             />
           </div>
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--ink-mute)', cursor: 'pointer' }}>
