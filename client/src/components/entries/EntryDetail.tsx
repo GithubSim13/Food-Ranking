@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import axios from 'axios'
 import { getEntry, patchEntry, deleteEntry, getEntries } from '../../api/entries'
 import { patchRestaurant } from '../../api/restaurants'
 import FlagImage from '../common/FlagImage'
@@ -367,9 +368,14 @@ export default function EntryDetail({ onPanelChange }: EntryDetailProps = {}) {
     onPanelChange?.(panelOpen)
   }, [panelOpen, onPanelChange])
 
-  const { data: entry, isLoading } = useQuery({
+  const { data: entry, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['entries', entryId],
     queryFn: () => getEntry(entryId),
+    enabled: !isNaN(entryId),
+    retry: (failureCount, err) => {
+      if (axios.isAxiosError(err) && err.response?.status === 404) return false
+      return failureCount < 2
+    },
   })
 
   // If a review was deleted while its card was in edit mode, clear the stale id
@@ -451,7 +457,29 @@ export default function EntryDetail({ onPanelChange }: EntryDetailProps = {}) {
   })
 
   if (isLoading) return <p style={{ color: 'var(--ink-mute)' }}>Loading…</p>
-  if (!entry) return <p style={{ color: 'var(--ink-mute)' }}>Entry not found.</p>
+
+  if (isError) {
+    const is404 = axios.isAxiosError(error) && error.response?.status === 404
+    if (is404) {
+      return (
+        <div style={errorStateStyle}>
+          <p style={errorHeadingStyle}>Entry not found</p>
+          <p style={errorBodyStyle}>This entry may have been deleted or the link is wrong.</p>
+          <button onClick={() => navigate('/entries')} style={errorBackBtnStyle}>← Back to Entries</button>
+        </div>
+      )
+    }
+    return (
+      <div style={errorStateStyle}>
+        <p style={errorHeadingStyle}>Something went wrong</p>
+        <p style={errorBodyStyle}>Could not load this entry.</p>
+        <div style={{ display: 'flex', gap: '0.625rem', justifyContent: 'center' }}>
+          <button onClick={() => refetch()} style={errorRetryBtnStyle}>Try again</button>
+          <button onClick={() => navigate('/entries')} style={errorBackBtnStyle}>← Back to Entries</button>
+        </div>
+      </div>
+    )
+  }
 
   const onReviewUpdated = () => {
     queryClient.invalidateQueries({ queryKey: ['entries'] })
@@ -697,4 +725,43 @@ const deleteBtnStyle: React.CSSProperties = {
   fontSize: '0.8rem',
   fontWeight: 500,
   flexShrink: 0,
+}
+const errorStateStyle: React.CSSProperties = {
+  padding: '3rem 1.5rem',
+  textAlign: 'center',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: '0.625rem',
+}
+const errorHeadingStyle: React.CSSProperties = {
+  fontFamily: 'var(--font-display)',
+  fontWeight: 700,
+  fontSize: '1.25rem',
+  color: 'var(--ink)',
+  margin: 0,
+}
+const errorBodyStyle: React.CSSProperties = {
+  fontSize: '0.9rem',
+  color: 'var(--ink-mute)',
+  margin: 0,
+}
+const errorBackBtnStyle: React.CSSProperties = {
+  background: 'var(--surface)',
+  color: 'var(--ink-mute)',
+  border: '1px solid var(--line)',
+  padding: '0.4rem 0.875rem',
+  borderRadius: 6,
+  cursor: 'pointer',
+  fontSize: '0.875rem',
+}
+const errorRetryBtnStyle: React.CSSProperties = {
+  background: 'var(--accent)',
+  color: 'var(--accent-ink)',
+  border: 'none',
+  padding: '0.4rem 0.875rem',
+  borderRadius: 6,
+  cursor: 'pointer',
+  fontSize: '0.875rem',
+  fontWeight: 500,
 }
