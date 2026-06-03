@@ -22,6 +22,8 @@ export default function AppShell() {
   })
 
   const entryCount = entries.length
+  const restaurantCount = new Set(entries.map(e => e.restaurantId)).size
+  const starredCount = entries.filter(e => e.starred).length
   const perEntryLatest = entries
     .map(e => {
       const sorted = [...e.reviews].map((r, i) => ({ r, i }))
@@ -110,9 +112,11 @@ export default function AppShell() {
             marginTop: '0.5rem',
           }}>
             <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--ink-mute)', lineHeight: 1.6 }}>
-              <span style={{ display: 'block' }}>{entryCount} foods rated</span>
+              <span style={{ display: 'block' }}>{entryCount} lamons logged</span>
+              <span style={{ display: 'block' }}>{restaurantCount} spots visited</span>
+              <span style={{ display: 'block' }}>{starredCount} stand-out stars</span>
               {avgRating && (
-                <span style={{ display: 'block' }}>avg {avgRating} / 10</span>
+                <span style={{ display: 'block' }}>est. 2025</span>
               )}
             </p>
           </div>
