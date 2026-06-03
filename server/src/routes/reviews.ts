@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import prisma from '../lib/prisma';
+import { parseId } from '../lib/routeHelpers';
 
 const router = Router();
 
@@ -31,25 +32,28 @@ router.post('/', async (req, res) => {
   const r2 = rating2 != null ? Number(rating2) : null;
   const r3 = rating3 != null ? Number(rating3) : null;
 
-  const review = await prisma.review.create({
-    data: {
-      entryId: Number(entryId),
-      date: date ? new Date(date) : null,
-      notes: notes ?? null,
-      rating1: r1,
-      rating2: r2,
-      rating3: r3,
-      overallRating: computeOverallRating(r1, r2, r3),
-      retroactive: retroactive === true,
-    },
-  });
-
-  res.status(201).json(review);
+  try {
+    const review = await prisma.review.create({
+      data: {
+        entryId: Number(entryId),
+        date: date ? new Date(date) : null,
+        notes: notes ?? null,
+        rating1: r1,
+        rating2: r2,
+        rating3: r3,
+        overallRating: computeOverallRating(r1, r2, r3),
+        retroactive: retroactive === true,
+      },
+    });
+    res.status(201).json(review);
+  } catch {
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 router.put('/:id', async (req, res) => {
-  const id = Number(req.params.id);
-  if (isNaN(id)) {
+  const id = parseId(req.params.id);
+  if (id === null) {
     res.status(400).json({ error: 'Invalid review id' });
     return;
   }
@@ -60,30 +64,37 @@ router.put('/:id', async (req, res) => {
   const r2 = rating2 != null ? Number(rating2) : null;
   const r3 = rating3 != null ? Number(rating3) : null;
 
-  const review = await prisma.review.update({
-    where: { id },
-    data: {
-      date: date ? new Date(date) : null,
-      notes: notes ?? null,
-      rating1: r1,
-      rating2: r2,
-      rating3: r3,
-      overallRating: computeOverallRating(r1, r2, r3),
-      ...(retroactive !== undefined && { retroactive: retroactive === true }),
-    },
-  });
-
-  res.json(review);
+  try {
+    const review = await prisma.review.update({
+      where: { id },
+      data: {
+        date: date ? new Date(date) : null,
+        notes: notes ?? null,
+        rating1: r1,
+        rating2: r2,
+        rating3: r3,
+        overallRating: computeOverallRating(r1, r2, r3),
+        ...(retroactive !== undefined && { retroactive: retroactive === true }),
+      },
+    });
+    res.json(review);
+  } catch {
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 router.delete('/:id', async (req, res) => {
-  const id = Number(req.params.id);
-  if (isNaN(id)) {
+  const id = parseId(req.params.id);
+  if (id === null) {
     res.status(400).json({ error: 'Invalid review id' });
     return;
   }
-  await prisma.review.delete({ where: { id } });
-  res.status(204).send();
+  try {
+    await prisma.review.delete({ where: { id } });
+    res.status(204).send();
+  } catch {
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 export default router;

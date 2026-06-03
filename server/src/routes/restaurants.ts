@@ -1,25 +1,30 @@
 import { Router } from 'express';
 import prisma from '../lib/prisma';
+import { parseId } from '../lib/routeHelpers';
 
 const router = Router();
 
 router.get('/', async (_req, res) => {
-  const restaurants = await prisma.restaurant.findMany({
-    include: { _count: { select: { entries: true } } },
-    orderBy: { name: 'asc' },
-  });
-  res.json(
-    restaurants.map(r => ({
-      id: r.id,
-      name: r.name,
-      entryCount: r._count.entries,
-    }))
-  );
+  try {
+    const restaurants = await prisma.restaurant.findMany({
+      include: { _count: { select: { entries: true } } },
+      orderBy: { name: 'asc' },
+    });
+    res.json(
+      restaurants.map(r => ({
+        id: r.id,
+        name: r.name,
+        entryCount: r._count.entries,
+      }))
+    );
+  } catch {
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 router.patch('/:id', async (req, res) => {
-  const id = Number(req.params.id);
-  if (isNaN(id)) {
+  const id = parseId(req.params.id);
+  if (id === null) {
     res.status(400).json({ error: 'Invalid restaurant id' });
     return;
   }
@@ -28,26 +33,34 @@ router.patch('/:id', async (req, res) => {
     res.status(400).json({ error: 'name is required' });
     return;
   }
-  const restaurant = await prisma.restaurant.update({
-    where: { id },
-    data: { name },
-  });
-  res.json(restaurant);
+  try {
+    const restaurant = await prisma.restaurant.update({
+      where: { id },
+      data: { name },
+    });
+    res.json(restaurant);
+  } catch {
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 router.delete('/:id', async (req, res) => {
-  const id = Number(req.params.id);
-  if (isNaN(id)) {
+  const id = parseId(req.params.id);
+  if (id === null) {
     res.status(400).json({ error: 'Invalid restaurant id' });
     return;
   }
-  const count = await prisma.entry.count({ where: { restaurantId: id } });
-  if (count > 0) {
-    res.status(400).json({ error: `Cannot delete: ${count} ${count === 1 ? 'entry belongs' : 'entries belong'} to this restaurant.` });
-    return;
+  try {
+    const count = await prisma.entry.count({ where: { restaurantId: id } });
+    if (count > 0) {
+      res.status(400).json({ error: `Cannot delete: ${count} ${count === 1 ? 'entry belongs' : 'entries belong'} to this restaurant.` });
+      return;
+    }
+    await prisma.restaurant.delete({ where: { id } });
+    res.status(204).send();
+  } catch {
+    res.status(500).json({ error: 'Internal server error' });
   }
-  await prisma.restaurant.delete({ where: { id } });
-  res.status(204).send();
 });
 
 export default router;
