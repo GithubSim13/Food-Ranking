@@ -398,6 +398,7 @@ export default function EntryDetail({ onPanelChange }: EntryDetailProps = {}) {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['entries', entryId] })
       queryClient.invalidateQueries({ queryKey: ['entries'] })
+      queryClient.invalidateQueries({ queryKey: ['rankings'] })
     },
   })
 
@@ -448,7 +449,10 @@ export default function EntryDetail({ onPanelChange }: EntryDetailProps = {}) {
   if (isLoading) return <p style={{ color: 'var(--ink-mute)' }}>Loading…</p>
   if (!entry) return <p style={{ color: 'var(--ink-mute)' }}>Entry not found.</p>
 
-  const onReviewUpdated = () => queryClient.invalidateQueries({ queryKey: ['entries', entryId] })
+  const onReviewUpdated = () => {
+    queryClient.invalidateQueries({ queryKey: ['entries'] })
+    queryClient.invalidateQueries({ queryKey: ['rankings'] })
+  }
 
   const startEditDetails = () => {
     setEditForm({
