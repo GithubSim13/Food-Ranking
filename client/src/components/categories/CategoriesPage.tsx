@@ -191,7 +191,7 @@ export default function CategoriesPage() {
                       </button>
                     </div>
 
-                    <div onClick={() => navigate('/rankings')} style={{ cursor: 'pointer', paddingRight: '3.5rem' }}>
+                    <div onClick={() => navigate(`/rankings?category=${encodeURIComponent(cat.name)}`)} style={{ cursor: 'pointer', paddingRight: '3.5rem' }}>
                       <div style={{
                         fontFamily: 'var(--font-display)',
                         fontWeight: 700,
