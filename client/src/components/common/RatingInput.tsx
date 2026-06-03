@@ -41,13 +41,19 @@ export default function RatingInput({ label, value, onChange }: Props) {
     onChange(n)
   }
 
-  const fill = ((value ?? 0) / 10 * 100).toFixed(2)
-
   return (
-    <div>
-      <label style={labelStyle}>
-        {label} <span style={{ color: 'var(--ink-mute)', fontWeight: 400 }}>(0–10)</span>
-      </label>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+      <span style={labelStyle}>{label}</span>
+      <input
+        type="range"
+        className="rating-slider"
+        min={0}
+        max={10}
+        step={0.01}
+        value={value ?? 0}
+        onChange={handleSliderChange}
+        style={{ flex: 1 }}
+      />
       <input
         type="number"
         min={0}
@@ -58,34 +64,26 @@ export default function RatingInput({ label, value, onChange }: Props) {
         onChange={handleNumberChange}
         style={numberInputStyle}
       />
-      <input
-        type="range"
-        className="rating-slider"
-        min={0}
-        max={10}
-        step={0.01}
-        value={value ?? 0}
-        onChange={handleSliderChange}
-        style={{ '--slider-fill': `${fill}%` } as React.CSSProperties}
-      />
     </div>
   )
 }
 
 const labelStyle: React.CSSProperties = {
-  display: 'block',
+  width: 90,
+  flexShrink: 0,
   fontWeight: 500,
   fontSize: '0.85rem',
-  marginBottom: '0.25rem',
   color: 'var(--ink)',
 }
 
 const numberInputStyle: React.CSSProperties = {
-  width: '100%',
-  padding: '0.45rem 0.65rem',
+  width: 70,
+  flexShrink: 0,
+  padding: '0.4rem 0.5rem',
   background: 'var(--paper)',
   color: 'var(--ink)',
   border: '1px solid var(--line)',
   borderRadius: 6,
   boxSizing: 'border-box',
+  textAlign: 'center',
 }

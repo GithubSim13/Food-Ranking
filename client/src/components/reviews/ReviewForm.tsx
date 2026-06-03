@@ -59,7 +59,7 @@ export default function ReviewForm({ entryId, onSuccess }: Props) {
         <input type="date" value={date} onChange={e => setDate(e.target.value)} style={inputStyle} />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
         {RATING_FIELDS.map(({ label, key }) => (
           <RatingInput
             key={key}

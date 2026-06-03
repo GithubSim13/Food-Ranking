@@ -405,7 +405,7 @@ export default function EntryForm() {
                 flexDirection: 'column',
                 gap: '0.875rem',
               }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   {RATING_FIELDS.map(({ label, key }) => (
                     <RatingInput
                       key={key}
