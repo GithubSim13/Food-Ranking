@@ -1,6 +1,8 @@
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 
 export default function Modal({ onClose, children, maxWidth = 800 }: { onClose: () => void; children: ReactNode; maxWidth?: number }) {
+  const backdropMouseDown = useRef(false)
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
@@ -11,7 +13,13 @@ export default function Modal({ onClose, children, maxWidth = 800 }: { onClose: 
 
   return (
     <div
-      onClick={onClose}
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) backdropMouseDown.current = true
+      }}
+      onMouseUp={(e) => {
+        if (e.target === e.currentTarget && backdropMouseDown.current) onClose()
+        backdropMouseDown.current = false
+      }}
       style={{
         position: 'fixed',
         inset: 0,
@@ -24,7 +32,7 @@ export default function Modal({ onClose, children, maxWidth = 800 }: { onClose: 
       }}
     >
       <div
-        onClick={e => e.stopPropagation()}
+        onMouseDown={e => e.stopPropagation()}
         style={{
           background: 'var(--surface)',
           color: 'var(--ink)',

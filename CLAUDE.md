@@ -204,9 +204,9 @@ Sections (top to bottom) and how to compute each:
 | **Greeting** | Total entry count, distinct category count |
 | **Stat row** | Avg overallRating across all rated entries; total entries; count where `starred === true`; distinct restaurant count |
 | **Top 5 podium** | Top 5 entries by highest overallRating (latest review per entry); all 5 shown as bars — order left to right: 4, 2, 1, 3, 5; bar heights: #1=65%, #2=50%, #3=40%, #4=28%, #5=18%; above each bar: entry name + score; inside bars 1–3: trophy emoji (🥇🥈🥉), rank number, category, restaurant name, review count; inside bars 4–5: medal emoji (🏅) and rank number only (too short for detail); clicking any bar opens entry modal via background-location pattern |
-| **Hall of Fame** | Single highest-rated entry that has a review with notes; show name, restaurant · category, overallRating (green), first line of notes as italic quote |
-| **Hall of Shame** | Single lowest-rated entry that has a review with notes; same fields, orange score |
-| **Reigning Champion** | Same entry as Hall of Fame; additionally show Taste / Value / Consistency breakdown from its most recent review (rating1, rating2, rating3) as a compact inline row below the quote |
+| **⭐ Starred Picks** | Top 5 starred entries () sorted by overallRating desc; list format — rank, flag, name, overallRating; green left border card; label "⭐ STARRED PICKS" |
+| **💀 Hall of Shame** | Bottom 5 rated entries (min one review) sorted by overallRating asc; list format — rank, flag, name, overallRating; orange left border card; label "💀 HALL OF SHAME" |
+| **Reigning Champion** | Entry with most reviews (reviews.length desc), tiebreak by overallRating desc; show name, restaurant · category, quote, Taste/Value/Consistency breakdown, and "tried N times" subtitle; purple stripe card |
 | **Fresh off the fork** | 5 most recent entries by review.date (earliest non-null per entry); show flag, name, date formatted "Mon D, YYYY" |
 | **Top Tables** | Restaurants with ≥ 2 rated entries, sorted by avg overallRating desc; show rank, name, visit count (e.g. `3×`), avg overallRating |
 | **Regulars** | Restaurants sorted by entry count desc; show rank, name, visit count + avg overallRating (e.g. `3× avg 8.6`) |
@@ -268,5 +268,7 @@ Default to low or medium effort unless the task is explicitly complex. Only use 
 - [x] Home dashboard data wiring (Session 2) — all sections wired to real computed data from ['entries'] query; no new API calls
 - [x] Home dashboard interactivity — ALL RANKINGS/ALL ENTRIES links, podium bars, Hall of Fame/Shame, Reigning Champion, Fresh off the fork rows all navigate correctly; entry clicks use background-location modal pattern
 - [x] Home dashboard podium — all 5 entries shown as bars (order: 4,2,1,3,5); bars 1–3 show trophy + category + restaurant + review count inside; bars 4–5 show medal + rank only; Best Value split card with entry list on right
-- [ ] Home dashboard analytics logic — resolve redundancy between Hall of Fame, Reigning Champion, and Top 5 podium
+- [x] Home dashboard analytics logic — Hall of Fame → "⭐ Starred Picks" (top 5 starred by overallRating desc, list format); Hall of Shame → "💀 Hall of Shame" (bottom 5 rated, list format); Reigning Champion → most reviewed entry (reviews.length desc, tiebreak overallRating), shows "tried N times"
+- [x] Scrollbar theming — custom dark scrollbars globally in index.css (6px, purple thumb #3a2f5e, hover #6c47d4, track #1c1826); Firefox + Chromium
+- [x] Entries page filter layout — scope pills and sort pills aligned on same row via flex justify-content: space-between
 - [ ] Capacitor mobile wrapper
