@@ -191,7 +191,28 @@ client/src/
 - **Rankings search + filters**: same search bar and scope filter pills as Entries page (Everything / ★ Starred / Abroad / Home). Category groups with zero matches are hidden.
 - **Category Comparison Panel**: visible on entry detail when a review form is open (new or edit). Shows other rated entries in the same category sorted by `overallRating` desc. Displays food name, overallRating, and Taste/Value/Consistency breakdowns (— if null). Unrated entries hidden. Panel appears to the right; modal expands wider to accommodate it.
 - **Category combo box**: on new entry form, shows existing categories as dropdown, allows free-text new category.
-- **Home dashboard**: stat grid, top 5 podium, Hall of Fame/Shame, Reigning Champion, Fresh off the fork, Top Tables, Regulars, Logging pace bar chart, Best value. All computed client-side from cached `['entries']` query. Date-dependent sections (Logging pace, Fresh off the fork) use the earliest non-null `review.date` per entry — entries with no dated reviews are excluded from pace and sorted last in recency.
+- **Home dashboard**: all sections computed client-side from the cached `['entries']` query — do not add new API calls. Date-dependent sections (Logging pace, Fresh off the fork) use the earliest non-null `review.date` per entry — entries with no dated reviews are excluded from pace and sorted last in recency.
+
+### Home dashboard sections (HomePage.tsx)
+
+Layout rebuilt in Session 1 with placeholder values. Session 2 wires real data — **do not change any styling or layout, only replace hardcoded values**.
+
+Sections (top to bottom) and how to compute each:
+
+| Section | Computation |
+|---------|-------------|
+| **Greeting** | Total entry count, distinct category count |
+| **Stat row** | Avg overallRating across all rated entries; total entries; count where `starred === true`; distinct restaurant count |
+| **Top 5 podium** | Top 5 entries by highest overallRating (latest review per entry); show name, flag (FlagImage), overallRating, starred boolean; podium bar order: 2nd left, 1st center, 3rd right |
+| **Hall of Fame** | Single highest-rated entry that has a review with notes; show name, restaurant · category, overallRating (green), first line of notes as italic quote |
+| **Hall of Shame** | Single lowest-rated entry that has a review with notes; same fields, orange score |
+| **Reigning Champion** | Same entry as Hall of Fame; additionally show Taste / Value / Consistency breakdown from its most recent review (rating1, rating2, rating3) as a compact inline row below the quote |
+| **Fresh off the fork** | 5 most recent entries by review.date (earliest non-null per entry); show flag, name, date formatted "Mon D, YYYY" |
+| **Top Tables** | Restaurants with ≥ 2 rated entries, sorted by avg overallRating desc; show rank, name, visit count (e.g. `3×`), avg overallRating |
+| **Regulars** | Restaurants sorted by entry count desc; show rank, name, visit count + avg overallRating (e.g. `3× avg 8.6`) |
+| **Logging Pace** | Avg entries per month across all months with data; bar chart one bar per calendar month using actual review dates; peak month bar highlighted purple; subtitle "Busiest was [Mon 'YY] ([N] foods) · [X]-month streak" |
+| **Best Value Spot** | Restaurant with highest avg rating2 (Value score), min 2 entries; left side: label, avg Value score, name, subtitle; right side: list of that restaurant's entries with individual rating2 scores |
+
 - **Sidebar**: primary nav (Home, Entries, Rankings) + EXPLORE section (Categories, Restaurants). Footer shows total foods rated + avg rating.
 - **Scope filters on Entries**: Everything / ★ Starred / Abroad / Home. Sort pills: Most recent / Top rated / A–Z.
 
@@ -243,4 +264,7 @@ Default to low or medium effort unless the task is explicitly complex. Only use 
 - [x] Rankings sorting — rated entries auto-sort by overallRating desc; drag-and-drop restricted to unrated entries only
 - [x] Rankings search + scope filters (Everything / Starred / Abroad / Home) — category groups hidden when no matches
 - [x] Category Comparison Panel — shown on entry detail when review form is open; rated entries in same category sorted by overallRating desc; Taste/Value/Consistency breakdowns displayed
+- [x] Home dashboard layout rebuilt (Session 1) — new section order, stat row compacted to 4 cards, Reigning Champion card, Best Value split card, Logging Pace bar chart; all placeholder values
+- [ ] Home dashboard data wiring (Session 2) — replace all hardcoded values with real computed data from ['entries'] query
+- [ ] Home dashboard analytics logic — resolve redundancy between Hall of Fame, Reigning Champion, and Top 5 podium
 - [ ] Capacitor mobile wrapper
