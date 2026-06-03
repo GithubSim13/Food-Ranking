@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { createEntry, searchEntries } from '../../api/entries'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { createEntry, searchEntries, getEntries } from '../../api/entries'
+import { createReview } from '../../api/reviews'
 import { getCategories } from '../../api/categories'
 import { getRestaurants } from '../../api/restaurants'
 import FlagPicker from '../common/FlagPicker'
 import { useToast } from '../../context/ToastContext'
+import { smallSecondaryBtnStyle } from '../common/pageStyles'
+import { sortReviewsByDateDesc, latestRatedReview } from '../../utils'
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value)
@@ -15,6 +18,101 @@ function useDebounce<T>(value: T, delay: number): T {
   }, [value, delay])
   return debounced
 }
+
+// ─── category comparison panel ────────────────────────────────────────────────
+
+function CategoryComparisonPanel({ category }: { category: string }) {
+  const { data: entries = [] } = useQuery({
+    queryKey: ['entries'],
+    queryFn: getEntries,
+  })
+
+  const comparisons = entries
+    .filter(e => e.category === category)
+    .map(e => {
+      const latest = latestRatedReview(e.reviews)
+      if (latest === null) return null
+      const sorted = sortReviewsByDateDesc(e.reviews)
+      return {
+        id: e.id,
+        foodName: e.foodName,
+        overall: latest.overallRating!,
+        taste: sorted.find(r => r.rating1 !== null)?.rating1 ?? null,
+        value: sorted.find(r => r.rating2 !== null)?.rating2 ?? null,
+        consistency: sorted.find(r => r.rating3 !== null)?.rating3 ?? null,
+      }
+    })
+    .filter((e): e is NonNullable<typeof e> => e !== null)
+    .sort((a, b) => b.overall - a.overall)
+
+  const fmt1 = (v: number | null) => (v != null ? v.toFixed(1) : '—')
+
+  return (
+    <div style={{
+      width: 264,
+      flexShrink: 0,
+      background: 'var(--surface)',
+      border: '1px solid var(--line)',
+      borderRadius: 10,
+      padding: '1rem',
+      alignSelf: 'flex-start',
+      maxHeight: '70vh',
+      overflowY: 'auto',
+    }}>
+      <p style={{
+        fontFamily: 'var(--font-mono)',
+        fontSize: '0.6rem',
+        fontWeight: 700,
+        textTransform: 'uppercase',
+        letterSpacing: '0.1em',
+        color: 'var(--ink-mute)',
+        marginBottom: '0.75rem',
+        opacity: 0.8,
+      }}>
+        {category} · others
+      </p>
+
+      {comparisons.length === 0 ? (
+        <p style={{ fontSize: '0.82rem', color: 'var(--ink-mute)' }}>
+          No other rated entries in this category.
+        </p>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          {comparisons.map((c, i) => (
+            <div
+              key={c.id}
+              style={{
+                padding: '0.5rem 0.625rem',
+                background: 'var(--paper)',
+                borderRadius: 8,
+                border: '1px solid var(--line)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.375rem', marginBottom: '0.3rem' }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: 'var(--ink-mute)', width: 14, flexShrink: 0 }}>
+                  {i + 1}
+                </span>
+                <span style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--ink)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {c.foodName}
+                </span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '0.9rem', color: 'var(--accent)', flexShrink: 0 }}>
+                  {c.overall.toFixed(2)}
+                </span>
+              </div>
+              <div style={{ display: 'flex', gap: '0.625rem', fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--ink-mute)', paddingLeft: 18 }}>
+                <span>T {fmt1(c.taste)}</span>
+                <span>V {fmt1(c.value)}</span>
+                <span>C {fmt1(c.consistency)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── combo boxes ──────────────────────────────────────────────────────────────
 
 interface CategoryComboProps {
   value: string
@@ -55,33 +153,12 @@ function CategoryCombo({ value, onChange }: CategoryComboProps) {
         autoComplete="off"
       />
       {open && filtered.length > 0 && (
-        <ul style={{
-          position: 'absolute',
-          top: '100%',
-          left: 0,
-          right: 0,
-          zIndex: 50,
-          margin: '2px 0 0',
-          padding: 0,
-          listStyle: 'none',
-          background: 'var(--surface)',
-          border: '1px solid var(--line)',
-          borderRadius: 6,
-          boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
-          maxHeight: 200,
-          overflowY: 'auto',
-        }}>
+        <ul style={dropdownStyle}>
           {filtered.map(name => (
             <li
               key={name}
               onMouseDown={e => { e.preventDefault(); onChange(name); setOpen(false) }}
-              style={{
-                padding: '0.45rem 0.75rem',
-                cursor: 'pointer',
-                fontSize: '0.9rem',
-                background: name === value ? 'var(--paper-2)' : undefined,
-                color: name === value ? 'var(--accent)' : 'var(--ink)',
-              }}
+              style={dropdownItemStyle(name === value)}
               onMouseEnter={e => (e.currentTarget.style.background = 'var(--paper-2)')}
               onMouseLeave={e => (e.currentTarget.style.background = name === value ? 'var(--paper-2)' : '')}
             >
@@ -133,33 +210,12 @@ function RestaurantCombo({ value, onChange }: RestaurantComboProps) {
         autoComplete="off"
       />
       {open && filtered.length > 0 && (
-        <ul style={{
-          position: 'absolute',
-          top: '100%',
-          left: 0,
-          right: 0,
-          zIndex: 50,
-          margin: '2px 0 0',
-          padding: 0,
-          listStyle: 'none',
-          background: 'var(--surface)',
-          border: '1px solid var(--line)',
-          borderRadius: 6,
-          boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
-          maxHeight: 200,
-          overflowY: 'auto',
-        }}>
+        <ul style={dropdownStyle}>
           {filtered.map(name => (
             <li
               key={name}
               onMouseDown={e => { e.preventDefault(); onChange(name); setOpen(false) }}
-              style={{
-                padding: '0.45rem 0.75rem',
-                cursor: 'pointer',
-                fontSize: '0.9rem',
-                background: name === value ? 'var(--paper-2)' : undefined,
-                color: name === value ? 'var(--accent)' : 'var(--ink)',
-              }}
+              style={dropdownItemStyle(name === value)}
               onMouseEnter={e => (e.currentTarget.style.background = 'var(--paper-2)')}
               onMouseLeave={e => (e.currentTarget.style.background = name === value ? 'var(--paper-2)' : '')}
             >
@@ -172,6 +228,14 @@ function RestaurantCombo({ value, onChange }: RestaurantComboProps) {
   )
 }
 
+// ─── main form ────────────────────────────────────────────────────────────────
+
+const RATING_FIELDS = [
+  { label: 'Taste', key: 'rating1' },
+  { label: 'Value', key: 'rating2' },
+  { label: 'Consistency', key: 'rating3' },
+] as const
+
 export default function EntryForm() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -183,6 +247,13 @@ export default function EntryForm() {
   const [starred, setStarred] = useState(false)
   const [flag, setFlag] = useState<string | null>(null)
 
+  const [showReview, setShowReview] = useState(false)
+  const [ratings, setRatings] = useState({ rating1: '', rating2: '', rating3: '' })
+  const [notes, setNotes] = useState('')
+  const notesRef = useRef<HTMLTextAreaElement>(null)
+
+  const [isPending, setIsPending] = useState(false)
+
   const debouncedName = useDebounce(foodName, 300)
 
   const { data: dupes = [] } = useQuery({
@@ -191,88 +262,177 @@ export default function EntryForm() {
     enabled: debouncedName.length > 2,
   })
 
-  const { mutate, isPending } = useMutation({
-    mutationFn: createEntry,
-    onSuccess: entry => {
+  const autoResize = (el: HTMLTextAreaElement) => {
+    el.style.height = 'auto'
+    el.style.height = el.scrollHeight + 'px'
+  }
+
+  const clearReview = () => {
+    setRatings({ rating1: '', rating2: '', rating3: '' })
+    setNotes('')
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsPending(true)
+    try {
+      const entry = await createEntry({ foodName, category, restaurantName, starred, flag })
+
+      if (showReview) {
+        const reviewPayload: Parameters<typeof createReview>[0] = {
+          entryId: entry.id,
+          date: new Date().toISOString(),
+        }
+        if (ratings.rating1) reviewPayload.rating1 = Number(ratings.rating1)
+        if (ratings.rating2) reviewPayload.rating2 = Number(ratings.rating2)
+        if (ratings.rating3) reviewPayload.rating3 = Number(ratings.rating3)
+        if (notes.trim()) reviewPayload.notes = notes.trim()
+
+        try {
+          await createReview(reviewPayload)
+          queryClient.invalidateQueries({ queryKey: ['rankings'] })
+        } catch {
+          showToast('Entry saved, but review failed to save', 'error')
+        }
+      }
+
       queryClient.invalidateQueries({ queryKey: ['entries'] })
       navigate(`/entries/${entry.id}`)
-    },
-    onError: () => {
+    } catch {
       showToast('Failed to save entry', 'error')
-    },
-  })
+    } finally {
+      setIsPending(false)
+    }
+  }
+
+  const showPanel = showReview && category.trim().length > 0
 
   return (
-    <div style={{ maxWidth: 480 }}>
-      <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1.5rem' }}>New Entry</h2>
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1.5rem' }}>
+      <div style={{ width: 480, flexShrink: 0 }}>
+        <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1.5rem' }}>New Entry</h2>
 
-      <form
-        onSubmit={e => {
-          e.preventDefault()
-          mutate({ foodName, category, restaurantName, starred, flag })
-        }}
-        style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
-      >
-        <div>
-          <label style={labelStyle}>Food Name</label>
-          <input
-            value={foodName}
-            onChange={e => setFoodName(e.target.value)}
-            required
-            style={inputStyle}
-          />
-          {dupes.length > 0 && (
-            <div style={{
-              marginTop: '0.4rem',
-              padding: '0.5rem 0.75rem',
-              background: 'rgba(251,191,36,0.1)',
-              border: '1px solid rgba(251,191,36,0.35)',
-              borderRadius: 6,
-              fontSize: '0.85rem',
-              color: 'var(--ink)',
-            }}>
-              <div style={{ fontWeight: 600, marginBottom: '0.3rem', color: '#fbbf24' }}>
-                Possible duplicate{dupes.length > 1 ? 's' : ''}:
+        <form
+          onSubmit={handleSubmit}
+          style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
+        >
+          <div>
+            <label style={labelStyle}>Food Name</label>
+            <input
+              value={foodName}
+              onChange={e => setFoodName(e.target.value)}
+              required
+              style={inputStyle}
+            />
+            {dupes.length > 0 && (
+              <div style={{
+                marginTop: '0.4rem',
+                padding: '0.5rem 0.75rem',
+                background: 'rgba(251,191,36,0.1)',
+                border: '1px solid rgba(251,191,36,0.35)',
+                borderRadius: 6,
+                fontSize: '0.85rem',
+                color: 'var(--ink)',
+              }}>
+                <div style={{ fontWeight: 600, marginBottom: '0.3rem', color: '#fbbf24' }}>
+                  Possible duplicate{dupes.length > 1 ? 's' : ''}:
+                </div>
+                <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                  {dupes.map(d => (
+                    <li key={d.id} style={{ display: 'flex', gap: '0.4rem', alignItems: 'baseline' }}>
+                      <span style={{ fontWeight: 600 }}>{d.foodName}</span>
+                      <span style={{ color: 'var(--ink-mute)' }}>·</span>
+                      <span>{d.restaurant.name}</span>
+                      <span style={{ color: 'var(--ink-mute)' }}>·</span>
+                      <span style={{ color: 'var(--ink-mute)' }}>{d.category}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                {dupes.map(d => (
-                  <li key={d.id} style={{ display: 'flex', gap: '0.4rem', alignItems: 'baseline' }}>
-                    <span style={{ fontWeight: 600 }}>{d.foodName}</span>
-                    <span style={{ color: 'var(--ink-mute)' }}>·</span>
-                    <span>{d.restaurant.name}</span>
-                    <span style={{ color: 'var(--ink-mute)' }}>·</span>
-                    <span style={{ color: 'var(--ink-mute)' }}>{d.category}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
 
-        <div>
-          <label style={labelStyle}>Category</label>
-          <CategoryCombo value={category} onChange={setCategory} />
-        </div>
+          <div>
+            <label style={labelStyle}>Category</label>
+            <CategoryCombo value={category} onChange={setCategory} />
+          </div>
 
-        <div>
-          <label style={labelStyle}>Restaurant Name</label>
-          <RestaurantCombo value={restaurantName} onChange={setRestaurantName} />
-        </div>
+          <div>
+            <label style={labelStyle}>Restaurant Name</label>
+            <RestaurantCombo value={restaurantName} onChange={setRestaurantName} />
+          </div>
 
-        <div>
-          <label style={labelStyle}>Country <span style={{ color: 'var(--ink-mute)', fontWeight: 400 }}>(optional)</span></label>
-          <FlagPicker value={flag} onChange={setFlag} />
-        </div>
+          <div>
+            <label style={labelStyle}>Country <span style={{ color: 'var(--ink-mute)', fontWeight: 400 }}>(optional)</span></label>
+            <FlagPicker value={flag} onChange={setFlag} />
+          </div>
 
-        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.95rem' }}>
-          <input type="checkbox" checked={starred} onChange={e => setStarred(e.target.checked)} />
-          ⭐ Worth trying once in a lifetime
-        </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.95rem' }}>
+            <input type="checkbox" checked={starred} onChange={e => setStarred(e.target.checked)} />
+            ⭐ Worth trying once in a lifetime
+          </label>
 
-        <button type="submit" disabled={isPending} style={{ ...btnStyle, opacity: isPending ? 0.6 : 1 }}>
-          {isPending ? 'Saving…' : 'Save Entry'}
-        </button>
-      </form>
+          {/* Inline review section */}
+          <div>
+            <button
+              type="button"
+              style={smallSecondaryBtnStyle}
+              onClick={() => {
+                if (showReview) clearReview()
+                setShowReview(v => !v)
+              }}
+            >
+              {showReview ? '− Remove Review' : '+ Add Review'}
+            </button>
+
+            {showReview && (
+              <div style={{
+                marginTop: '0.875rem',
+                padding: '1rem',
+                background: 'var(--surface)',
+                border: '1px solid var(--line)',
+                borderRadius: 8,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.875rem',
+              }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
+                  {RATING_FIELDS.map(({ label, key }) => (
+                    <div key={key}>
+                      <label style={reviewLabelStyle}>{label} (0–10)</label>
+                      <input
+                        type="number"
+                        min={0} max={10} step="any"
+                        placeholder="–"
+                        value={ratings[key]}
+                        onChange={e => setRatings(r => ({ ...r, [key]: e.target.value }))}
+                        style={reviewInputStyle}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <div>
+                  <label style={reviewLabelStyle}>Notes <span style={{ color: 'var(--ink-mute)', fontWeight: 400 }}>(optional)</span></label>
+                  <textarea
+                    ref={notesRef}
+                    value={notes}
+                    onChange={e => { setNotes(e.target.value); autoResize(e.target) }}
+                    rows={3}
+                    style={{ ...reviewInputStyle, resize: 'none', overflow: 'hidden' }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <button type="submit" disabled={isPending} style={{ ...btnStyle, opacity: isPending ? 0.6 : 1 }}>
+            {isPending ? 'Saving…' : 'Save Entry'}
+          </button>
+        </form>
+      </div>
+
+      {showPanel && <CategoryComparisonPanel category={category.trim()} />}
     </div>
   )
 }
@@ -284,6 +444,13 @@ const labelStyle: React.CSSProperties = {
   marginBottom: '0.3rem',
   color: 'var(--ink)',
 }
+const reviewLabelStyle: React.CSSProperties = {
+  display: 'block',
+  fontWeight: 500,
+  fontSize: '0.85rem',
+  marginBottom: '0.25rem',
+  color: 'var(--ink)',
+}
 const inputStyle: React.CSSProperties = {
   width: '100%',
   padding: '0.5rem 0.75rem',
@@ -293,6 +460,38 @@ const inputStyle: React.CSSProperties = {
   borderRadius: 6,
   boxSizing: 'border-box',
 }
+const reviewInputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '0.45rem 0.65rem',
+  background: 'var(--paper)',
+  color: 'var(--ink)',
+  border: '1px solid var(--line)',
+  borderRadius: 6,
+  boxSizing: 'border-box',
+}
+const dropdownStyle: React.CSSProperties = {
+  position: 'absolute',
+  top: '100%',
+  left: 0,
+  right: 0,
+  zIndex: 50,
+  margin: '2px 0 0',
+  padding: 0,
+  listStyle: 'none',
+  background: 'var(--surface)',
+  border: '1px solid var(--line)',
+  borderRadius: 6,
+  boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+  maxHeight: 200,
+  overflowY: 'auto',
+}
+const dropdownItemStyle = (active: boolean): React.CSSProperties => ({
+  padding: '0.45rem 0.75rem',
+  cursor: 'pointer',
+  fontSize: '0.9rem',
+  background: active ? 'var(--paper-2)' : undefined,
+  color: active ? 'var(--accent)' : 'var(--ink)',
+})
 const btnStyle: React.CSSProperties = {
   background: 'var(--accent)',
   color: '#fff',
