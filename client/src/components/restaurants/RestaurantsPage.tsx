@@ -1,65 +1,12 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { getRestaurants, patchRestaurant, deleteRestaurant } from '../../api/restaurants'
 import { getEntries } from '../../api/entries'
 import FlagImage from '../common/FlagImage'
 import { useToast } from '../../context/ToastContext'
-import type { Entry } from '../../types'
-
-function sortByDateDesc<T extends { date: string | null }>(reviews: T[]): T[] {
-  return [...reviews].map((r, i) => ({ r, i }))
-    .sort((a, b) => {
-      if (a.r.date && b.r.date) {
-        const diff = new Date(b.r.date).getTime() - new Date(a.r.date).getTime()
-        return diff !== 0 ? diff : b.i - a.i
-      }
-      if (a.r.date) return -1
-      if (b.r.date) return 1
-      return b.i - a.i
-    })
-    .map(({ r }) => r)
-}
-
-function latestRating(reviews: Entry['reviews']): number | null {
-  return sortByDateDesc(reviews).find(r => r.overallRating !== null)?.overallRating ?? null
-}
-
-function scoreColor(v: number): string {
-  return `oklch(0.62 0.16 ${25 + ((v - 3) / 6.5) * 120})`
-}
-
-function PencilIcon() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-    </svg>
-  )
-}
-
-function TrashIcon() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="3 6 5 6 21 6"/>
-      <path d="M19 6l-1 14H6L5 6"/>
-      <path d="M10 11v6"/><path d="M14 11v6"/>
-      <path d="M9 6V4h6v2"/>
-    </svg>
-  )
-}
-
-function ChevronIcon({ open }: { open: boolean }) {
-  return (
-    <svg
-      width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
-      strokeLinecap="round" strokeLinejoin="round"
-      style={{ transition: 'transform 0.15s', transform: open ? 'rotate(90deg)' : 'rotate(0deg)' }}
-    >
-      <polyline points="9 18 15 12 9 6"/>
-    </svg>
-  )
-}
+import { latestRating, scoreColor } from '../../utils'
+import { PencilIcon, TrashIcon, ChevronIcon, iconBtnStyle } from '../common/Icons'
 
 export default function RestaurantsPage() {
   const navigate = useNavigate()
@@ -100,17 +47,23 @@ export default function RestaurantsPage() {
     },
   })
 
-  // build per-restaurant avg rating map
-  const restAvgMap = new Map<number, number | null>()
-  restaurants.forEach(rest => {
-    const ratings = allEntries
-      .filter(e => e.restaurantId === rest.id)
-      .map(e => latestRating(e.reviews))
-      .filter((r): r is number => r !== null)
-    restAvgMap.set(rest.id, ratings.length ? ratings.reduce((a, b) => a + b, 0) / ratings.length : null)
-  })
+  const { restAvgMap, entriesByRestaurantId } = useMemo(() => {
+    const byId = new Map<number, typeof allEntries>()
+    for (const e of allEntries) {
+      const list = byId.get(e.restaurantId) ?? []
+      list.push(e)
+      byId.set(e.restaurantId, list)
+    }
+    const avgMap = new Map<number, number | null>()
+    for (const [id, entries] of byId) {
+      const ratings = entries.map(e => latestRating(e.reviews)).filter((r): r is number => r !== null)
+      avgMap.set(id, ratings.length ? ratings.reduce((a, b) => a + b, 0) / ratings.length : null)
+    }
+    return { restAvgMap: avgMap, entriesByRestaurantId: byId }
+  }, [allEntries])
 
-  const filtered = restaurants.filter(r => r.name.toLowerCase().includes(search.toLowerCase()))
+  const q = search.toLowerCase()
+  const filtered = restaurants.filter(r => r.name.toLowerCase().includes(q))
 
   if (isLoading) return <p style={{ color: 'var(--ink-mute)' }}>Loading…</p>
 
@@ -149,7 +102,7 @@ export default function RestaurantsPage() {
           const isOpen = expanded === rest.id
           const isEditing = editingId === rest.id
           const isDelConfirm = deletingRestaurant === rest.id
-          const restEntries = allEntries.filter(e => e.restaurantId === rest.id)
+          const restEntries = entriesByRestaurantId.get(rest.id) ?? []
 
           return (
             <div key={rest.id}>
@@ -434,20 +387,6 @@ const inputStyle: React.CSSProperties = {
   color: 'var(--ink)',
   outline: 'none',
   boxSizing: 'border-box',
-}
-
-const iconBtnStyle: React.CSSProperties = {
-  background: 'none',
-  border: 'none',
-  padding: '0.25rem',
-  borderRadius: 5,
-  cursor: 'pointer',
-  color: 'var(--ink-mute)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  flexShrink: 0,
-  lineHeight: 1,
 }
 
 const smallPrimaryBtnStyle: React.CSSProperties = {

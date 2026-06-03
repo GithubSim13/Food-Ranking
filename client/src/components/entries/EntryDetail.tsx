@@ -9,6 +9,7 @@ import { updateReview, deleteReview } from '../../api/reviews'
 import ReviewForm from '../reviews/ReviewForm'
 import type { Entry, EntryDetail as EntryDetailType, Review } from '../../types'
 import { useToast } from '../../context/ToastContext'
+import { sortReviewsByDateDesc, latestRatedReview } from '../../utils'
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -17,24 +18,6 @@ const EDIT_RATING_FIELDS = [
   { label: 'Value', key: 'rating2' },
   { label: 'Consistency', key: 'rating3' },
 ] as const
-
-function sortReviewsByDateDesc(reviews: Entry['reviews']): Entry['reviews'] {
-  return [...reviews].map((r, i) => ({ r, i }))
-    .sort((a, b) => {
-      if (a.r.date && b.r.date) {
-        const diff = new Date(b.r.date).getTime() - new Date(a.r.date).getTime()
-        return diff !== 0 ? diff : b.i - a.i
-      }
-      if (a.r.date) return -1
-      if (b.r.date) return 1
-      return b.i - a.i
-    })
-    .map(({ r }) => r)
-}
-
-function latestRatedReview(reviews: Entry['reviews']): Entry['reviews'][0] | null {
-  return sortReviewsByDateDesc(reviews).find(r => r.overallRating !== null) ?? null
-}
 
 // ─── category comparison panel ────────────────────────────────────────────────
 

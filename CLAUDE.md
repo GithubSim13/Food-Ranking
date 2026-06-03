@@ -110,7 +110,7 @@ server/
 | POST | `/api/reviews` | Create review — body: `{ entryId, date?, rating1?, rating2?, rating3?, notes?, retroactive? }`. `overallRating` computed server-side. |
 | PUT | `/api/reviews/:id` | Update review — same optional fields as POST including `retroactive?`. `overallRating` recomputed server-side. |
 | DELETE | `/api/reviews/:id` | Delete a single review. |
-| GET | `/api/rankings` | All entries grouped by category; sorted by `manualRank` asc (nulls last), then `overallRating` desc. Includes `flag` and `manualRank` per entry. |
+| GET | `/api/rankings` | All entries grouped by category, alphabetically sorted by category name; within each category: rated entries by `overallRating` desc (latest review's), unrated by `manualRank` asc nulls last. Includes `flag` and `manualRank` per entry. |
 | PATCH | `/api/rankings/reorder` | Persist drag order — body: `{ category: string, orderedIds: number[] }`. Writes `manualRank` (0-based index). |
 | GET | `/api/categories` | Distinct categories with entry count — `[{ name, entryCount }]`, sorted alphabetically. |
 | PATCH | `/api/categories/:name` | Rename a category — body: `{ name: string }`. Bulk-updates all entries. `:name` is URL-encoded. |
@@ -158,11 +158,11 @@ client/src/
     reviews/
       ReviewForm.tsx    # add review: Taste/Value/Consistency (1–10) + date + notes + retroactive checkbox
     rankings/
-      RankingsPage.tsx  # /rankings — grouped by category; rated entries sorted by overallRating desc (automatic); unrated entries below, drag-and-drop reorder via @dnd-kit (gated behind Edit Rankings mode); search bar + scope filters (Everything/Starred/Abroad/Home)
+      RankingsPage.tsx  # /rankings — grouped by category alphabetically; rated entries sorted by overallRating desc (automatic); unrated entries below, drag-and-drop reorder via @dnd-kit (gated behind Edit Rankings mode); search bar + scope filters (Everything/Starred/Abroad/Home); reads ?category= URL param on mount to pre-fill search bar (used by CategoriesPage card clicks)
     categories/
-      CategoriesPage.tsx  # /categories — accordion list, inline rename, delete (blocked if entries exist)
+      CategoriesPage.tsx  # /categories — searchable card grid (4 columns); each card shows category name, entry count, avg overallRating (color-coded); pencil/trash icon buttons; clicking a card navigates to /rankings?category=<name> which pre-fills the Rankings search bar
     restaurants/
-      RestaurantsPage.tsx # /restaurants — accordion list, inline rename, delete (blocked if entries exist)
+      RestaurantsPage.tsx # /restaurants — searchable list; each row shows restaurant name, entry count badge, avg overallRating badge, pencil/trash icon buttons; click to expand and show entries (food name + category, indented); collapsed by default
   context/
     ToastContext.tsx    # ToastProvider + useToast() hook; showToast(message, variant?)
   types.ts              # Entry, EntryDetail, Review (includes retroactive), RankedEntry, Rankings, CategorySummary, RestaurantSummary
@@ -279,5 +279,12 @@ Default to low or medium effort unless the task is explicitly complex. Only use 
 - [x] Rankings categories sorted alphabetically — GET /api/rankings sorts category keys case-insensitively before building response
 - [x] Latest-review rating — all overallRating display (entry cards, rankings, sidebar footer, home dashboard) uses latest review's overallRating instead of averaging; latest = most recent non-null date, dateless only wins if sole review; implemented via latestRating() helper on client; GET /api/rankings also fixed server-side
 - [x] Reigning Champion restricted to starred entries — most-reviewed starred entry wins; hidden if no starred entries have reviews
+- [x] Dynamic time-based greeting — "Morning" / "Afternoon" / "Evening" based on current hour
+- [x] Categories page redesign — searchable card grid with avg overallRating (color-coded), icon buttons (pencil/trash), clicking card navigates to /rankings?category=<name>
+- [x] Restaurants page redesign — searchable list with entry count badge, avg overallRating badge, icon buttons, expandable rows showing entries (food name + category)
+- [x] Rankings ?category= URL param — RankingsPage reads query param on mount and pre-fills search bar; used by category card navigation
+- [x] Bug fix: Best Value Spot — now scans all reviews for most recent one with a non-null rating2 value, not just latest rated review
+- [x] Bug fix: Category Comparison Panel T/V/C — each sub-rating now independently finds latest non-null value across all reviews
+- [x] Bug fix: Rankings alphabetical order — client-side localeCompare sort added as guarantee regardless of server/cache insertion order
 - [ ] Error boundaries on Home dashboard — each section should fail independently without crashing the whole page
 - [ ] Capacitor mobile wrapper

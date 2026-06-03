@@ -1,52 +1,11 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { getCategories, renameCategory, deleteCategory } from '../../api/categories'
 import { getEntries } from '../../api/entries'
 import { useToast } from '../../context/ToastContext'
-import type { Entry } from '../../types'
-
-function sortByDateDesc<T extends { date: string | null }>(reviews: T[]): T[] {
-  return [...reviews].map((r, i) => ({ r, i }))
-    .sort((a, b) => {
-      if (a.r.date && b.r.date) {
-        const diff = new Date(b.r.date).getTime() - new Date(a.r.date).getTime()
-        return diff !== 0 ? diff : b.i - a.i
-      }
-      if (a.r.date) return -1
-      if (b.r.date) return 1
-      return b.i - a.i
-    })
-    .map(({ r }) => r)
-}
-
-function latestRating(reviews: Entry['reviews']): number | null {
-  return sortByDateDesc(reviews).find(r => r.overallRating !== null)?.overallRating ?? null
-}
-
-function scoreColor(v: number): string {
-  return `oklch(0.62 0.16 ${25 + ((v - 3) / 6.5) * 120})`
-}
-
-function PencilIcon() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-    </svg>
-  )
-}
-
-function TrashIcon() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="3 6 5 6 21 6"/>
-      <path d="M19 6l-1 14H6L5 6"/>
-      <path d="M10 11v6"/><path d="M14 11v6"/>
-      <path d="M9 6V4h6v2"/>
-    </svg>
-  )
-}
+import { latestRating, scoreColor } from '../../utils'
+import { PencilIcon, TrashIcon, iconBtnStyle } from '../common/Icons'
 
 export default function CategoriesPage() {
   const navigate = useNavigate()
@@ -85,16 +44,20 @@ export default function CategoriesPage() {
     },
   })
 
-  const categoryAvgMap = new Map<string, number | null>()
-  categories.forEach(cat => {
-    const ratings = allEntries
-      .filter(e => e.category === cat.name)
-      .map(e => latestRating(e.reviews))
-      .filter((r): r is number => r !== null)
-    categoryAvgMap.set(cat.name, ratings.length ? ratings.reduce((a, b) => a + b, 0) / ratings.length : null)
-  })
+  const categoryAvgMap = useMemo(() => {
+    const map = new Map<string, number | null>()
+    categories.forEach(cat => {
+      const ratings = allEntries
+        .filter(e => e.category === cat.name)
+        .map(e => latestRating(e.reviews))
+        .filter((r): r is number => r !== null)
+      map.set(cat.name, ratings.length ? ratings.reduce((a, b) => a + b, 0) / ratings.length : null)
+    })
+    return map
+  }, [categories, allEntries])
 
-  const filtered = categories.filter(c => c.name.toLowerCase().includes(search.toLowerCase()))
+  const q = search.toLowerCase()
+  const filtered = categories.filter(c => c.name.toLowerCase().includes(q))
 
   if (isLoading) return <p style={{ color: 'var(--ink-mute)' }}>Loading…</p>
 
@@ -137,7 +100,7 @@ export default function CategoriesPage() {
             <div key={cat.name}>
               <div style={{
                 background: 'var(--surface)',
-                border: `1px solid ${isDelConfirm ? 'var(--line)' : 'var(--line)'}`,
+                border: '1px solid var(--line)',
                 borderRadius: 14,
                 padding: '1rem 1.125rem',
                 position: 'relative',
@@ -301,19 +264,6 @@ const inputStyle: React.CSSProperties = {
   color: 'var(--ink)',
   outline: 'none',
   boxSizing: 'border-box',
-}
-
-const iconBtnStyle: React.CSSProperties = {
-  background: 'none',
-  border: 'none',
-  padding: '0.25rem',
-  borderRadius: 5,
-  cursor: 'pointer',
-  color: 'var(--ink-mute)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  lineHeight: 1,
 }
 
 const smallPrimaryBtnStyle: React.CSSProperties = {
