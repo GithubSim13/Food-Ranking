@@ -373,7 +373,7 @@ export default function EntryDetail({ onPanelChange }: EntryDetailProps = {}) {
     queryFn: () => getEntry(entryId),
     enabled: !isNaN(entryId),
     retry: (failureCount, err) => {
-      if (axios.isAxiosError(err) && err.response?.status === 404) return false
+      if (axios.isAxiosError(err) && (err.response?.status === 404 || err.response?.status === 400)) return false
       return failureCount < 2
     },
   })
@@ -456,11 +456,21 @@ export default function EntryDetail({ onPanelChange }: EntryDetailProps = {}) {
     },
   })
 
+  if (isNaN(entryId)) {
+    return (
+      <div style={errorStateStyle}>
+        <p style={errorHeadingStyle}>Entry not found</p>
+        <p style={errorBodyStyle}>This entry may have been deleted or the link is wrong.</p>
+        <button onClick={() => navigate('/entries')} style={errorBackBtnStyle}>← Back to Entries</button>
+      </div>
+    )
+  }
+
   if (isLoading) return <p style={{ color: 'var(--ink-mute)' }}>Loading…</p>
 
   if (isError) {
-    const is404 = axios.isAxiosError(error) && error.response?.status === 404
-    if (is404) {
+    const isNotFound = axios.isAxiosError(error) && (error.response?.status === 404 || error.response?.status === 400)
+    if (isNotFound) {
       return (
         <div style={errorStateStyle}>
           <p style={errorHeadingStyle}>Entry not found</p>
