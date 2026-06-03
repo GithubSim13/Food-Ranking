@@ -48,7 +48,17 @@ export function SearchAndScopeBar({
   rightSlot,
 }: Props) {
   return (
-    <>
+    <div style={{
+      position: 'sticky',
+      top: '-2rem',
+      zIndex: 10,
+      background: 'var(--paper)',
+      paddingTop: '0.5rem',
+      paddingBottom: '0.75rem',
+      marginBottom: '0.75rem',
+      borderBottom: '1px solid var(--line)',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+    }}>
       <input
         value={search}
         onChange={e => onSearchChange(e.target.value)}
@@ -75,6 +85,6 @@ export function SearchAndScopeBar({
         </div>
         {rightSlot}
       </div>
-    </>
+    </div>
   )
 }

@@ -349,7 +349,7 @@ export default function RankingsPage() {
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
         <div>
           <p style={kickerStyle}>The board</p>
           <h2 style={pageTitleStyle}>Rankings</h2>
