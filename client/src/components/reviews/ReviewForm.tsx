@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { createReview } from '../../api/reviews'
 import { useToast } from '../../context/ToastContext'
+import RatingInput from '../common/RatingInput'
 
 interface Props {
   entryId: number
@@ -18,7 +19,9 @@ export default function ReviewForm({ entryId, onSuccess }: Props) {
   const { showToast } = useToast()
   const today = new Date().toISOString().split('T')[0]
   const [date, setDate] = useState(today)
-  const [ratings, setRatings] = useState({ rating1: '', rating2: '', rating3: '' })
+  const [ratings, setRatings] = useState<{ rating1: number | null; rating2: number | null; rating3: number | null }>(
+    { rating1: null, rating2: null, rating3: null }
+  )
   const [notes, setNotes] = useState('')
   const [retroactive, setRetroactive] = useState(false)
 
@@ -26,7 +29,7 @@ export default function ReviewForm({ entryId, onSuccess }: Props) {
     mutationFn: createReview,
     onSuccess: () => {
       setDate(today)
-      setRatings({ rating1: '', rating2: '', rating3: '' })
+      setRatings({ rating1: null, rating2: null, rating3: null })
       setNotes('')
       setRetroactive(false)
       onSuccess()
@@ -42,9 +45,9 @@ export default function ReviewForm({ entryId, onSuccess }: Props) {
       entryId,
       date: date || undefined,
       notes: notes || undefined,
-      rating1: ratings.rating1 ? Number(ratings.rating1) : undefined,
-      rating2: ratings.rating2 ? Number(ratings.rating2) : undefined,
-      rating3: ratings.rating3 ? Number(ratings.rating3) : undefined,
+      rating1: ratings.rating1 ?? undefined,
+      rating2: ratings.rating2 ?? undefined,
+      rating3: ratings.rating3 ?? undefined,
       retroactive,
     })
   }
@@ -58,26 +61,12 @@ export default function ReviewForm({ entryId, onSuccess }: Props) {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
         {RATING_FIELDS.map(({ label, key }) => (
-          <div key={key}>
-            <label style={labelStyle}>{label} (1–10)</label>
-            <input
-              type="number"
-              min={0} max={10} step="any"
-              placeholder="–"
-              value={ratings[key]}
-              onChange={e => {
-                const raw = e.target.value
-                if (raw === '') { setRatings(r => ({ ...r, [key]: '' })); return }
-                const n = parseFloat(raw)
-                if (!isNaN(n)) {
-                  if (n > 10) { setRatings(r => ({ ...r, [key]: '10' })); return }
-                  if (n < 0) { setRatings(r => ({ ...r, [key]: '0' })); return }
-                }
-                setRatings(r => ({ ...r, [key]: raw }))
-              }}
-              style={inputStyle}
-            />
-          </div>
+          <RatingInput
+            key={key}
+            label={label}
+            value={ratings[key]}
+            onChange={n => setRatings(r => ({ ...r, [key]: n }))}
+          />
         ))}
       </div>
 

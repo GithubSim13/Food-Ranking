@@ -6,6 +6,7 @@ import { createReview } from '../../api/reviews'
 import { getCategories } from '../../api/categories'
 import { getRestaurants } from '../../api/restaurants'
 import FlagPicker from '../common/FlagPicker'
+import RatingInput from '../common/RatingInput'
 import { useToast } from '../../context/ToastContext'
 import { smallSecondaryBtnStyle } from '../common/pageStyles'
 import { sortReviewsByDateDesc, latestRatedReview } from '../../utils'
@@ -246,7 +247,9 @@ export default function EntryForm() {
   const [flag, setFlag] = useState<string | null>(null)
 
   const [showReview, setShowReview] = useState(false)
-  const [ratings, setRatings] = useState({ rating1: '', rating2: '', rating3: '' })
+  const [ratings, setRatings] = useState<{ rating1: number | null; rating2: number | null; rating3: number | null }>(
+    { rating1: null, rating2: null, rating3: null }
+  )
   const [notes, setNotes] = useState('')
   const notesRef = useRef<HTMLTextAreaElement>(null)
 
@@ -267,7 +270,7 @@ export default function EntryForm() {
   }
 
   const clearReview = () => {
-    setRatings({ rating1: '', rating2: '', rating3: '' })
+    setRatings({ rating1: null, rating2: null, rating3: null })
     setNotes('')
   }
 
@@ -287,9 +290,9 @@ export default function EntryForm() {
           entryId: entry.id,
           date: new Date().toISOString(),
         }
-        if (ratings.rating1) reviewPayload.rating1 = Number(ratings.rating1)
-        if (ratings.rating2) reviewPayload.rating2 = Number(ratings.rating2)
-        if (ratings.rating3) reviewPayload.rating3 = Number(ratings.rating3)
+        if (ratings.rating1 != null) reviewPayload.rating1 = ratings.rating1
+        if (ratings.rating2 != null) reviewPayload.rating2 = ratings.rating2
+        if (ratings.rating3 != null) reviewPayload.rating3 = ratings.rating3
         if (notes.trim()) reviewPayload.notes = notes.trim()
 
         try {
@@ -404,26 +407,12 @@ export default function EntryForm() {
               }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
                   {RATING_FIELDS.map(({ label, key }) => (
-                    <div key={key}>
-                      <label style={reviewLabelStyle}>{label} (0–10)</label>
-                      <input
-                        type="number"
-                        min={0} max={10} step="any"
-                        placeholder="–"
-                        value={ratings[key]}
-                        onChange={e => {
-                          const raw = e.target.value
-                          if (raw === '') { setRatings(r => ({ ...r, [key]: '' })); return }
-                          const n = parseFloat(raw)
-                          if (!isNaN(n)) {
-                            if (n > 10) { setRatings(r => ({ ...r, [key]: '10' })); return }
-                            if (n < 0) { setRatings(r => ({ ...r, [key]: '0' })); return }
-                          }
-                          setRatings(r => ({ ...r, [key]: raw }))
-                        }}
-                        style={reviewInputStyle}
-                      />
-                    </div>
+                    <RatingInput
+                      key={key}
+                      label={label}
+                      value={ratings[key]}
+                      onChange={n => setRatings(r => ({ ...r, [key]: n }))}
+                    />
                   ))}
                 </div>
 

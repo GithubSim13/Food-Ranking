@@ -150,17 +150,17 @@ client/src/
       countryList.ts    # static list of 250 { code, name } pairs (auto-generated, do not hand-edit)
       Icons.tsx         # shared icon components: PencilIcon, TrashIcon, ChevronIcon, iconBtnStyle
       SectionErrorBoundary.tsx  # class-based React error boundary; wraps each Home dashboard section; shows "Could not load [title]" fallback on error
-    NotFoundPage.tsx    # catch-all 404 page — "Page not found" with Go to Home button; matched by <Route path="*"> in App.tsx
+    NotFoundPage.tsx    # catch-all 404 page — Minecraft "How did we get here?" achievement toast, bounces in from top with idle bob animation, ghost 404 background text, Go Home button; matched by <Route path="*"> in App.tsx
     home/
       HomePage.tsx      # / — dashboard: greeting, stat grid, top 5 podium, Hall of Fame/Shame, Reigning Champion, Fresh off the fork, Top Tables, Regulars, Logging pace, Best value
     entries/
       EntryList.tsx     # /entries — card list + search + scope filters (Everything/Starred/Abroad/Home) + sort pills (Most recent/Top rated/A-Z)
       EntryCard.tsx     # card: flag SVG, name, category, restaurant, avg overallRating; gold styling when starred
-      EntryForm.tsx     # /entries/new — form + live dupe detection (list format) + FlagPicker + category combo box
+      EntryForm.tsx     # /entries/new — form + live dupe detection (list format) + FlagPicker + category combo box + restaurant combo box (fetches GET /api/restaurants) + optional inline review section (toggle, Taste/Value/Consistency clamped 0–10, Notes, date auto-set to ISO timestamp at POST time) + Category Comparison Panel when review section is open + React-side validation (no native HTML validation)
       EntryDetail.tsx   # /entries/:id — entry info + inline editing + star toggle + reviews list + ReviewForm + delete entry/review; fully dark themed
       EntryModal.tsx    # modal wrapper around EntryDetail; onClose navigates back
     reviews/
-      ReviewForm.tsx    # add review: Taste/Value/Consistency (1–10) + date + notes + retroactive checkbox
+      ReviewForm.tsx    # add review: Taste/Value/Consistency (0–10, step any, clamped on onChange) + date + notes + retroactive checkbox; rating inputs also clamped in edit form
     rankings/
       RankingsPage.tsx  # /rankings — grouped by category alphabetically; rated entries sorted by overallRating desc (automatic); unrated entries below, drag-and-drop reorder via @dnd-kit (gated behind Edit Rankings mode); search bar + scope filters (Everything/Starred/Abroad/Home); reads ?category= URL param on mount to pre-fill search bar (used by CategoriesPage card clicks)
     categories/
@@ -195,12 +195,15 @@ client/src/
 - **Entry detail modal**: clicking an entry card anywhere opens `EntryDetail` inside `Modal.tsx`. URL updates to `/entries/:id`. ESC or backdrop closes. Direct navigation renders as full page.
 - **Error handling**: all 17 async route handlers wrapped in try/catch — DB failures return 500 instead of crashing the process; invalid IDs return 400; missing records return 404
 - **Entry detail error states**: GET /api/entries/:id returning 400 or 404 renders an "Entry not found" message with back button instead of infinite loading
-- **404 page**: unmatched routes render NotFoundPage via catch-all `<Route path="*">`
+- **404 page**: unmatched routes render NotFoundPage via catch-all `<Route path="*">` — Minecraft achievement toast style, Ube Midnight palette, bounces in from top with idle bob, ghost 404 background text, "This page has no rating. We've checked." copy, Go Home button.
 - **Error boundaries**: each Home dashboard section wrapped in SectionErrorBoundary — a section crash shows a muted fallback without affecting the rest of the page
 - **Rankings drag-and-drop**: only applies to unrated entries. Gated behind "Edit Rankings" button. Save persists order via `PATCH /api/rankings/reorder`; Cancel restores snapshot. Rated entries always sort by `overallRating` desc automatically — `manualRank` is ignored for them (values left in DB, not wiped).
 - **Rankings search + filters**: same search bar and scope filter pills as Entries page (Everything / ★ Starred / Abroad / Home). Category groups with zero matches are hidden.
 - **Category Comparison Panel**: visible on entry detail when a review form is open (new or edit). Shows other rated entries in the same category sorted by `overallRating` desc. Displays food name, overallRating, and Taste/Value/Consistency breakdowns (— if null). Unrated entries hidden. Panel appears to the right; modal expands wider to accommodate it.
 - **Category combo box**: on new entry form, shows existing categories as dropdown, allows free-text new category.
+- **Restaurant combo box**: on new entry form, mirrors category combo box — fetches from GET /api/restaurants, shows existing names, allows free-text new restaurant.
+- **Form validation**: all forms use React-side validation — no native HTML `required` attributes anywhere. Invalid fields show inline error messages below the field (danger CSS variable color, Hanken Grotesk, ~0.85rem); errors clear on input change.
+- **Rating input clamping**: Taste/Value/Consistency inputs across all forms clamp to 0–10 on `onChange`. Values below 0 floor to 0, above 10 cap to 10. `step="any"` allows full decimal precision.
 - **Home dashboard**: all sections computed client-side from the cached `['entries']` query — do not add new API calls. Date-dependent sections (Logging pace, Fresh off the fork) use the earliest non-null `review.date` per entry — entries with no dated reviews are excluded from pace and sorted last in recency.
 
 ### Home dashboard sections (HomePage.tsx)
@@ -301,4 +304,10 @@ Default to low or medium effort unless the task is explicitly complex. Only use 
 - [x] Entry detail error states — 400 and 404 from GET /api/entries/:id both render "Entry not found" with back button; no more infinite loading
 - [x] Catch-all 404 page — NotFoundPage component; matched by <Route path="*"> in App.tsx
 - [x] Error boundaries on Home dashboard — SectionErrorBoundary wraps all 9 sections independently
+- [x] Personalized 404 page — Minecraft "How did we get here?" achievement toast, bounces in from top with idle bob animation, ghost 404 background text, Ube Midnight palette
+- [x] Restaurant Name combo box on new entry form — mirrors Category combo box; fetches from GET /api/restaurants; existing names + free-text new
+- [x] Inline review on new entry form — optional toggle (+ Add Review); Taste/Value/Consistency (0–10, step any, clamped), Notes; date auto-set to ISO timestamp at POST time; review saved after entry creation even if partial
+- [x] Category Comparison Panel on new entry form — appears when review section is expanded and a category is typed; mirrors entry detail panel
+- [x] Native HTML validation replaced app-wide — all forms use React-side validation; inline error messages styled with CSS danger variable, Hanken Grotesk, below each field; errors clear on input change
+- [x] Rating input bounds clamping — Taste/Value/Consistency inputs clamped to 0–10 on onChange across new entry form and review add/edit forms in entry detail
 - [ ] Capacitor mobile wrapper

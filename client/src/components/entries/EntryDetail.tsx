@@ -6,6 +6,7 @@ import { getEntry, patchEntry, deleteEntry, getEntries } from '../../api/entries
 import { patchRestaurant } from '../../api/restaurants'
 import FlagImage from '../common/FlagImage'
 import FlagPicker from '../common/FlagPicker'
+import RatingInput from '../common/RatingInput'
 import { updateReview, deleteReview } from '../../api/reviews'
 import ReviewForm from '../reviews/ReviewForm'
 import type { EntryDetail as EntryDetailType, Review } from '../../types'
@@ -142,11 +143,18 @@ function ReviewCard({ review: r, onUpdated, onEditStart, onEditEnd }: ReviewCard
     if (isEditing && notesRef.current) autoResize(notesRef.current)
   }, [isEditing])
   const [confirmDelete, setConfirmDelete] = useState(false)
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<{
+    date: string
+    rating1: number | null
+    rating2: number | null
+    rating3: number | null
+    notes: string
+    retroactive: boolean
+  }>({
     date: '',
-    rating1: '',
-    rating2: '',
-    rating3: '',
+    rating1: null,
+    rating2: null,
+    rating3: null,
     notes: '',
     retroactive: false,
   })
@@ -165,9 +173,9 @@ function ReviewCard({ review: r, onUpdated, onEditStart, onEditEnd }: ReviewCard
     mutationFn: () =>
       updateReview(r.id, {
         date: form.date || undefined,
-        rating1: form.rating1 ? Number(form.rating1) : null,
-        rating2: form.rating2 ? Number(form.rating2) : null,
-        rating3: form.rating3 ? Number(form.rating3) : null,
+        rating1: form.rating1,
+        rating2: form.rating2,
+        rating3: form.rating3,
         notes: form.notes || null,
         retroactive: form.retroactive,
       }),
@@ -197,9 +205,9 @@ function ReviewCard({ review: r, onUpdated, onEditStart, onEditEnd }: ReviewCard
   const startEdit = () => {
     setForm({
       date: r.date ? r.date.split('T')[0] : '',
-      rating1: r.rating1?.toString() ?? '',
-      rating2: r.rating2?.toString() ?? '',
-      rating3: r.rating3?.toString() ?? '',
+      rating1: r.rating1 ?? null,
+      rating2: r.rating2 ?? null,
+      rating3: r.rating3 ?? null,
       notes: r.notes ?? '',
       retroactive: r.retroactive,
     })
@@ -222,26 +230,12 @@ function ReviewCard({ review: r, onUpdated, onEditStart, onEditEnd }: ReviewCard
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
             {EDIT_RATING_FIELDS.map(({ label, key }) => (
-              <div key={key}>
-                <label style={labelStyle}>{label} (1–10)</label>
-                <input
-                  type="number"
-                  min={0} max={10} step="any"
-                  placeholder="–"
-                  value={form[key]}
-                  onChange={e => {
-                    const raw = e.target.value
-                    if (raw === '') { setForm(f => ({ ...f, [key]: '' })); return }
-                    const n = parseFloat(raw)
-                    if (!isNaN(n)) {
-                      if (n > 10) { setForm(f => ({ ...f, [key]: '10' })); return }
-                      if (n < 0) { setForm(f => ({ ...f, [key]: '0' })); return }
-                    }
-                    setForm(f => ({ ...f, [key]: raw }))
-                  }}
-                  style={inputStyle}
-                />
-              </div>
+              <RatingInput
+                key={key}
+                label={label}
+                value={form[key]}
+                onChange={n => setForm(f => ({ ...f, [key]: n }))}
+              />
             ))}
           </div>
           <div>
