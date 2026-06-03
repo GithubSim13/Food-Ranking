@@ -1,40 +1,88 @@
-import { useQuery } from '@tanstack/react-query'
-import { useNavigate, useLocation, Link } from 'react-router-dom'
-import { getEntries } from '../../api/entries'
+import { Link } from 'react-router-dom'
 import FlagImage from '../common/FlagImage'
-import type { Entry } from '../../types'
 
-// ─── helpers ────────────────────────────────────────────────────────────────
+// ─── placeholder data ────────────────────────────────────────────────────────
 
-function entryAvg(e: Entry): number | null {
-  const vals = e.reviews.map(r => r.overallRating).filter((r): r is number => r !== null)
-  return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null
+const TOP5 = [
+  { id: 1, name: 'Tonkotsu Ramen', flag: 'JP', score: 9.42 },
+  { id: 2, name: 'Hainanese Chicken Rice', flag: 'SG', score: 9.08 },
+  { id: 3, name: 'Rendang', flag: 'MY', score: 8.87 },
+  { id: 4, name: 'Peking Duck', flag: 'CN', score: 8.64 },
+  { id: 5, name: 'Tteokbokki', flag: 'KR', score: 8.31 },
+]
+
+const FAME = {
+  name: 'Tonkotsu Ramen',
+  restaurant: 'Ippudo',
+  category: 'Ramen',
+  quote: 'Rich, umami-packed broth with perfectly chewy noodles.',
+  score: 9.42,
+  flag: 'JP',
 }
+
+const SHAME = {
+  name: 'Soggy Nachos',
+  restaurant: "Chili's",
+  category: 'Tex-Mex',
+  quote: 'Somehow soggy and stale at the same time.',
+  score: 4.21,
+  flag: null as string | null,
+}
+
+const CHAMPION = {
+  name: 'Tonkotsu Ramen',
+  restaurant: 'Ippudo',
+  category: 'Ramen',
+  score: 9.42,
+  flag: 'JP',
+}
+
+const FRESH = [
+  { id: 6, name: 'Laksa', flag: 'MY', date: 'Jun 1' },
+  { id: 7, name: 'Croissant', flag: 'FR', date: 'May 28' },
+  { id: 8, name: 'Char Siu Bao', flag: 'HK', date: 'May 22' },
+  { id: 9, name: 'Birria Tacos', flag: 'MX', date: 'May 17' },
+  { id: 10, name: 'Matcha Parfait', flag: 'JP', date: 'May 10' },
+]
+
+const TOP_TABLES = [
+  { name: 'Ippudo', visits: 3, avg: 9.1 },
+  { name: 'Jollibee', visits: 5, avg: 8.7 },
+  { name: 'Din Tai Fung', visits: 4, avg: 8.4 },
+  { name: 'Zus Coffee', visits: 3, avg: 8.3 },
+  { name: "Nando's", visits: 3, avg: 8.2 },
+]
+
+const REGULARS = [
+  { name: 'Jollibee', visits: 5, avg: 7.8 },
+  { name: 'Din Tai Fung', visits: 4, avg: 8.4 },
+  { name: "McDonald's", visits: 4, avg: 6.1 },
+  { name: 'Ippudo', visits: 3, avg: 9.1 },
+  { name: 'Zus Coffee', visits: 3, avg: 8.3 },
+]
+
+const CHART = [
+  { label: 'M', count: 4 },
+  { label: 'A', count: 6 },
+  { label: 'M', count: 5 },
+  { label: 'J', count: 8 },
+  { label: 'J', count: 7 },
+  { label: 'A', count: 18 },
+  { label: 'S', count: 4 },
+  { label: 'O', count: 3 },
+]
+const CHART_MAX = 18
+const CHART_PEAK = 5
+
+// ─── helpers ─────────────────────────────────────────────────────────────────
 
 function scoreColor(v: number): string {
   return `oklch(0.62 0.16 ${25 + ((v - 3) / 6.5) * 120})`
 }
 
-function greeting(): string {
-  const h = new Date().getHours()
-  if (h < 11) return 'Morning'
-  if (h < 17) return 'Afternoon'
-  return 'Evening'
-}
-
-function formatMonth(yyyyMm: string): string {
-  const [y, m] = yyyyMm.split('-')
-  return new Date(Number(y), Number(m) - 1, 1).toLocaleString('en', { month: 'short', year: '2-digit' })
-}
-
-function formatDay(iso: string): string {
-  const d = new Date(iso)
-  return d.toLocaleString('en', { month: 'short', day: 'numeric' })
-}
-
 // ─── sub-components ──────────────────────────────────────────────────────────
 
-function SectionCard({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
   return (
     <div style={{
       background: 'var(--surface)',
@@ -48,65 +96,28 @@ function SectionCard({ children, style }: { children: React.ReactNode; style?: R
   )
 }
 
-function StatCard({ value, label, valueColor }: { value: string; label: string; valueColor?: string }) {
+function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <SectionCard>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: '2rem', fontWeight: 700, color: valueColor ?? 'var(--ink)', lineHeight: 1 }}>
-        {value}
-      </div>
-      <div style={{ marginTop: '0.4rem', fontSize: '0.78rem', color: 'var(--ink-mute)', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'var(--font-mono)' }}>
-        {label}
-      </div>
-    </SectionCard>
+    <div style={{
+      fontFamily: 'var(--font-mono)',
+      fontSize: '0.68rem',
+      textTransform: 'uppercase' as const,
+      letterSpacing: '0.1em',
+      color: 'var(--ink-mute)',
+      marginBottom: '0.75rem',
+    }}>
+      {children}
+    </div>
   )
 }
 
-interface PodiumStepProps {
-  entry: Entry
-  rank: number
-  stepHeight: number
-  onNavigate: () => void
-}
-
-function PodiumStep({ entry, rank, stepHeight, onNavigate }: PodiumStepProps) {
-  const avg = entryAvg(entry)
+function RankRow({ rank, name, visits, avg }: { rank: number; name: string; visits: number; avg: number }) {
   return (
-    <div
-      onClick={onNavigate}
-      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', width: 140 }}
-    >
-      {/* Info above step */}
-      <div style={{ textAlign: 'center', marginBottom: '0.5rem', padding: '0 0.25rem' }}>
-        <div style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', fontWeight: 600, color: 'var(--ink)' }}>
-          <FlagImage code={entry.flag} />
-          <span style={{ maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.foodName}</span>
-        </div>
-        {avg != null && (
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', fontWeight: 700, color: scoreColor(avg), marginTop: '0.2rem' }}>
-            {avg.toFixed(2)}
-          </div>
-        )}
-      </div>
-      {/* Step */}
-      <div style={{
-        width: '100%',
-        height: stepHeight,
-        background: rank === 1 ? 'var(--accent-wash)' : 'var(--line-soft)',
-        borderTop: `3px solid ${rank === 1 ? 'var(--accent)' : rank === 2 ? 'var(--ink-mute)' : 'var(--line)'}`,
-        borderRadius: '6px 6px 0 0',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}>
-        <span style={{
-          fontFamily: 'var(--font-mono)',
-          fontWeight: 700,
-          fontSize: rank === 1 ? '1.5rem' : '1.1rem',
-          color: rank === 1 ? 'var(--accent)' : 'var(--ink-mute)',
-        }}>
-          {rank}
-        </span>
-      </div>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.5rem', borderRadius: 6, background: 'var(--paper)' }}>
+      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', color: 'var(--ink-mute)', width: 14, flexShrink: 0 }}>{rank}</span>
+      <span style={{ flex: 1, fontSize: '0.88rem', color: 'var(--ink)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{name}</span>
+      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', color: 'var(--ink-mute)', flexShrink: 0 }}>{visits}×</span>
+      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', fontWeight: 700, color: scoreColor(avg), flexShrink: 0 }}>{avg.toFixed(1)}</span>
     </div>
   )
 }
@@ -114,423 +125,276 @@ function PodiumStep({ entry, rank, stepHeight, onNavigate }: PodiumStepProps) {
 // ─── main component ───────────────────────────────────────────────────────────
 
 export default function HomePage() {
-  const navigate = useNavigate()
-  const location = useLocation()
-  const { data: entries = [], isLoading } = useQuery({
-    queryKey: ['entries'],
-    queryFn: getEntries,
-  })
+  const [p1, p2, p3, p4, p5] = TOP5
 
-  if (isLoading) return <p style={{ color: 'var(--ink-mute)' }}>Loading…</p>
-  if (entries.length === 0) {
-    return (
-      <div>
-        <p style={kickerStyle}>{greeting()}, Sim.</p>
-        <h1 style={pageTitleStyle}>Nothing logged yet.</h1>
-        <p style={{ color: 'var(--ink-mute)', marginTop: '0.5rem' }}>
-          <Link to="/entries/new" style={{ color: 'var(--accent)' }}>Add your first entry</Link> to get started.
-        </p>
-      </div>
-    )
-  }
+  const PODIUM_CONTAINER_H = 180
+  // podium order: 2nd, 1st, 3rd — heights as % of container
+  const podiumOrder = [
+    { entry: p2, rank: 2, height: Math.round(PODIUM_CONTAINER_H * 0.45), barColor: '#2a2240' },
+    { entry: p1, rank: 1, height: Math.round(PODIUM_CONTAINER_H * 0.65), barColor: '#6c47d4' },
+    { entry: p3, rank: 3, height: Math.round(PODIUM_CONTAINER_H * 0.30), barColor: '#201b32' },
+  ]
 
-  // ── stats ──────────────────────────────────────────────────────────────────
-  const allRatings = entries.flatMap(e =>
-    e.reviews.map(r => r.overallRating).filter((r): r is number => r !== null)
-  )
-  const avgAll = allRatings.length
-    ? allRatings.reduce((a, b) => a + b, 0) / allRatings.length
-    : null
-
-  const rated = entries.filter(e => entryAvg(e) !== null)
-  const byScore = [...rated].sort((a, b) => entryAvg(b)! - entryAvg(a)!)
-  const earliestReviewDate = (e: Entry): number => {
-    const dates = e.reviews.map(r => r.date).filter((d): d is string => d !== null)
-    return dates.length ? new Date(dates.sort()[0]).getTime() : 0
-  }
-  const byDate = [...entries].sort((a, b) => earliestReviewDate(b) - earliestReviewDate(a))
-  const categoryCount = new Set(entries.map(e => e.category)).size
-  const restaurantCount = new Set(entries.map(e => e.restaurant.name)).size
-  const starredCount = entries.filter(e => e.starred).length
-
-  // restaurant aggregates
-  type RestAgg = { restaurantId: number; name: string; visits: number; avgRating: number | null }
-  const restMap = new Map<number, { name: string; allRatings: number[]; count: number }>()
-  entries.forEach(e => {
-    if (!restMap.has(e.restaurantId)) restMap.set(e.restaurantId, { name: e.restaurant.name, allRatings: [], count: 0 })
-    const r = restMap.get(e.restaurantId)!
-    r.count++
-    e.reviews.forEach(rv => { if (rv.overallRating != null) r.allRatings.push(rv.overallRating) })
-  })
-  const restAggs: RestAgg[] = Array.from(restMap.entries()).map(([id, r]) => ({
-    restaurantId: id,
-    name: r.name,
-    visits: r.count,
-    avgRating: r.allRatings.length ? r.allRatings.reduce((a, b) => a + b, 0) / r.allRatings.length : null,
-  }))
-  const topTables = restAggs
-    .filter(r => r.visits >= 2 && r.avgRating != null)
-    .sort((a, b) => b.avgRating! - a.avgRating!)
-    .slice(0, 5)
-  const regulars = [...restAggs].sort((a, b) => b.visits - a.visits).slice(0, 5)
-  const topRatedRest = topTables[0] ?? null
-
-  // monthly pace (by earliest non-null review date)
-  const byMonth = new Map<string, number>()
-  entries.forEach(e => {
-    const dates = e.reviews.map(r => r.date).filter((d): d is string => d !== null)
-    if (dates.length === 0) return
-    const earliest = dates.sort()[0]
-    const key = earliest.slice(0, 7)
-    byMonth.set(key, (byMonth.get(key) ?? 0) + 1)
-  })
-  const monthKeys = Array.from(byMonth.keys()).sort()
-  const perMonth = monthKeys.length ? entries.length / monthKeys.length : 0
-  const busiestMonth = monthKeys.length
-    ? monthKeys.reduce((a, b) => (byMonth.get(b)! > byMonth.get(a)! ? b : a))
-    : ''
-  let streak = 0
-  if (monthKeys.length) {
-    const latestParts = monthKeys[monthKeys.length - 1].split('-').map(Number)
-    for (let i = 0; ; i++) {
-      const d = new Date(latestParts[0], latestParts[1] - 1 - i, 1)
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-      if (!byMonth.has(key)) break
-      streak++
-    }
-  }
-  const maxMonthCount = Math.max(...Array.from(byMonth.values()), 1)
-  // show at most last 18 months on chart
-  const chartMonths = monthKeys.slice(-18)
-
-  // hall of fame / shame
-  const famEntry = byScore[0]
-  const shameEntry = byScore.length > 1 ? byScore[byScore.length - 1] : null
-  const famAvg = famEntry ? entryAvg(famEntry) : null
-  const shameAvg = shameEntry ? entryAvg(shameEntry) : null
-
-  const openEntry = (id: number) => navigate(`/entries/${id}`, { state: { background: location } })
-
-  // ── render ─────────────────────────────────────────────────────────────────
   return (
-    <div style={{ maxWidth: 960 }}>
+    <div style={{ width: '100%' }}>
+
       {/* 1. Greeting */}
       <div style={{ marginBottom: '2rem' }}>
-        <p style={kickerStyle}>{greeting()}, Sim.</p>
-        <h1 style={pageTitleStyle}>
-          You've logged {entries.length} foods across {categoryCount} {categoryCount === 1 ? 'category' : 'categories'}.
+        <h1 style={{ fontFamily: 'Bricolage Grotesque, sans-serif', fontSize: 48, fontWeight: 800, lineHeight: 1.1, color: 'var(--ink)', marginBottom: '0.5rem' }}>
+          Morning, <span style={{ color: '#8b5cf6' }}>Sim.</span>
         </h1>
-        <p style={{ color: 'var(--ink-mute)', marginTop: '0.5rem', fontSize: '0.95rem' }}>
-          Here's where things stand.
+        <p style={{ fontFamily: 'Hanken Grotesk, sans-serif', fontSize: 13, color: '#9b8fc0', lineHeight: 1.5 }}>
+          You've logged 55 foods across 24 categories. Here's where things stand.
         </p>
       </div>
 
-      {/* 2. Stat grid */}
+      {/* 2. Stat row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
-        <StatCard
-          value={avgAll != null ? avgAll.toFixed(2) : '—'}
-          label="avg rating · all time"
-          valueColor={avgAll != null ? scoreColor(avgAll) : 'var(--ink-mute)'}
-        />
-        <StatCard value={String(entries.length)} label="foods logged" />
-        <StatCard value={String(starredCount)} label="starred faves" valueColor="var(--gold)" />
-        <StatCard value={String(restaurantCount)} label="restaurants tried" />
+        {/* Avg Rating — purple tinted card */}
+        <div style={{ background: '#1a1430', border: '1px solid #6c47d4', borderRadius: 14, padding: '1.25rem 1.5rem' }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '2rem', fontWeight: 700, color: '#6c47d4', lineHeight: 1 }}>7.51</div>
+          <div style={{ marginTop: '0.4rem', fontFamily: 'var(--font-mono)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--ink-mute)' }}>Avg Rating</div>
+        </div>
+        {/* Foods Logged */}
+        <Card>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '2rem', fontWeight: 700, color: 'var(--ink)', lineHeight: 1 }}>55</div>
+          <div style={{ marginTop: '0.4rem', fontFamily: 'var(--font-mono)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--ink-mute)' }}>Foods Logged</div>
+        </Card>
+        {/* Starred Faves */}
+        <Card>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '2rem', fontWeight: 700, color: '#e6a817', lineHeight: 1 }}>14</div>
+          <div style={{ marginTop: '0.4rem', fontFamily: 'var(--font-mono)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--ink-mute)' }}>Starred Faves</div>
+        </Card>
+        {/* Restaurants Tried */}
+        <Card>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '2rem', fontWeight: 700, color: 'var(--ink)', lineHeight: 1 }}>44</div>
+          <div style={{ marginTop: '0.4rem', fontFamily: 'var(--font-mono)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--ink-mute)' }}>Restaurants Tried</div>
+        </Card>
       </div>
 
-      {/* 3. Top 5 podium */}
-      {byScore.length >= 3 && (
-        <SectionCard style={{ marginBottom: '1.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-            <h2 style={sectionTitleStyle}>Top 5</h2>
-            <Link to="/rankings" style={linkStyle}>All rankings →</Link>
-          </div>
-          {/* Podium steps: 2nd, 1st, 3rd */}
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-end', gap: '0.5rem', marginBottom: '1.5rem' }}>
-            {([byScore[1], byScore[0], byScore[2]] as const).map((entry, i) => (
-              entry ? (
-                <PodiumStep
-                  key={entry.id}
-                  entry={entry}
-                  rank={[2, 1, 3][i]}
-                  stepHeight={[80, 120, 60][i]}
-                  onNavigate={() => openEntry(entry.id)}
-                />
-              ) : null
-            ))}
-          </div>
-          {/* Ranks 4–5 */}
-          {byScore.length >= 4 && (
-            <div style={{ display: 'flex', gap: '1rem', borderTop: '1px solid var(--line)', paddingTop: '1rem' }}>
-              {byScore.slice(3, 5).map((entry, i) => {
-                const avg = entryAvg(entry)
-                return (
-                  <div
-                    key={entry.id}
-                    onClick={() => openEntry(entry.id)}
-                    style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0.5rem 0.75rem', borderRadius: 8, background: 'var(--paper)' }}
-                  >
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--ink-mute)', width: 16 }}>{i + 4}</span>
-                    <FlagImage code={entry.flag} />
-                    <span style={{ flex: 1, fontSize: '0.9rem', color: 'var(--ink)', fontWeight: 500 }}>{entry.foodName}</span>
-                    {avg != null && (
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', color: scoreColor(avg), fontWeight: 700 }}>{avg.toFixed(2)}</span>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </SectionCard>
-      )}
-
-      {/* 4. Hall of Fame / Shame */}
-      {byScore.length >= 2 && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
-          {/* Fame */}
-          <div
-            onClick={() => openEntry(famEntry.id)}
-            style={{ background: 'var(--accent-wash)', border: '1px solid var(--accent)', borderRadius: 14, padding: '1.25rem 1.5rem', cursor: 'pointer' }}
-          >
-            <p style={{ ...kickerStyle, color: 'var(--accent)' }}>Hall of Fame</p>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.2rem', letterSpacing: '-0.02em', color: 'var(--ink)', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <FlagImage code={famEntry.flag} />
-              {famEntry.foodName}
-            </div>
-            <div style={{ fontSize: '0.82rem', color: 'var(--ink-mute)', marginBottom: '0.5rem' }}>
-              {famEntry.restaurant.name} · {famEntry.category}
-            </div>
-            {famAvg != null && (
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '2rem', fontWeight: 700, color: scoreColor(famAvg), lineHeight: 1 }}>
-                {famAvg.toFixed(2)}
-              </div>
-            )}
-          </div>
-          {/* Shame */}
-          {shameEntry && (
-            <div
-              onClick={() => openEntry(shameEntry.id)}
-              style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 14, padding: '1.25rem 1.5rem', cursor: 'pointer' }}
-            >
-              <p style={{ ...kickerStyle }}>Hall of Shame</p>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.2rem', letterSpacing: '-0.02em', color: 'var(--ink)', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                <FlagImage code={shameEntry.flag} />
-                {shameEntry.foodName}
-              </div>
-              <div style={{ fontSize: '0.82rem', color: 'var(--ink-mute)', marginBottom: '0.5rem' }}>
-                {shameEntry.restaurant.name} · {shameEntry.category}
-              </div>
-              {shameAvg != null && (
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '2rem', fontWeight: 700, color: scoreColor(shameAvg), lineHeight: 1 }}>
-                  {shameAvg.toFixed(2)}
-                </div>
-              )}
-            </div>
-          )}
+      {/* 3. Top 5 Podium */}
+      <Card style={{ marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1rem', letterSpacing: '-0.02em', color: 'var(--ink)' }}>🏆 Top 5</div>
+          <Link to="/rankings" style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#6c47d4', textDecoration: 'none' }}>All Rankings →</Link>
         </div>
-      )}
 
-      {/* 5. Champion + Fresh off the fork */}
-      <div style={{ display: 'grid', gridTemplateColumns: '3fr 2fr', gap: '1rem', marginBottom: '1.5rem' }}>
-        {/* Champion */}
-        {famEntry && (
-          <div
-            onClick={() => openEntry(famEntry.id)}
-            style={{ background: 'var(--accent-wash)', border: '1px solid var(--accent)', borderRadius: 14, padding: '1.5rem', cursor: 'pointer' }}
-          >
-            <p style={{ ...kickerStyle, color: 'var(--accent)' }}>Reigning Champion</p>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.75rem', letterSpacing: '-0.03em', color: 'var(--ink)', margin: '0.5rem 0', display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-              <FlagImage code={famEntry.flag} />
-              {famEntry.foodName}
-            </div>
-            <div style={{ fontSize: '0.88rem', color: 'var(--ink-mute)', marginBottom: '0.75rem' }}>
-              {famEntry.restaurant.name} · {famEntry.category}
-            </div>
-            {famAvg != null && (
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '2.5rem', fontWeight: 700, color: scoreColor(famAvg), lineHeight: 1 }}>
-                {famAvg.toFixed(2)}
+        {/* Podium bars */}
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-end', gap: '1rem', marginBottom: '1.5rem' }}>
+          {podiumOrder.map(({ entry, rank, height, barColor }) => (
+            <div key={entry.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 140 }}>
+              {/* Info above bar */}
+              <div style={{ textAlign: 'center', marginBottom: '0.5rem', padding: '0 0.25rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', fontSize: '0.85rem', fontWeight: 600, color: 'var(--ink)', marginBottom: '0.2rem' }}>
+                  <FlagImage code={entry.flag} />
+                  <span style={{ maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.name}</span>
+                </div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', fontWeight: 700, color: scoreColor(entry.score) }}>
+                  {entry.score.toFixed(2)}
+                </div>
               </div>
-            )}
-          </div>
-        )}
-        {/* Fresh off the fork */}
-        <SectionCard style={{ display: 'flex', flexDirection: 'column' }}>
-          <h2 style={{ ...sectionTitleStyle, marginBottom: '0.875rem' }}>Fresh off the fork</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
-            {byDate.slice(0, 5).map(entry => (
-              <div
-                key={entry.id}
-                onClick={() => openEntry(entry.id)}
-                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0.35rem 0.5rem', borderRadius: 6, background: 'var(--paper)' }}
-              >
-                <FlagImage code={entry.flag} />
-                <span style={{ flex: 1, fontSize: '0.88rem', color: 'var(--ink)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.foodName}</span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--ink-mute)', flexShrink: 0 }}>
-                  {(() => { const d = entry.reviews.map(r => r.date).filter((d): d is string => d !== null).sort()[0]; return d ? formatDay(d) : '' })()}
+              {/* Bar */}
+              <div style={{
+                width: '100%',
+                height,
+                background: barColor,
+                borderRadius: '6px 6px 0 0',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                <span style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontWeight: 700,
+                  fontSize: rank === 1 ? '1.5rem' : '1.1rem',
+                  color: rank === 1 ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.4)',
+                }}>
+                  {rank}
                 </span>
               </div>
-            ))}
+            </div>
+          ))}
+        </div>
+
+        {/* Ranks 4 & 5 */}
+        <div style={{ display: 'flex', gap: '1rem', borderTop: '1px solid var(--line)', paddingTop: '1rem' }}>
+          {[p4, p5].map((entry, i) => (
+            <div key={entry.id} style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.75rem', borderRadius: 8, background: 'var(--paper)' }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', color: 'var(--ink-mute)', width: 14, flexShrink: 0 }}>{i + 4}</span>
+              <FlagImage code={entry.flag} />
+              <span style={{ flex: 1, fontSize: '0.9rem', color: 'var(--ink)', fontWeight: 500 }}>{entry.name}</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', fontWeight: 700, color: scoreColor(entry.score) }}>{entry.score.toFixed(2)}</span>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* 4. Hall of Fame / Hall of Shame */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+        {/* Hall of Fame */}
+        <div style={{ background: 'var(--surface)', borderLeft: '4px solid #4caf82', borderRadius: 14, padding: '1.25rem 1.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#4caf82' }}>▲ Hall of Fame</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1.5rem', fontWeight: 700, color: '#4caf82', lineHeight: 1 }}>{FAME.score.toFixed(2)}</div>
           </div>
-          <Link to="/entries" style={{ ...linkStyle, display: 'block', marginTop: '0.75rem', fontSize: '0.8rem' }}>All entries →</Link>
-        </SectionCard>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.1rem', letterSpacing: '-0.02em', color: 'var(--ink)', marginBottom: '0.25rem' }}>
+            <FlagImage code={FAME.flag} />
+            {FAME.name}
+          </div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--ink-mute)', marginBottom: '0.5rem' }}>{FAME.restaurant} · {FAME.category}</div>
+          <div style={{ fontSize: '0.82rem', color: 'var(--ink-mute)', fontStyle: 'italic' }}>"{FAME.quote}"</div>
+        </div>
+
+        {/* Hall of Shame */}
+        <div style={{ background: 'var(--surface)', borderLeft: '4px solid #e07a40', borderRadius: 14, padding: '1.25rem 1.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#e07a40' }}>▼ Hall of Shame</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1.5rem', fontWeight: 700, color: '#e07a40', lineHeight: 1 }}>{SHAME.score.toFixed(2)}</div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.1rem', letterSpacing: '-0.02em', color: 'var(--ink)', marginBottom: '0.25rem' }}>
+            <FlagImage code={SHAME.flag} />
+            {SHAME.name}
+          </div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--ink-mute)', marginBottom: '0.5rem' }}>{SHAME.restaurant} · {SHAME.category}</div>
+          <div style={{ fontSize: '0.82rem', color: 'var(--ink-mute)', fontStyle: 'italic' }}>"{SHAME.quote}"</div>
+        </div>
       </div>
 
-      {/* 6. Top Tables + Regulars */}
+      {/* 5. Reigning Champion / Fresh off the Fork */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
-        {/* Top Tables */}
-        <SectionCard>
-          <h2 style={{ ...sectionTitleStyle, marginBottom: '0.875rem' }}>Top Tables</h2>
-          {topTables.length === 0 ? (
-            <p style={{ fontSize: '0.85rem', color: 'var(--ink-mute)' }}>No restaurants with 2+ visits yet.</p>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-              {topTables.map((r, i) => (
-                <div
-                  key={r.restaurantId}
-                  onClick={() => navigate('/restaurants')}
-                  style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0.4rem 0.5rem', borderRadius: 6, background: 'var(--paper)' }}
-                >
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--ink-mute)', width: 14 }}>{i + 1}</span>
-                  <span style={{ flex: 1, fontSize: '0.88rem', color: 'var(--ink)', fontWeight: 500 }}>{r.name}</span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--ink-mute)', flexShrink: 0 }}>{r.visits}×</span>
-                  {r.avgRating != null && (
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', fontWeight: 700, color: scoreColor(r.avgRating), flexShrink: 0 }}>{r.avgRating.toFixed(1)}</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </SectionCard>
-        {/* Regulars */}
-        <SectionCard>
-          <h2 style={{ ...sectionTitleStyle, marginBottom: '0.875rem' }}>Regulars</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-            {regulars.map((r, i) => (
-              <div
-                key={r.restaurantId}
-                onClick={() => navigate('/restaurants')}
-                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0.4rem 0.5rem', borderRadius: 6, background: 'var(--paper)' }}
-              >
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--ink-mute)', width: 14 }}>{i + 1}</span>
-                <span style={{ flex: 1, fontSize: '0.88rem', color: 'var(--ink)', fontWeight: 500 }}>{r.name}</span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--ink-mute)', flexShrink: 0 }}>{r.visits} visits</span>
-                {r.avgRating != null && (
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', fontWeight: 700, color: scoreColor(r.avgRating), flexShrink: 0 }}>{r.avgRating.toFixed(1)}</span>
-                )}
+        {/* Reigning Champion */}
+        <div style={{
+          position: 'relative',
+          background: '#6c47d4',
+          backgroundImage: 'repeating-linear-gradient(135deg, rgba(255,255,255,0.04) 0px, rgba(255,255,255,0.04) 2px, transparent 2px, transparent 14px)',
+          borderRadius: 14,
+          padding: '1.5rem',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column' as const,
+          justifyContent: 'center',
+          gap: 4,
+        }}>
+          {/* Gold score badge — top-right */}
+          <div style={{
+            position: 'absolute',
+            top: '1.5rem',
+            right: '1.5rem',
+            background: '#e6a817',
+            color: '#0f0d17',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '1.5rem',
+            fontWeight: 700,
+            lineHeight: 1,
+            padding: '0.25rem 0.6rem',
+            borderRadius: 8,
+          }}>
+            {CHAMPION.score.toFixed(2)}
+          </div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.7)' }}>
+            ★ Reigning Champion
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.75rem', letterSpacing: '-0.03em', color: '#ffffff', flexWrap: 'wrap' as const }}>
+            <FlagImage code={CHAMPION.flag} />
+            {CHAMPION.name}
+          </div>
+          <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.55)' }}>
+            {CHAMPION.restaurant} · {CHAMPION.category}
+          </div>
+          <div style={{ fontSize: '0.82rem', color: '#d4c0f8', fontStyle: 'italic' }}>
+            "Rich, umami-packed broth with perfectly chewy noodles."
+          </div>
+        </div>
+
+        {/* Fresh off the Fork */}
+        <Card style={{ display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.875rem' }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1rem', letterSpacing: '-0.02em', color: 'var(--ink)' }}>🍴 Fresh off the fork</div>
+            <Link to="/entries" style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#6c47d4', textDecoration: 'none' }}>All Entries →</Link>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', flex: 1 }}>
+            {FRESH.map(entry => (
+              <div key={entry.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.35rem 0.5rem', borderRadius: 6, background: 'var(--paper)' }}>
+                <FlagImage code={entry.flag} />
+                <span style={{ flex: 1, fontSize: '0.88rem', color: 'var(--ink)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{entry.name}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: 'var(--ink-mute)', flexShrink: 0 }}>{entry.date}</span>
               </div>
             ))}
           </div>
-        </SectionCard>
+        </Card>
       </div>
 
-      {/* 7. Logging pace + Top Rated Restaurant */}
+      {/* 6. Top Tables / Regulars */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+        {/* Top Tables */}
+        <Card>
+          <SectionLabel>Top Tables</SectionLabel>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+            {TOP_TABLES.map((r, i) => (
+              <RankRow key={r.name} rank={i + 1} name={r.name} visits={r.visits} avg={r.avg} />
+            ))}
+          </div>
+        </Card>
+
+        {/* Regulars */}
+        <Card>
+          <SectionLabel>Regulars</SectionLabel>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+            {REGULARS.map((r, i) => (
+              <div key={r.name} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.5rem', borderRadius: 6, background: 'var(--paper)' }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', color: 'var(--ink-mute)', width: 14, flexShrink: 0 }}>{i + 1}</span>
+                <span style={{ flex: 1, fontSize: '0.88rem', color: 'var(--ink)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{r.name}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', color: 'var(--ink-mute)', flexShrink: 0 }}>{r.visits}× avg {r.avg.toFixed(1)}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+
+      {/* 7. Logging Pace / Best Value */}
       <div style={{ display: 'grid', gridTemplateColumns: '3fr 2fr', gap: '1rem', marginBottom: '2rem' }}>
-        {/* Logging pace */}
-        <SectionCard>
-          <h2 style={{ ...sectionTitleStyle, marginBottom: '1rem' }}>Logging pace</h2>
+        {/* Logging Pace */}
+        <Card>
+          <SectionLabel>Logging Pace</SectionLabel>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.3rem', marginBottom: '1.25rem' }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '2.5rem', fontWeight: 700, color: 'var(--ink)', lineHeight: 1 }}>6.9</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--ink-mute)' }}>/ month</span>
+          </div>
+
           {/* Bar chart */}
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', height: 100, marginBottom: '0.5rem' }}>
-            {chartMonths.map(key => {
-              const count = byMonth.get(key) ?? 0
-              const height = Math.max(4, Math.round((count / maxMonthCount) * 80))
-              const isLatest = key === monthKeys[monthKeys.length - 1]
-              const isBusiest = key === busiestMonth
+          <div style={{ display: 'flex', alignItems: 'flex-end', width: '100%', height: 90, marginBottom: '0.75rem', gap: 4 }}>
+            {CHART.map((m, i) => {
+              const barH = Math.max(4, Math.round((m.count / CHART_MAX) * 72))
+              const isPeak = i === CHART_PEAK
               return (
-                <div key={key} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
                   <div style={{
-                    width: 18,
-                    height,
-                    background: isBusiest ? 'var(--gold)' : isLatest ? 'var(--accent)' : 'var(--accent)',
-                    opacity: isBusiest ? 1 : isLatest ? 1 : 0.45,
+                    width: '100%',
+                    height: barH,
+                    background: isPeak ? '#8b5cf6' : 'var(--accent)',
+                    opacity: isPeak ? 1 : 0.35,
                     borderRadius: '3px 3px 0 0',
                   }} />
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.55rem', color: 'var(--ink-mute)', transform: 'rotate(-45deg)', transformOrigin: 'center', marginTop: 2 }}>
-                    {new Date(key + '-15').toLocaleString('en', { month: 'short' }).slice(0, 1)}
-                  </span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', color: 'var(--ink-mute)' }}>{m.label}</span>
                 </div>
               )
             })}
           </div>
-          {/* Stats below chart */}
-          <div style={{ display: 'flex', gap: '1.5rem', borderTop: '1px solid var(--line)', paddingTop: '0.75rem', flexWrap: 'wrap' }}>
-            <div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1.1rem', fontWeight: 700, color: 'var(--ink)' }}>{perMonth.toFixed(1)}</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: 'var(--ink-mute)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>per month</div>
-            </div>
-            {busiestMonth && (
-              <div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1.1rem', fontWeight: 700, color: 'var(--gold)' }}>{formatMonth(busiestMonth)}</div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: 'var(--ink-mute)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>busiest month ({byMonth.get(busiestMonth)} entries)</div>
-              </div>
-            )}
-            {streak > 0 && (
-              <div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1.1rem', fontWeight: 700, color: 'var(--accent)' }}>{streak}</div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: 'var(--ink-mute)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>month streak</div>
-              </div>
-            )}
-          </div>
-        </SectionCard>
 
-        {/* Top Rated Restaurant */}
-        <SectionCard style={{ display: 'flex', flexDirection: 'column' }}>
-          <p style={kickerStyle}>Award</p>
-          <h2 style={{ ...sectionTitleStyle, marginBottom: '0.5rem' }}>Top Rated</h2>
-          {topRatedRest ? (
-            <div
-              onClick={() => navigate('/restaurants')}
-              style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', cursor: 'pointer' }}
-            >
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '3rem', fontWeight: 700, color: scoreColor(topRatedRest.avgRating!), lineHeight: 1, marginBottom: '0.5rem' }}>
-                {topRatedRest.avgRating!.toFixed(1)}
-              </div>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1rem', color: 'var(--ink)', marginBottom: '0.25rem' }}>
-                {topRatedRest.name}
-              </div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--ink-mute)' }}>
-                {topRatedRest.visits} visits
-              </div>
-            </div>
-          ) : (
-            <p style={{ fontSize: '0.85rem', color: 'var(--ink-mute)', flex: 1 }}>
-              No restaurants with 2+ visits yet.
-            </p>
-          )}
-        </SectionCard>
+          <div style={{ borderTop: '1px solid var(--line)', paddingTop: '0.75rem', fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--ink-mute)' }}>
+            Busiest was <span style={{ color: '#8b5cf6', fontWeight: 700 }}>Aug '25</span> (18 foods) · 8-month streak
+          </div>
+        </Card>
+
+        {/* Best Value */}
+        <Card style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--ink-mute)', marginBottom: '0.5rem' }}>★ Best Value Spot</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '3rem', fontWeight: 700, color: '#e6a817', lineHeight: 1, marginBottom: '0.5rem' }}>8.3</div>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.05rem', color: 'var(--ink)', marginBottom: '0.3rem' }}>Zus Coffee</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--ink-mute)' }}>avg Value score · 3 visits</div>
+        </Card>
       </div>
+
     </div>
   )
-}
-
-// ─── style constants ──────────────────────────────────────────────────────────
-
-const kickerStyle: React.CSSProperties = {
-  fontFamily: 'var(--font-mono)',
-  fontSize: 11,
-  textTransform: 'uppercase',
-  letterSpacing: '0.08em',
-  color: 'var(--ink-mute)',
-  marginBottom: '0.25rem',
-}
-
-const pageTitleStyle: React.CSSProperties = {
-  fontFamily: 'var(--font-display)',
-  fontWeight: 800,
-  fontSize: '1.75rem',
-  letterSpacing: '-0.03em',
-  color: 'var(--ink)',
-}
-
-const sectionTitleStyle: React.CSSProperties = {
-  fontFamily: 'var(--font-display)',
-  fontWeight: 700,
-  fontSize: '1rem',
-  letterSpacing: '-0.02em',
-  color: 'var(--ink)',
-}
-
-const linkStyle: React.CSSProperties = {
-  color: 'var(--accent)',
-  textDecoration: 'none',
-  fontSize: '0.85rem',
-  fontWeight: 500,
 }
