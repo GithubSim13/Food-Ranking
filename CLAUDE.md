@@ -206,7 +206,7 @@ Sections (top to bottom) and how to compute each:
 | **Top 5 podium** | Top 5 entries by highest overallRating (latest review per entry); all 5 shown as bars — order left to right: 4, 2, 1, 3, 5; bar heights: #1=65%, #2=50%, #3=40%, #4=28%, #5=18%; above each bar: entry name + score; inside bars 1–3: trophy emoji (🥇🥈🥉), rank number, category, restaurant name, review count; inside bars 4–5: medal emoji (🏅) and rank number only (too short for detail); clicking any bar opens entry modal via background-location pattern |
 | **⭐ Starred Picks** | Top 5 starred entries () sorted by overallRating desc; list format — rank, flag, name, overallRating; green left border card; label "⭐ STARRED PICKS" |
 | **💀 Hall of Shame** | Bottom 5 rated entries (min one review) sorted by overallRating asc; list format — rank, flag, name, overallRating; orange left border card; label "💀 HALL OF SHAME" |
-| **Reigning Champion** | Entry with most reviews (reviews.length desc), tiebreak by overallRating desc; show name, restaurant · category, quote, Taste/Value/Consistency breakdown, and "tried N times" subtitle; purple stripe card |
+| **Reigning Champion** | Most-reviewed **starred** entry (reviews.length desc), tiebreak by latest overallRating desc; show name, restaurant · category, quote, Taste/Value/Consistency breakdown, and "tried N times" subtitle; purple stripe card. If no starred entries have reviews, card is hidden. |
 | **Fresh off the fork** | 5 most recent entries by review.date (earliest non-null per entry); show flag, name, date formatted "Mon D, YYYY" |
 | **Top Tables** | Restaurants with ≥ 2 rated entries, sorted by avg overallRating desc; show rank, name, visit count (e.g. `3×`), avg overallRating |
 | **Regulars** | Restaurants sorted by entry count desc; show rank, name, visit count + avg overallRating (e.g. `3× avg 8.6`) |
@@ -277,5 +277,7 @@ Default to low or medium effort unless the task is explicitly complex. Only use 
 - [x] Sticky search bar — SearchAndScopeBar uses position: sticky, top: -<main-padding>, paddingTop: <main-padding> to cover the scroll container's padding gap; opaque background, border-bottom, box-shadow for visual separation
 - [x] Sticky category headers on Rankings — CategorySection headers use position: sticky with top set via CSS variable --search-bar-height; SearchAndScopeBar sets --search-bar-height on :root via ResizeObserver
 - [x] Rankings categories sorted alphabetically — GET /api/rankings sorts category keys case-insensitively before building response
+- [x] Latest-review rating — all overallRating display (entry cards, rankings, sidebar footer, home dashboard) uses latest review's overallRating instead of averaging; latest = most recent non-null date, dateless only wins if sole review; implemented via latestRating() helper on client; GET /api/rankings also fixed server-side
+- [x] Reigning Champion restricted to starred entries — most-reviewed starred entry wins; hidden if no starred entries have reviews
 - [ ] Error boundaries on Home dashboard — each section should fail independently without crashing the whole page
 - [ ] Capacitor mobile wrapper

@@ -92,6 +92,9 @@ export default function HomePage() {
   const location = useLocation()
   const { data: entries = [] } = useQuery({ queryKey: ['entries'], queryFn: getEntries })
 
+  const hour = new Date().getHours()
+  const greetingWord = hour < 12 ? 'Morning' : hour < 18 ? 'Afternoon' : 'Evening'
+
   // ── basic stats ────────────────────────────────────────────────────────────
   const totalFoods = entries.length
   const totalCategories = new Set(entries.map(e => e.category)).size
@@ -258,7 +261,7 @@ export default function HomePage() {
       {/* 1. Greeting */}
       <div style={{ marginBottom: '2rem' }}>
         <h1 style={{ fontFamily: 'Bricolage Grotesque, sans-serif', fontSize: 48, fontWeight: 800, lineHeight: 1.1, color: 'var(--ink)', marginBottom: '0.5rem' }}>
-          Morning, <span style={{ color: '#8b5cf6' }}>Sim.</span>
+          {greetingWord}, <span style={{ color: '#8b5cf6' }}>Sim.</span>
         </h1>
         <p style={{ fontFamily: 'Hanken Grotesk, sans-serif', fontSize: 13, color: '#9b8fc0', lineHeight: 1.5 }}>
           You've logged {totalFoods} foods across {totalCategories} categories. Here's where things stand.
@@ -356,8 +359,8 @@ export default function HomePage() {
       {/* 4. Starred Picks / Hall of Shame */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
         {/* Starred Picks */}
-        <div style={{ background: 'var(--surface)', borderLeft: '4px solid #4caf82', borderRadius: 14, padding: '1.25rem 1.5rem' }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#4caf82', marginBottom: '0.75rem' }}>⭐ Hall of Fame</div>
+        <div style={{ background: 'var(--surface)', borderLeft: '4px solid #1EA04F', borderRadius: 14, padding: '1.25rem 1.5rem' }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#1EA04F', marginBottom: '0.75rem' }}>⭐ Hall of Fame</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
             {starredPicks.map((e, i) => (
               <div key={e.id} onClick={() => navigate(`/entries/${e.id}`, { state: { background: location } })} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.35rem 0.5rem', borderRadius: 6, background: 'var(--paper)', cursor: 'pointer' }}>
@@ -371,8 +374,8 @@ export default function HomePage() {
         </div>
 
         {/* Hall of Shame */}
-        <div style={{ background: 'var(--surface)', borderLeft: '4px solid #e07a40', borderRadius: 14, padding: '1.25rem 1.5rem' }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#e07a40', marginBottom: '0.75rem' }}>💀 Hall of Shame</div>
+        <div style={{ background: 'var(--surface)', borderLeft: '4px solid #bd5417', borderRadius: 14, padding: '1.25rem 1.5rem' }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#bd5417', marginBottom: '0.75rem' }}>💀 Hall of Shame</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
             {shameList.map((e, i) => (
               <div key={e.id} onClick={() => navigate(`/entries/${e.id}`, { state: { background: location } })} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.35rem 0.5rem', borderRadius: 6, background: 'var(--paper)', cursor: 'pointer' }}>
