@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createEntry, searchEntries } from '../../api/entries'
 import { getCategories } from '../../api/categories'
+import { getRestaurants } from '../../api/restaurants'
 import FlagPicker from '../common/FlagPicker'
 import { useToast } from '../../context/ToastContext'
 
@@ -31,6 +32,84 @@ function CategoryCombo({ value, onChange }: CategoryComboProps) {
 
   const filtered = categories
     .map(c => c.name)
+    .filter(name => name.toLowerCase().includes(value.toLowerCase()))
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  return (
+    <div ref={containerRef} style={{ position: 'relative' }}>
+      <input
+        value={value}
+        onChange={e => { onChange(e.target.value); setOpen(true) }}
+        onFocus={() => setOpen(true)}
+        required
+        style={inputStyle}
+        autoComplete="off"
+      />
+      {open && filtered.length > 0 && (
+        <ul style={{
+          position: 'absolute',
+          top: '100%',
+          left: 0,
+          right: 0,
+          zIndex: 50,
+          margin: '2px 0 0',
+          padding: 0,
+          listStyle: 'none',
+          background: 'var(--surface)',
+          border: '1px solid var(--line)',
+          borderRadius: 6,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+          maxHeight: 200,
+          overflowY: 'auto',
+        }}>
+          {filtered.map(name => (
+            <li
+              key={name}
+              onMouseDown={e => { e.preventDefault(); onChange(name); setOpen(false) }}
+              style={{
+                padding: '0.45rem 0.75rem',
+                cursor: 'pointer',
+                fontSize: '0.9rem',
+                background: name === value ? 'var(--paper-2)' : undefined,
+                color: name === value ? 'var(--accent)' : 'var(--ink)',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'var(--paper-2)')}
+              onMouseLeave={e => (e.currentTarget.style.background = name === value ? 'var(--paper-2)' : '')}
+            >
+              {name}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+interface RestaurantComboProps {
+  value: string
+  onChange: (val: string) => void
+}
+
+function RestaurantCombo({ value, onChange }: RestaurantComboProps) {
+  const [open, setOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  const { data: restaurants = [] } = useQuery({
+    queryKey: ['restaurants'],
+    queryFn: getRestaurants,
+  })
+
+  const filtered = restaurants
+    .map(r => r.name)
     .filter(name => name.toLowerCase().includes(value.toLowerCase()))
 
   useEffect(() => {
@@ -177,7 +256,7 @@ export default function EntryForm() {
 
         <div>
           <label style={labelStyle}>Restaurant Name</label>
-          <input value={restaurantName} onChange={e => setRestaurantName(e.target.value)} required style={inputStyle} />
+          <RestaurantCombo value={restaurantName} onChange={setRestaurantName} />
         </div>
 
         <div>
