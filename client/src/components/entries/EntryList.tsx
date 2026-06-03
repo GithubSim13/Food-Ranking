@@ -5,22 +5,10 @@ import { getEntries } from '../../api/entries'
 import EntryCard from './EntryCard'
 import { SearchAndScopeBar, pillStyle, matchesScope } from '../common/SearchAndScopeBar'
 import type { Scope } from '../common/SearchAndScopeBar'
+import { latestRating } from '../../utils'
+import { kickerStyle, pageTitleStyle } from '../common/pageStyles'
 
 type Sort = 'recent' | 'rated' | 'az'
-
-function latestRating(reviews: { overallRating: number | null; date: string | null }[]): number | null {
-  const sorted = [...reviews].map((r, i) => ({ r, i }))
-    .sort((a, b) => {
-      if (a.r.date && b.r.date) {
-        const diff = new Date(b.r.date).getTime() - new Date(a.r.date).getTime()
-        return diff !== 0 ? diff : b.i - a.i
-      }
-      if (a.r.date) return -1
-      if (b.r.date) return 1
-      return b.i - a.i
-    })
-  return sorted.find(({ r }) => r.overallRating !== null)?.r.overallRating ?? null
-}
 
 export default function EntryList() {
   const navigate = useNavigate()
@@ -101,23 +89,6 @@ export default function EntryList() {
       )}
     </div>
   )
-}
-
-const kickerStyle: React.CSSProperties = {
-  fontFamily: 'var(--font-mono)',
-  fontSize: 11,
-  textTransform: 'uppercase',
-  letterSpacing: '0.08em',
-  color: 'var(--ink-mute)',
-  marginBottom: '0.25rem',
-}
-
-const pageTitleStyle: React.CSSProperties = {
-  fontFamily: 'var(--font-display)',
-  fontWeight: 800,
-  fontSize: '2rem',
-  letterSpacing: '-0.03em',
-  color: 'var(--ink)',
 }
 
 const primaryBtnStyle: React.CSSProperties = {

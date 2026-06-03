@@ -1,20 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { getEntries } from '../../api/entries'
 import EntryCard from '../entries/EntryCard'
-
-function latestRating(reviews: { overallRating: number | null; date: string | null }[]): number | null {
-  const sorted = [...reviews].map((r, i) => ({ r, i }))
-    .sort((a, b) => {
-      if (a.r.date && b.r.date) {
-        const diff = new Date(b.r.date).getTime() - new Date(a.r.date).getTime()
-        return diff !== 0 ? diff : b.i - a.i
-      }
-      if (a.r.date) return -1
-      if (b.r.date) return 1
-      return b.i - a.i
-    })
-  return sorted.find(({ r }) => r.overallRating !== null)?.r.overallRating ?? null
-}
+import { latestRating } from '../../utils'
 
 export default function StarredPage() {
   const { data: entries = [], isLoading } = useQuery({
@@ -22,7 +9,7 @@ export default function StarredPage() {
     queryFn: getEntries,
   })
 
-  if (isLoading) return <p style={{ color: '#6b7280' }}>Loading…</p>
+  if (isLoading) return <p style={{ color: 'var(--ink-mute)' }}>Loading…</p>
 
   const starred = entries.filter(e => e.starred)
 
@@ -30,7 +17,7 @@ export default function StarredPage() {
     return (
       <div>
         <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1rem' }}>Starred</h2>
-        <p style={{ color: '#6b7280' }}>No starred entries yet. Star an entry to see it here.</p>
+        <p style={{ color: 'var(--ink-mute)' }}>No starred entries yet. Star an entry to see it here.</p>
       </div>
     )
   }
@@ -65,7 +52,7 @@ export default function StarredPage() {
               fontWeight: 600,
               textTransform: 'uppercase',
               letterSpacing: '0.08em',
-              color: '#6b7280',
+              color: 'var(--ink-mute)',
               marginBottom: '0.625rem',
             }}>
               {cat}

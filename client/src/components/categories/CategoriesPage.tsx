@@ -6,6 +6,7 @@ import { getEntries } from '../../api/entries'
 import { useToast } from '../../context/ToastContext'
 import { latestRating, scoreColor } from '../../utils'
 import { PencilIcon, TrashIcon, iconBtnStyle } from '../common/Icons'
+import { kickerStyle, pageTitleStyle, smallPrimaryBtnStyle, smallSecondaryBtnStyle, smallDeleteBtnStyle } from '../common/pageStyles'
 
 export default function CategoriesPage() {
   const navigate = useNavigate()
@@ -237,23 +238,6 @@ export default function CategoriesPage() {
   )
 }
 
-const kickerStyle: React.CSSProperties = {
-  fontFamily: 'var(--font-mono)',
-  fontSize: 11,
-  textTransform: 'uppercase',
-  letterSpacing: '0.08em',
-  color: 'var(--ink-mute)',
-  marginBottom: '0.25rem',
-}
-
-const pageTitleStyle: React.CSSProperties = {
-  fontFamily: 'var(--font-display)',
-  fontWeight: 800,
-  fontSize: '2rem',
-  letterSpacing: '-0.03em',
-  color: 'var(--ink)',
-}
-
 const inputStyle: React.CSSProperties = {
   width: '100%',
   padding: '0.3rem 0.6rem',
@@ -266,37 +250,3 @@ const inputStyle: React.CSSProperties = {
   boxSizing: 'border-box',
 }
 
-const smallPrimaryBtnStyle: React.CSSProperties = {
-  background: 'var(--accent)',
-  color: 'var(--accent-ink)',
-  border: 'none',
-  padding: '0.3rem 0.7rem',
-  borderRadius: 6,
-  cursor: 'pointer',
-  fontSize: '0.78rem',
-  fontWeight: 600,
-  flexShrink: 0,
-}
-
-const smallSecondaryBtnStyle: React.CSSProperties = {
-  background: 'var(--surface)',
-  color: 'var(--ink-mute)',
-  border: '1px solid var(--line)',
-  padding: '0.2rem 0.6rem',
-  borderRadius: 6,
-  cursor: 'pointer',
-  fontSize: '0.75rem',
-  flexShrink: 0,
-}
-
-const smallDeleteBtnStyle: React.CSSProperties = {
-  background: '#dc2626',
-  color: '#fff',
-  border: 'none',
-  padding: '0.3rem 0.7rem',
-  borderRadius: 6,
-  cursor: 'pointer',
-  fontSize: '0.78rem',
-  fontWeight: 600,
-  flexShrink: 0,
-}

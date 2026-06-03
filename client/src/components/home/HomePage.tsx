@@ -1,7 +1,7 @@
 import { useNavigate, useLocation } from 'react-router-dom'
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { getEntries } from '../../api/entries'
-import type { Entry } from '../../types'
 import FlagImage from '../common/FlagImage'
 import { sortReviewsByDateDesc, latestRating, latestRatedReview, scoreColor } from '../../utils'
 
@@ -142,40 +142,40 @@ export default function HomePage() {
     valueScores: number[]
     valueItems: { name: string; valueScore: number }[]
   }
-  const restMap = new Map<number, RestBucket>()
-  entries.forEach(e => {
-    if (!restMap.has(e.restaurantId))
-      restMap.set(e.restaurantId, { name: e.restaurant.name, total: 0, ratedAvgs: [], valueScores: [], valueItems: [] })
-    const bucket = restMap.get(e.restaurantId)!
-    bucket.total++
-    const avg = latestRating(e.reviews)
-    if (avg !== null) bucket.ratedAvgs.push(avg)
-    const val = sortReviewsByDateDesc(e.reviews).find(r => r.rating2 !== null)?.rating2 ?? null
-    if (val !== null) { bucket.valueScores.push(val); bucket.valueItems.push({ name: e.foodName, valueScore: val }) }
-  })
-
-  const topTables = Array.from(restMap.values())
-    .filter(r => r.ratedAvgs.length >= 2)
-    .map(r => ({ name: r.name, visits: r.total, avg: r.ratedAvgs.reduce((a, b) => a + b, 0) / r.ratedAvgs.length }))
-    .sort((a, b) => b.avg - a.avg)
-    .slice(0, 5)
-
-  const regulars = Array.from(restMap.values())
-    .map(r => ({
-      name: r.name,
-      visits: r.total,
-      avg: r.ratedAvgs.length ? r.ratedAvgs.reduce((a, b) => a + b, 0) / r.ratedAvgs.length : null,
-    }))
-    .sort((a, b) => b.visits - a.visits)
-    .slice(0, 5)
-
-  const bestValueRest = Array.from(restMap.values())
-    .filter(r => r.valueScores.length >= 2)
-    .map(r => ({ ...r, avgValue: r.valueScores.reduce((a, b) => a + b, 0) / r.valueScores.length }))
-    .sort((a, b) => b.avgValue - a.avgValue)[0] ?? null
-  const bestValueItems = bestValueRest
-    ? [...bestValueRest.valueItems].sort((a, b) => b.valueScore - a.valueScore).slice(0, 5)
-    : []
+  const { topTables, regulars, bestValueRest, bestValueItems } = useMemo(() => {
+    const restMap = new Map<number, RestBucket>()
+    entries.forEach(e => {
+      if (!restMap.has(e.restaurantId))
+        restMap.set(e.restaurantId, { name: e.restaurant.name, total: 0, ratedAvgs: [], valueScores: [], valueItems: [] })
+      const bucket = restMap.get(e.restaurantId)!
+      bucket.total++
+      const avg = latestRating(e.reviews)
+      if (avg !== null) bucket.ratedAvgs.push(avg)
+      const val = sortReviewsByDateDesc(e.reviews).find(r => r.rating2 !== null)?.rating2 ?? null
+      if (val !== null) { bucket.valueScores.push(val); bucket.valueItems.push({ name: e.foodName, valueScore: val }) }
+    })
+    const topTables = Array.from(restMap.values())
+      .filter(r => r.ratedAvgs.length >= 2)
+      .map(r => ({ name: r.name, visits: r.total, avg: r.ratedAvgs.reduce((a, b) => a + b, 0) / r.ratedAvgs.length }))
+      .sort((a, b) => b.avg - a.avg)
+      .slice(0, 5)
+    const regulars = Array.from(restMap.values())
+      .map(r => ({
+        name: r.name,
+        visits: r.total,
+        avg: r.ratedAvgs.length ? r.ratedAvgs.reduce((a, b) => a + b, 0) / r.ratedAvgs.length : null,
+      }))
+      .sort((a, b) => b.visits - a.visits)
+      .slice(0, 5)
+    const bvRest = Array.from(restMap.values())
+      .filter(r => r.valueScores.length >= 2)
+      .map(r => ({ ...r, avgValue: r.valueScores.reduce((a, b) => a + b, 0) / r.valueScores.length }))
+      .sort((a, b) => b.avgValue - a.avgValue)[0] ?? null
+    const bestValueItems = bvRest
+      ? [...bvRest.valueItems].sort((a, b) => b.valueScore - a.valueScore).slice(0, 5)
+      : []
+    return { topTables, regulars, bestValueRest: bvRest, bestValueItems }
+  }, [entries])
 
   // ── logging pace ───────────────────────────────────────────────────────────
   const monthCountMap = new Map<string, number>()

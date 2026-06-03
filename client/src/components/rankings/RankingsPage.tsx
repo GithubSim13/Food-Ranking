@@ -22,6 +22,7 @@ import { useToast } from '../../context/ToastContext'
 import { SearchAndScopeBar, matchesScope } from '../common/SearchAndScopeBar'
 import type { Scope } from '../common/SearchAndScopeBar'
 import type { RankedEntry } from '../../types'
+import { kickerStyle, pageTitleStyle } from '../common/pageStyles'
 
 // ─── sort helpers ─────────────────────────────────────────────────────────────
 
@@ -432,23 +433,6 @@ export default function RankingsPage() {
 }
 
 // ─── style constants ──────────────────────────────────────────────────────────
-
-const kickerStyle: React.CSSProperties = {
-  fontFamily: 'var(--font-mono)',
-  fontSize: 11,
-  textTransform: 'uppercase',
-  letterSpacing: '0.08em',
-  color: 'var(--ink-mute)',
-  marginBottom: '0.25rem',
-}
-
-const pageTitleStyle: React.CSSProperties = {
-  fontFamily: 'var(--font-display)',
-  fontWeight: 800,
-  fontSize: '2rem',
-  letterSpacing: '-0.03em',
-  color: 'var(--ink)',
-}
 
 const primaryBtnStyle: React.CSSProperties = {
   background: 'var(--accent)',
