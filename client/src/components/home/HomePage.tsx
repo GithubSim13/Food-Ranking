@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom'
-import { useMemo } from 'react'
+import { useMemo, useRef, useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { getEntries } from '../../api/entries'
 import FlagImage from '../common/FlagImage'
@@ -215,6 +215,28 @@ export default function HomePage() {
     else break
   }
 
+  // ── podium scroll state ────────────────────────────────────────────────────
+  const [shameExpanded, setShameExpanded] = useState(false)
+  const podiumCardRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const el = podiumCardRef.current
+    if (!el) return
+    const scrollContainer = el.closest('main') as HTMLElement | null
+    if (!scrollContainer) return
+
+    const handleScroll = () => {
+      const cardRect = el.getBoundingClientRect()
+      const containerRect = scrollContainer.getBoundingClientRect()
+      const cardMid = cardRect.top + cardRect.height / 2
+      const containerMid = containerRect.top + containerRect.height / 2
+      setShameExpanded(cardMid < containerMid)
+    }
+
+    scrollContainer.addEventListener('scroll', handleScroll, { passive: true })
+    return () => scrollContainer.removeEventListener('scroll', handleScroll)
+  }, [])
+
   // ── podium layout ──────────────────────────────────────────────────────────
   const PODIUM_CONTAINER_H = 320
   const PODIUM_TOP_PAD = 16
@@ -273,6 +295,7 @@ export default function HomePage() {
 
       {/* 3. Hall of Fame + Hall of Shame */}
       <SectionErrorBoundary title="Hall of Fame / Hall of Shame">
+      <div ref={podiumCardRef}>
       <Card style={{ marginBottom: '1.5rem' }}>
 
         {/* All Rankings link — top right, out of the way */}
@@ -280,87 +303,103 @@ export default function HomePage() {
           <span onClick={() => navigate('/rankings')} style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: '#6c47d4', cursor: 'pointer' }}>All Rankings →</span>
         </div>
 
-        {/* Relative wrapper: ghost labels + divider + columns all share the same space */}
-        <div style={{ position: 'relative', paddingTop: PODIUM_TOP_PAD }}>
-
-          {/* Ghost: Hall of Fame — watermark behind fame bars */}
-          <div className="hall-title-fame" style={{ position: 'absolute', top: 0, left: 0, right: 0, fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '12rem', color: 'var(--ink)', opacity: 0.13, textAlign: 'center', pointerEvents: 'none', userSelect: 'none', lineHeight: 1.1, letterSpacing: '-0.04em', zIndex: 0 }}>
-          Hall of Fame
+        {/* ── Hall of Fame — collapses to a bar-peek strip when shame expands ── */}
+        <div style={{
+          position: 'relative',
+          height: shameExpanded ? 60 : PODIUM_CONTAINER_H + PODIUM_TOP_PAD,
+          overflow: 'hidden',
+          transition: 'height 500ms ease-in-out',
+        }}>
+          {/* Ghost: Hall of Fame watermark */}
+          <div className="hall-title-fame" style={{
+            position: 'absolute', top: 0, left: 0, right: 0,
+            fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '12rem',
+            color: 'var(--ink)',
+            opacity: shameExpanded ? 0 : 0.13,
+            transition: 'opacity 500ms ease-in-out',
+            textAlign: 'center', pointerEvents: 'none', userSelect: 'none',
+            lineHeight: 1.1, letterSpacing: '-0.04em', zIndex: 0,
+          }}>
+            Hall of Fame
           </div>
 
-          {/* Divider — sits exactly at the fame/shame junction */}
-          <div style={{ position: 'absolute', top: PODIUM_CONTAINER_H + PODIUM_TOP_PAD, left: 0, right: 0, height: 3, background: 'rgb(255, 255, 255)', zIndex: 2, pointerEvents: 'none' }} />
-
-          {/* Shared column loop — fame bar above divider, shame bar below */}
-          <div style={{ display: 'flex', gap: '0.75rem', position: 'relative', zIndex: 1 }}>
-            {podiumOrder.map(({ entry: fEntry, rank: fRank, height: fHeight, barColor: fColor, scoreOpacity: fOpacity }, colIdx) => {
-              const s = shamePodiumOrder[colIdx]
-              return (
-                <div key={fEntry.id} style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-
-                  {/* Fame: fixed-height container, bar pinned to bottom */}
-                  <div
-                    onClick={() => navigate(`/entries/${fEntry.id}`, { state: { background: location } })}
-                    style={{ height: PODIUM_CONTAINER_H, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', cursor: 'pointer' }}
-                  >
-                    <div style={{ textAlign: 'center', marginBottom: '0.5rem', padding: '0 0.25rem', width: '100%' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', fontSize: fRank <= 3 ? '0.85rem' : '0.75rem', fontWeight: 600, color: fRank <= 3 ? 'var(--ink)' : 'var(--ink-mute)', marginBottom: '0.2rem' }}>
-                        <FlagImage code={fEntry.flag} />
-                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fEntry.name}</span>
-                      </div>
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: fRank <= 3 ? '0.82rem' : '0.72rem', fontWeight: 700, color: scoreColor(fEntry.score), opacity: fOpacity }}>
-                        {fEntry.score.toFixed(2)}
-                      </div>
+          {/* Fame columns — pinned to bottom so bar colour peeks when wrapper collapses */}
+          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, display: 'flex', gap: '0.75rem', zIndex: 1 }}>
+            {podiumOrder.map(({ entry: fEntry, rank: fRank, height: fHeight, barColor: fColor, scoreOpacity: fOpacity }) => (
+              <div key={fEntry.id} style={{ flex: 1, minWidth: 0 }}>
+                <div
+                  onClick={() => navigate(`/entries/${fEntry.id}`, { state: { background: location } })}
+                  style={{ height: PODIUM_CONTAINER_H, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', cursor: 'pointer' }}
+                >
+                  <div style={{ textAlign: 'center', marginBottom: '0.5rem', padding: '0 0.25rem', width: '100%', opacity: shameExpanded ? 0 : 1, transition: 'opacity 400ms ease-in-out' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', fontSize: fRank <= 3 ? '0.85rem' : '0.75rem', fontWeight: 600, color: fRank <= 3 ? 'var(--ink)' : 'var(--ink-mute)', marginBottom: '0.2rem' }}>
+                      <FlagImage code={fEntry.flag} />
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fEntry.name}</span>
                     </div>
-                    <div style={{ width: '100%', height: fHeight, background: fColor, borderRadius: '6px 6px 0 0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, overflow: 'hidden', padding: '0.5rem 0.25rem' }}>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: fRank === 1 ? '2.2rem' : fRank === 2 ? '1.7rem' : fRank === 3 ? '1.35rem' : fRank === 4 ? '1.05rem' : '0.9rem', color: `rgba(255,255,255,${fOpacity})`, lineHeight: 1 }}>{fRank}</span>
-                      {fRank <= 3 && <>
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: `rgba(255,255,255,${fOpacity * 0.65})`, textAlign: 'center', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>{fEntry.category}</span>
-                        <span style={{ fontFamily: 'Hanken Grotesk, sans-serif', fontSize: '10px', color: `rgba(255,255,255,${fOpacity * 0.8})`, textAlign: 'center', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>{fEntry.restaurant}</span>
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: `rgba(255,255,255,${fOpacity * 0.55})`, textAlign: 'center', lineHeight: 1.3 }}>{fEntry.reviewCount} {fEntry.reviewCount === 1 ? 'review' : 'reviews'}</span>
-                      </>}
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: fRank <= 3 ? '0.82rem' : '0.72rem', fontWeight: 700, color: scoreColor(fEntry.score), opacity: fOpacity }}>
+                      {fEntry.score.toFixed(2)}
                     </div>
                   </div>
-
-                  {/* Shame: bar pinned to top (no margin — touches divider), info below */}
-                  {s && (
-                    <div
-                      onClick={() => navigate(`/entries/${s.entry.id}`, { state: { background: location } })}
-                      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer' }}
-                    >
-                      <div style={{ width: '100%', height: s.depth, background: s.barColor, borderRadius: '0 0 6px 6px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, overflow: 'hidden', padding: '0.5rem 0.25rem' }}>
-                        <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: s.rank === 1 ? '2.2rem' : s.rank === 2 ? '1.7rem' : s.rank === 3 ? '1.35rem' : s.rank === 4 ? '1.05rem' : '0.9rem', color: `rgba(255,255,255,${s.scoreOpacity})`, lineHeight: 1 }}>{s.rank}</span>
-                        {s.rank <= 3 && <>
-                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: `rgba(255,255,255,${s.scoreOpacity * 0.65})`, textAlign: 'center', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>{s.entry.category}</span>
-                          <span style={{ fontFamily: 'Hanken Grotesk, sans-serif', fontSize: '10px', color: `rgba(255,255,255,${s.scoreOpacity * 0.8})`, textAlign: 'center', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>{s.entry.restaurant}</span>
-                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: `rgba(255,255,255,${s.scoreOpacity * 0.55})`, textAlign: 'center', lineHeight: 1.3 }}>{s.entry.reviewCount} {s.entry.reviewCount === 1 ? 'review' : 'reviews'}</span>
-                        </>}
-                      </div>
-                      <div style={{ textAlign: 'center', marginTop: '0.5rem', padding: '0 0.25rem', width: '100%' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', fontSize: s.rank <= 3 ? '0.85rem' : '0.75rem', fontWeight: 600, color: s.rank <= 3 ? 'var(--ink)' : 'var(--ink-mute)', marginBottom: '0.2rem' }}>
-                          <FlagImage code={s.entry.flag} />
-                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.entry.name}</span>
-                        </div>
-                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: s.rank <= 3 ? '0.82rem' : '0.72rem', fontWeight: 700, color: scoreColor(s.entry.score), opacity: s.scoreOpacity }}>
-                          {s.entry.score.toFixed(2)}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
+                  <div style={{ width: '100%', height: fHeight, background: fColor, borderRadius: '6px 6px 0 0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, overflow: 'hidden', padding: '0.5rem 0.25rem' }}>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: fRank === 1 ? '2.2rem' : fRank === 2 ? '1.7rem' : fRank === 3 ? '1.35rem' : fRank === 4 ? '1.05rem' : '0.9rem', color: `rgba(255,255,255,${fOpacity})`, lineHeight: 1, opacity: shameExpanded ? 0 : 1, transition: 'opacity 300ms ease-in-out' }}>{fRank}</span>
+                    {fRank <= 3 && <>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: `rgba(255,255,255,${fOpacity * 0.65})`, textAlign: 'center', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%', opacity: shameExpanded ? 0 : 1, transition: 'opacity 300ms ease-in-out' }}>{fEntry.category}</span>
+                      <span style={{ fontFamily: 'Hanken Grotesk, sans-serif', fontSize: '10px', color: `rgba(255,255,255,${fOpacity * 0.8})`, textAlign: 'center', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%', opacity: shameExpanded ? 0 : 1, transition: 'opacity 300ms ease-in-out' }}>{fEntry.restaurant}</span>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: `rgba(255,255,255,${fOpacity * 0.55})`, textAlign: 'center', lineHeight: 1.3, opacity: shameExpanded ? 0 : 1, transition: 'opacity 300ms ease-in-out' }}>{fEntry.reviewCount} {fEntry.reviewCount === 1 ? 'review' : 'reviews'}</span>
+                    </>}
+                  </div>
                 </div>
-              )
-            })}
+              </div>
+            ))}
           </div>
-
         </div>
 
-        {/* Ghost: Hall of Shame — in-flow below shame bars so bars don't overlap it */}
-        <div className="hall-title-shame" style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '12rem', color: 'var(--ink)', opacity: 0.13, textAlign: 'center', pointerEvents: 'none', userSelect: 'none', lineHeight: 1.1, letterSpacing: '-0.04em', marginTop: '-7.6rem' }}>
-          Hall of Shame
+        {/* Divider — fame/shame junction */}
+        <div style={{ height: 3, background: 'rgb(255,255,255)', position: 'relative', zIndex: 2 }} />
+
+        {/* ── Hall of Shame — peeks at 90px on load, expands as user scrolls down ── */}
+        <div style={{
+          overflow: 'hidden',
+          maxHeight: shameExpanded ? 500 : 90,
+          transition: 'max-height 500ms ease-in-out',
+        }}>
+          <div style={{ display: 'flex', gap: '0.75rem', position: 'relative', zIndex: 1 }}>
+            {shamePodiumOrder.map(({ entry: sEntry, rank: sRank, depth: sDepth, barColor: sColor, scoreOpacity: sOpacity }) => (
+              <div key={sEntry.id} style={{ flex: 1, minWidth: 0 }}>
+                <div
+                  onClick={() => navigate(`/entries/${sEntry.id}`, { state: { background: location } })}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer' }}
+                >
+                  <div style={{ width: '100%', height: sDepth, background: sColor, borderRadius: '0 0 6px 6px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, overflow: 'hidden', padding: '0.5rem 0.25rem' }}>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: sRank === 1 ? '2.2rem' : sRank === 2 ? '1.7rem' : sRank === 3 ? '1.35rem' : sRank === 4 ? '1.05rem' : '0.9rem', color: `rgba(255,255,255,${sOpacity})`, lineHeight: 1, opacity: shameExpanded ? 1 : 0, transition: 'opacity 400ms ease-in-out 150ms' }}>{sRank}</span>
+                    {sRank <= 3 && <>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: `rgba(255,255,255,${sOpacity * 0.65})`, textAlign: 'center', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%', opacity: shameExpanded ? 1 : 0, transition: 'opacity 400ms ease-in-out 150ms' }}>{sEntry.category}</span>
+                      <span style={{ fontFamily: 'Hanken Grotesk, sans-serif', fontSize: '10px', color: `rgba(255,255,255,${sOpacity * 0.8})`, textAlign: 'center', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%', opacity: shameExpanded ? 1 : 0, transition: 'opacity 400ms ease-in-out 150ms' }}>{sEntry.restaurant}</span>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: `rgba(255,255,255,${sOpacity * 0.55})`, textAlign: 'center', lineHeight: 1.3, opacity: shameExpanded ? 1 : 0, transition: 'opacity 400ms ease-in-out 150ms' }}>{sEntry.reviewCount} {sEntry.reviewCount === 1 ? 'review' : 'reviews'}</span>
+                    </>}
+                  </div>
+                  <div style={{ textAlign: 'center', marginTop: '0.5rem', padding: '0 0.25rem', width: '100%', opacity: shameExpanded ? 1 : 0, transition: 'opacity 400ms ease-in-out 150ms' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', fontSize: sRank <= 3 ? '0.85rem' : '0.75rem', fontWeight: 600, color: sRank <= 3 ? 'var(--ink)' : 'var(--ink-mute)', marginBottom: '0.2rem' }}>
+                      <FlagImage code={sEntry.flag} />
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sEntry.name}</span>
+                    </div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: sRank <= 3 ? '0.82rem' : '0.72rem', fontWeight: 700, color: scoreColor(sEntry.score), opacity: sOpacity }}>
+                      {sEntry.score.toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Ghost: Hall of Shame watermark — fades in as shame expands */}
+          <div className="hall-title-shame" style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '12rem', color: 'var(--ink)', opacity: shameExpanded ? 0.13 : 0, transition: 'opacity 500ms ease-in-out', textAlign: 'center', pointerEvents: 'none', userSelect: 'none', lineHeight: 1.1, letterSpacing: '-0.04em', marginTop: '-7.6rem' }}>
+            Hall of Shame
+          </div>
         </div>
 
       </Card>
+      </div>
       </SectionErrorBoundary>
 
       {/* 5. Reigning Champion / Fresh off the Fork */}
