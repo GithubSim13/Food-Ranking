@@ -284,12 +284,12 @@ export default function HomePage() {
         <div style={{ position: 'relative', paddingTop: PODIUM_TOP_PAD }}>
 
           {/* Ghost: Hall of Fame — watermark behind fame bars */}
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '4rem', color: 'var(--ink)', opacity: 1, textAlign: 'center', pointerEvents: 'none', userSelect: 'none', lineHeight: 1.1, letterSpacing: '-0.04em', zIndex: 0 }}>
+          <div className="hall-title-fame" style={{ position: 'absolute', top: 0, left: 0, right: 0, fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '4rem', color: 'var(--ink)', opacity: 1, textAlign: 'center', pointerEvents: 'none', userSelect: 'none', lineHeight: 1.1, letterSpacing: '-0.04em', zIndex: 0 }}>
             🏆 Hall of Fame
           </div>
 
           {/* Divider — sits exactly at the fame/shame junction */}
-          <div style={{ position: 'absolute', top: PODIUM_CONTAINER_H + PODIUM_TOP_PAD, left: 0, right: 0, height: 3, background: 'rgba(255,255,255,0.5)', zIndex: 2, pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', top: PODIUM_CONTAINER_H + PODIUM_TOP_PAD, left: 0, right: 0, height: 3, background: 'rgb(255, 255, 255)', zIndex: 2, pointerEvents: 'none' }} />
 
           {/* Shared column loop — fame bar above divider, shame bar below */}
           <div style={{ display: 'flex', gap: '0.75rem', position: 'relative', zIndex: 1 }}>
@@ -362,7 +362,7 @@ export default function HomePage() {
         </div>
 
         {/* Ghost: Hall of Shame — in-flow below shame bars so bars don't overlap it */}
-        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '4rem', color: 'var(--ink)', opacity: 1, textAlign: 'center', pointerEvents: 'none', userSelect: 'none', lineHeight: 1.1, letterSpacing: '-0.04em', marginTop: '0.5rem' }}>
+        <div className="hall-title-shame" style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '4rem', color: 'var(--ink)', opacity: 1, textAlign: 'center', pointerEvents: 'none', userSelect: 'none', lineHeight: 1.1, letterSpacing: '-0.04em', marginTop: '0.5rem' }}>
           💀 Hall of Shame
         </div>
 

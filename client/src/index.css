@@ -110,3 +110,13 @@ input[type="range"].rating-slider::-moz-range-thumb {
   border: none;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.55);
 }
+
+.hall-title-fame {
+  paint-order: stroke fill;
+  text-shadow: 0 0 4px #2ecc71, 0 0 8px #2ecc71;
+}
+
+.hall-title-shame {
+  paint-order: stroke fill;
+  text-shadow: 0 0 4px #e74c3c, 0 0 8px #e74c3c;
+}
