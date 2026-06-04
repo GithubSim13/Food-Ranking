@@ -336,7 +336,8 @@ export default function RankingsPage() {
       const hit =
         entry.foodName.toLowerCase().includes(q) ||
         entry.category.toLowerCase().includes(q) ||
-        entry.restaurant.toLowerCase().includes(q)
+        entry.restaurant.toLowerCase().includes(q) ||
+        entry.reviews.some(r => r.notes?.toLowerCase().includes(q))
       if (!hit) return false
     }
     return matchesScope(entry, scope)
@@ -390,7 +391,7 @@ export default function RankingsPage() {
         onSearchChange={setSearch}
         scope={scope}
         onScopeChange={setScope}
-        searchPlaceholder="Search by name, category, or restaurant…"
+        searchPlaceholder="Search by name, category, restaurant, or notes…"
       />
 
       {isEditing && (

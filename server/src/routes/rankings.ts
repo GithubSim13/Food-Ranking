@@ -9,7 +9,7 @@ router.get('/', async (_req, res) => {
     const entries = await prisma.entry.findMany({
       include: {
         restaurant: restaurantNameSelect,
-        reviews: { select: { overallRating: true, date: true, createdAt: true } },
+        reviews: { select: { overallRating: true, date: true, createdAt: true, notes: true } },
       },
     });
 
@@ -34,6 +34,7 @@ router.get('/', async (_req, res) => {
         avgRating,
         reviewCount: e.reviews.length,
         manualRank: e.manualRank,
+        reviews: e.reviews.map(r => ({ notes: r.notes })),
       };
     });
 

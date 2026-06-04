@@ -38,6 +38,7 @@ export interface RankedEntry {
   avgRating: number | null;
   reviewCount: number;
   manualRank: number | null;
+  reviews: { notes: string | null }[];
 }
 
 export type Rankings = Record<string, RankedEntry[]>;

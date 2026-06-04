@@ -26,7 +26,8 @@ export default function EntryList() {
     const matchesSearch =
       e.foodName.toLowerCase().includes(q) ||
       e.category.toLowerCase().includes(q) ||
-      e.restaurant.name.toLowerCase().includes(q)
+      e.restaurant.name.toLowerCase().includes(q) ||
+      e.reviews.some(r => r.notes?.toLowerCase().includes(q))
     if (!matchesSearch) return false
     return matchesScope(e, scope)
   })
@@ -65,7 +66,7 @@ export default function EntryList() {
         onSearchChange={setSearch}
         scope={scope}
         onScopeChange={setScope}
-        searchPlaceholder="Search by name, category, or restaurant…"
+        searchPlaceholder="Search by name, category, restaurant, or notes…"
         rightSlot={
           <div style={{ display: 'flex', gap: '0.375rem' }}>
             {sortPills.map(p => (
