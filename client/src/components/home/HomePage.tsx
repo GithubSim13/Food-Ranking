@@ -343,7 +343,7 @@ export default function HomePage() {
                       {fEntry.score.toFixed(2)}
                     </div>
                   </div>
-                  <div style={{ width: '100%', height: fHeight, background: fColor, borderRadius: '6px 6px 0 0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, overflow: 'hidden', padding: '0.5rem 0.25rem' }}>
+                  <div style={{ width: '100%', height: fHeight, background: `linear-gradient(to bottom, ${fColor}, transparent)`, borderRadius: '6px 6px 0 0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, overflow: 'hidden', padding: '0.5rem 0.25rem' }}>
                     <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: fRank === 1 ? '2.2rem' : fRank === 2 ? '1.7rem' : fRank === 3 ? '1.35rem' : fRank === 4 ? '1.05rem' : '0.9rem', color: `rgba(255,255,255,${fOpacity})`, lineHeight: 1, opacity: shameExpanded ? 0 : 1, transition: 'opacity 300ms ease-in-out' }}>{fRank}</span>
                     {fRank <= 3 && <>
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: `rgba(255,255,255,${fOpacity * 0.65})`, textAlign: 'center', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%', opacity: shameExpanded ? 0 : 1, transition: 'opacity 300ms ease-in-out' }}>{fEntry.category}</span>
@@ -359,7 +359,7 @@ export default function HomePage() {
         </div>
 
         {/* Divider — fame/shame junction */}
-        <div style={{ height: 3, background: 'rgb(255,255,255)', position: 'relative', zIndex: 2 }} />
+        <div style={{ height: 0.1, background: 'rgba(255, 255, 255, 0)', position: 'relative', zIndex: 2 }} />
 
         {/* ── Hall of Shame — peeks at 90px on load, expands as user scrolls down ── */}
         <div style={{
@@ -374,7 +374,7 @@ export default function HomePage() {
                   onClick={() => navigate(`/entries/${sEntry.id}`, { state: { background: location } })}
                   style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer' }}
                 >
-                  <div style={{ width: '100%', height: sDepth, background: sColor, borderRadius: '0 0 6px 6px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, overflow: 'hidden', padding: '0.5rem 0.25rem' }}>
+                  <div style={{ width: '100%', height: sDepth, background: `linear-gradient(to top, ${sColor}, transparent)`, borderRadius: '0 0 6px 6px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, overflow: 'hidden', padding: '0.5rem 0.25rem' }}>
                     <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: sRank === 1 ? '2.2rem' : sRank === 2 ? '1.7rem' : sRank === 3 ? '1.35rem' : sRank === 4 ? '1.05rem' : '0.9rem', color: `rgba(255,255,255,${sOpacity})`, lineHeight: 1, opacity: shameExpanded ? 1 : 0, transition: 'opacity 400ms ease-in-out 150ms' }}>{sRank}</span>
                     {sRank <= 3 && <>
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: `rgba(255,255,255,${sOpacity * 0.65})`, textAlign: 'center', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%', opacity: shameExpanded ? 1 : 0, transition: 'opacity 400ms ease-in-out 150ms' }}>{sEntry.category}</span>
