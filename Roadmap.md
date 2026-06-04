@@ -128,3 +128,5 @@ Restaurant — id, name, googlePlaceId?, mapboxId?
 - [x] Rating input bounds clamping — Taste/Value/Consistency inputs clamped to 0–10 on onChange across new entry form and review add/edit forms in entry detail
 - [x] RatingInput component — reusable label + slider + number input; full red→yellow→green spectrum gradient track; bidirectional sync; clamped 0–10; used across all review add/edit forms and new entry inline review
 - [x] Entries page card grid redesign — replaced list rows with responsive 3/2/1 column card grid; each card shows quote (first line of latest review notes, 2-line clamp) with rating pinned to bottom right; starred gold styling preserved
+- [x] Search extended to include review notes — whole-word regex matching for notes, substring for name/category/restaurant; applies to both Entries and Rankings pages
+- [x] Priority-based search sorting — whole-word matches ranked above partial matches; sort pills disabled and greyed out during active search on Entries page; priority sort applies within each category group on Rankings

@@ -91,22 +91,16 @@ export default function HomePage() {
     .slice(0, 5)
   const [p1, p2, p3, p4, p5] = top5
 
-  // ── starred picks (hall of fame) / hall of shame ──────────────────────────
-  type RatedEntry = { id: number; name: string; flag: string | null; avg: number }
-
-  const starredPicks: RatedEntry[] = entries
-    .filter(e => e.starred)
-    .map(e => ({ id: e.id, name: e.foodName, flag: e.flag, avg: latestRating(e.reviews) }))
-    .filter((x): x is RatedEntry => x.avg !== null)
-    .sort((a, b) => b.avg - a.avg)
+  // ── hall of shame ──────────────────────────────────────────────────────────
+  const shameList: Top5Entry[] = [...entries]
+    .map(e => {
+      const score = latestRating(e.reviews)
+      return { id: e.id, name: e.foodName, flag: e.flag, score, starred: e.starred, category: e.category, restaurant: e.restaurant.name, reviewCount: e.reviews.length }
+    })
+    .filter((e): e is Top5Entry => e.score !== null)
+    .sort((a, b) => a.score - b.score)
     .slice(0, 5)
-
-  const shameList: RatedEntry[] = entries
-    .filter(e => e.reviews.length > 0)
-    .map(e => ({ id: e.id, name: e.foodName, flag: e.flag, avg: latestRating(e.reviews) }))
-    .filter((x): x is RatedEntry => x.avg !== null)
-    .sort((a, b) => a.avg - b.avg)
-    .slice(0, 5)
+  const [s1, s2, s3, s4, s5] = shameList
 
   // ── champion (most-reviewed entry, tiebreak by overallRating desc) ─────────
   const champData = [...entries]
@@ -223,12 +217,21 @@ export default function HomePage() {
 
   // ── podium layout ──────────────────────────────────────────────────────────
   const PODIUM_CONTAINER_H = 320
+  const PODIUM_TOP_PAD = 16
   const podiumOrder = (p1 && p2 && p3) ? [
     p4 ? { entry: p4, rank: 4, height: Math.round(PODIUM_CONTAINER_H * 0.28), barColor: '#1a1728', scoreOpacity: 0.35 } : null,
     { entry: p2, rank: 2, height: Math.round(PODIUM_CONTAINER_H * 0.50), barColor: '#2a2240', scoreOpacity: 0.55 },
     { entry: p1, rank: 1, height: Math.round(PODIUM_CONTAINER_H * 0.65), barColor: '#6c47d4', scoreOpacity: 1 },
     { entry: p3, rank: 3, height: Math.round(PODIUM_CONTAINER_H * 0.40), barColor: '#201b32', scoreOpacity: 0.35 },
     p5 ? { entry: p5, rank: 5, height: Math.round(PODIUM_CONTAINER_H * 0.18), barColor: '#1a1728', scoreOpacity: 0.35 } : null,
+  ].filter((x): x is NonNullable<typeof x> => x !== null) : []
+
+  const shamePodiumOrder = (s1 && s2 && s3) ? [
+    s4 ? { entry: s4, rank: 4, depth: Math.round(PODIUM_CONTAINER_H * 0.28), barColor: '#321808', scoreOpacity: 0.35 } : null,
+    { entry: s2, rank: 2, depth: Math.round(PODIUM_CONTAINER_H * 0.50), barColor: '#7a3a12', scoreOpacity: 0.55 },
+    { entry: s1, rank: 1, depth: Math.round(PODIUM_CONTAINER_H * 0.65), barColor: '#c05c1e', scoreOpacity: 1 },
+    { entry: s3, rank: 3, depth: Math.round(PODIUM_CONTAINER_H * 0.40), barColor: '#4d240c', scoreOpacity: 0.35 },
+    s5 ? { entry: s5, rank: 5, depth: Math.round(PODIUM_CONTAINER_H * 0.18), barColor: '#321808', scoreOpacity: 0.35 } : null,
   ].filter((x): x is NonNullable<typeof x> => x !== null) : []
 
   return (
@@ -268,108 +271,103 @@ export default function HomePage() {
         </Card>
       </div>
 
-      {/* 3. Top 5 Podium */}
-      <SectionErrorBoundary title="Top 5">
+      {/* 3. Hall of Fame + Hall of Shame */}
+      <SectionErrorBoundary title="Hall of Fame / Hall of Shame">
       <Card style={{ marginBottom: '1.5rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1rem', letterSpacing: '-0.02em', color: 'var(--ink)' }}>🏆 Top 5</div>
-          <span onClick={() => navigate('/rankings')} style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#6c47d4', textDecoration: 'none', cursor: 'pointer' }}>All Rankings →</span>
+
+        {/* All Rankings link — top right, out of the way */}
+        <div style={{ textAlign: 'right', marginBottom: '0.25rem' }}>
+          <span onClick={() => navigate('/rankings')} style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: '#6c47d4', cursor: 'pointer' }}>All Rankings →</span>
         </div>
 
-        {/* Podium bars */}
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-end', gap: '0.75rem' }}>
-          {podiumOrder.map(({ entry, rank, height, barColor, scoreOpacity }) => (
-            <div key={entry.id} onClick={() => navigate(`/entries/${entry.id}`, { state: { background: location } })} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, minWidth: 0, cursor: 'pointer' }}>
-              {/* Info above bar */}
-              <div style={{ textAlign: 'center', marginBottom: '0.5rem', padding: '0 0.25rem', width: '100%' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', fontSize: rank <= 3 ? '0.85rem' : '0.75rem', fontWeight: 600, color: rank <= 3 ? 'var(--ink)' : 'var(--ink-mute)', marginBottom: '0.2rem' }}>
-                  <FlagImage code={entry.flag} />
-                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.name}</span>
+        {/* Relative wrapper: ghost labels + divider + columns all share the same space */}
+        <div style={{ position: 'relative', paddingTop: PODIUM_TOP_PAD }}>
+
+          {/* Ghost: Hall of Fame — watermark behind fame bars */}
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '4rem', color: 'var(--ink)', opacity: 1, textAlign: 'center', pointerEvents: 'none', userSelect: 'none', lineHeight: 1.1, letterSpacing: '-0.04em', zIndex: 0 }}>
+            🏆 Hall of Fame
+          </div>
+
+          {/* Divider — sits exactly at the fame/shame junction */}
+          <div style={{ position: 'absolute', top: PODIUM_CONTAINER_H + PODIUM_TOP_PAD, left: 0, right: 0, height: 3, background: 'rgba(255,255,255,0.5)', zIndex: 2, pointerEvents: 'none' }} />
+
+          {/* Shared column loop — fame bar above divider, shame bar below */}
+          <div style={{ display: 'flex', gap: '0.75rem', position: 'relative', zIndex: 1 }}>
+            {podiumOrder.map(({ entry: fEntry, rank: fRank, height: fHeight, barColor: fColor, scoreOpacity: fOpacity }, colIdx) => {
+              const s = shamePodiumOrder[colIdx]
+              return (
+                <div key={fEntry.id} style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+
+                  {/* Fame: fixed-height container, bar pinned to bottom */}
+                  <div
+                    onClick={() => navigate(`/entries/${fEntry.id}`, { state: { background: location } })}
+                    style={{ height: PODIUM_CONTAINER_H, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', cursor: 'pointer' }}
+                  >
+                    <div style={{ textAlign: 'center', marginBottom: '0.5rem', padding: '0 0.25rem', width: '100%' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', fontSize: fRank <= 3 ? '0.85rem' : '0.75rem', fontWeight: 600, color: fRank <= 3 ? 'var(--ink)' : 'var(--ink-mute)', marginBottom: '0.2rem' }}>
+                        <FlagImage code={fEntry.flag} />
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fEntry.name}</span>
+                      </div>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: fRank <= 3 ? '0.82rem' : '0.72rem', fontWeight: 700, color: scoreColor(fEntry.score), opacity: fOpacity }}>
+                        {fEntry.score.toFixed(2)}
+                      </div>
+                    </div>
+                    <div style={{ width: '100%', height: fHeight, background: fColor, borderRadius: '6px 6px 0 0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, overflow: 'hidden', padding: '0.5rem 0.25rem' }}>
+                      <span style={{ fontSize: fRank === 1 ? '1.1rem' : '0.9rem', lineHeight: 1 }}>
+                        {fRank === 1 ? '🥇' : fRank === 2 ? '🥈' : fRank === 3 ? '🥉' : '🏅'}
+                      </span>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: fRank === 1 ? '1.5rem' : '1.1rem', color: `rgba(255,255,255,${fOpacity})`, lineHeight: 1 }}>{fRank}</span>
+                      {fRank <= 3 && <>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: `rgba(255,255,255,${fOpacity * 0.65})`, textAlign: 'center', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>{fEntry.category}</span>
+                        <span style={{ fontFamily: 'Hanken Grotesk, sans-serif', fontSize: '10px', color: `rgba(255,255,255,${fOpacity * 0.8})`, textAlign: 'center', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>{fEntry.restaurant}</span>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: `rgba(255,255,255,${fOpacity * 0.55})`, textAlign: 'center', lineHeight: 1.3 }}>{fEntry.reviewCount} {fEntry.reviewCount === 1 ? 'review' : 'reviews'}</span>
+                      </>}
+                    </div>
+                  </div>
+
+                  {/* Shame: bar pinned to top (no margin — touches divider), info below */}
+                  {s && (
+                    <div
+                      onClick={() => navigate(`/entries/${s.entry.id}`, { state: { background: location } })}
+                      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer' }}
+                    >
+                      <div style={{ width: '100%', height: s.depth, background: s.barColor, borderRadius: '0 0 6px 6px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, overflow: 'hidden', padding: '0.5rem 0.25rem' }}>
+                        <span style={{ fontSize: s.rank === 1 ? '1.1rem' : '0.9rem', lineHeight: 1 }}>
+                          {s.rank === 1 ? '💀' : s.rank === 2 ? '😬' : s.rank === 3 ? '🤢' : '😑'}
+                        </span>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: s.rank === 1 ? '1.5rem' : '1.1rem', color: `rgba(255,255,255,${s.scoreOpacity})`, lineHeight: 1 }}>{s.rank}</span>
+                        {s.rank <= 3 && <>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: `rgba(255,255,255,${s.scoreOpacity * 0.65})`, textAlign: 'center', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>{s.entry.category}</span>
+                          <span style={{ fontFamily: 'Hanken Grotesk, sans-serif', fontSize: '10px', color: `rgba(255,255,255,${s.scoreOpacity * 0.8})`, textAlign: 'center', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>{s.entry.restaurant}</span>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: `rgba(255,255,255,${s.scoreOpacity * 0.55})`, textAlign: 'center', lineHeight: 1.3 }}>{s.entry.reviewCount} {s.entry.reviewCount === 1 ? 'review' : 'reviews'}</span>
+                        </>}
+                      </div>
+                      <div style={{ textAlign: 'center', marginTop: '0.5rem', padding: '0 0.25rem', width: '100%' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', fontSize: s.rank <= 3 ? '0.85rem' : '0.75rem', fontWeight: 600, color: s.rank <= 3 ? 'var(--ink)' : 'var(--ink-mute)', marginBottom: '0.2rem' }}>
+                          <FlagImage code={s.entry.flag} />
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.entry.name}</span>
+                        </div>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: s.rank <= 3 ? '0.82rem' : '0.72rem', fontWeight: 700, color: scoreColor(s.entry.score), opacity: s.scoreOpacity }}>
+                          {s.entry.score.toFixed(2)}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                 </div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: rank <= 3 ? '0.82rem' : '0.72rem', fontWeight: 700, color: scoreColor(entry.score), opacity: scoreOpacity }}>
-                  {entry.score.toFixed(2)}
-                </div>
-              </div>
-              {/* Bar */}
-              <div style={{
-                width: '100%',
-                height,
-                background: barColor,
-                borderRadius: '6px 6px 0 0',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 4,
-                overflow: 'hidden',
-                padding: '0.5rem 0.25rem',
-              }}>
-                <span style={{ fontSize: rank === 1 ? '1.1rem' : '0.9rem', lineHeight: 1 }}>
-                  {rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '🏅'}
-                </span>
-                <span style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontWeight: 700,
-                  fontSize: rank === 1 ? '1.5rem' : '1.1rem',
-                  color: `rgba(255,255,255,${scoreOpacity})`,
-                  lineHeight: 1,
-                }}>
-                  {rank}
-                </span>
-                {rank <= 3 && <>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: `rgba(255,255,255,${scoreOpacity * 0.65})`, textAlign: 'center', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>
-                    {entry.category}
-                  </span>
-                  <span style={{ fontFamily: 'Hanken Grotesk, sans-serif', fontSize: '10px', color: `rgba(255,255,255,${scoreOpacity * 0.8})`, textAlign: 'center', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>
-                    {entry.restaurant}
-                  </span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: `rgba(255,255,255,${scoreOpacity * 0.55})`, textAlign: 'center', lineHeight: 1.3 }}>
-                    {entry.reviewCount} {entry.reviewCount === 1 ? 'review' : 'reviews'}
-                  </span>
-                </>}
-              </div>
-            </div>
-          ))}
+              )
+            })}
+          </div>
+
         </div>
+
+        {/* Ghost: Hall of Shame — in-flow below shame bars so bars don't overlap it */}
+        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '4rem', color: 'var(--ink)', opacity: 1, textAlign: 'center', pointerEvents: 'none', userSelect: 'none', lineHeight: 1.1, letterSpacing: '-0.04em', marginTop: '0.5rem' }}>
+          💀 Hall of Shame
+        </div>
+
       </Card>
       </SectionErrorBoundary>
-
-      {/* 4. Starred Picks / Hall of Shame */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
-        {/* Starred Picks */}
-        <SectionErrorBoundary title="Starred Picks">
-        <div style={{ background: 'var(--surface)', borderLeft: '4px solid #1EA04F', borderRadius: 14, padding: '1.25rem 1.5rem' }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#1EA04F', marginBottom: '0.75rem' }}>⭐ Hall of Fame</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-            {starredPicks.map((e, i) => (
-              <div key={e.id} onClick={() => navigate(`/entries/${e.id}`, { state: { background: location } })} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.35rem 0.5rem', borderRadius: 6, background: 'var(--paper)', cursor: 'pointer' }}>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', color: 'var(--ink-mute)', width: 14, flexShrink: 0 }}>{i + 1}</span>
-                <FlagImage code={e.flag} />
-                <span style={{ flex: 1, fontSize: '0.88rem', color: 'var(--ink)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{e.name}</span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', fontWeight: 700, color: scoreColor(e.avg), flexShrink: 0 }}>{e.avg.toFixed(2)}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-        </SectionErrorBoundary>
-
-        {/* Hall of Shame */}
-        <SectionErrorBoundary title="Hall of Shame">
-        <div style={{ background: 'var(--surface)', borderLeft: '4px solid #bd5417', borderRadius: 14, padding: '1.25rem 1.5rem' }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#bd5417', marginBottom: '0.75rem' }}>💀 Hall of Shame</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-            {shameList.map((e, i) => (
-              <div key={e.id} onClick={() => navigate(`/entries/${e.id}`, { state: { background: location } })} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.35rem 0.5rem', borderRadius: 6, background: 'var(--paper)', cursor: 'pointer' }}>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', color: 'var(--ink-mute)', width: 14, flexShrink: 0 }}>{i + 1}</span>
-                <FlagImage code={e.flag} />
-                <span style={{ flex: 1, fontSize: '0.88rem', color: 'var(--ink)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{e.name}</span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', fontWeight: 700, color: scoreColor(e.avg), flexShrink: 0 }}>{e.avg.toFixed(2)}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-        </SectionErrorBoundary>
-      </div>
 
       {/* 5. Reigning Champion / Fresh off the Fork */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>

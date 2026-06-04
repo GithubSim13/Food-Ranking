@@ -156,7 +156,7 @@ client/src/
     home/
       HomePage.tsx      # / — dashboard: greeting, stat grid, top 5 podium, Hall of Fame/Shame, Reigning Champion, Fresh off the fork, Top Tables, Regulars, Logging pace, Best value
     entries/
-      EntryList.tsx     # /entries — responsive card grid (3 columns desktop, 2 tablet, 1 mobile) + search + scope filters (Everything/Starred/Abroad/Home) + sort pills (Most recent/Top rated/A-Z)
+      EntryList.tsx     # /entries — responsive card grid (3 columns desktop, 2 tablet, 1 mobile) + search + scope filters (Everything/Starred/Abroad/Home) + sort pills (Most recent/Top rated/A-Z); search covers name/category/restaurant (substring) and review notes (whole-word regex); when search is active, sort pills are greyed out/disabled and results are priority-sorted (whole-word matches first, partial matches second); sort pills resume normal behaviour when search is cleared
       EntryCard.tsx     # card: flag SVG + food name + quote (first line of latest review notes, 2-line clamp, omitted if no notes) + category · restaurant + rating pinned bottom right; gold styling when starred
       EntryForm.tsx     # /entries/new — form + live dupe detection (list format) + FlagPicker + category combo box + restaurant combo box (fetches GET /api/restaurants) + optional inline review section (toggle, RatingInput for Taste/Value/Consistency, Notes, date auto-set to ISO timestamp at POST time) + Category Comparison Panel when review section is open + React-side validation (no native HTML validation)
       EntryDetail.tsx   # /entries/:id — entry info + inline editing + star toggle + reviews list + ReviewForm + delete entry/review; fully dark themed
@@ -165,7 +165,7 @@ client/src/
       ReviewForm.tsx    # add review: Taste/Value/Consistency via RatingInput component + date + notes + retroactive checkbox; rating inputs also clamped in edit form
       RatingInput.tsx   # reusable rating field: label (left) + range slider (full red→yellow→green spectrum gradient, 6px track) + number input (right, 70px fixed width); fully synced bidirectionally; clamped 0–10 on onChange; step="any" for decimal precision; used in all review add/edit forms
     rankings/
-      RankingsPage.tsx  # /rankings — grouped by category alphabetically; rated entries sorted by overallRating desc (automatic); unrated entries below, drag-and-drop reorder via @dnd-kit (gated behind Edit Rankings mode); search bar + scope filters (Everything/Starred/Abroad/Home); reads ?category= URL param on mount to pre-fill search bar (used by CategoriesPage card clicks)
+      RankingsPage.tsx  # /rankings — grouped by category alphabetically; rated entries sorted by overallRating desc (automatic); unrated entries below, drag-and-drop reorder via @dnd-kit (gated behind Edit Rankings mode); search bar + scope filters (Everything/Starred/Abroad/Home); reads ?category= URL param on mount to pre-fill search bar (used by CategoriesPage card clicks); search covers name/category/restaurant (substring) and review notes (whole-word regex); when search is active, results are priority-sorted within each category group (whole-word matches first, partial matches second)
     categories/
       CategoriesPage.tsx  # /categories — searchable card grid (4 columns); each card shows category name, entry count, avg overallRating (color-coded); pencil/trash icon buttons; clicking a card navigates to /rankings?category=<name> which pre-fills the Rankings search bar
     restaurants/
