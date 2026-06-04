@@ -313,10 +313,7 @@ export default function HomePage() {
                       </div>
                     </div>
                     <div style={{ width: '100%', height: fHeight, background: fColor, borderRadius: '6px 6px 0 0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, overflow: 'hidden', padding: '0.5rem 0.25rem' }}>
-                      <span style={{ fontSize: fRank === 1 ? '1.1rem' : '0.9rem', lineHeight: 1 }}>
-                        {fRank === 1 ? '🥇' : fRank === 2 ? '🥈' : fRank === 3 ? '🥉' : '🏅'}
-                      </span>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: fRank === 1 ? '1.5rem' : '1.1rem', color: `rgba(255,255,255,${fOpacity})`, lineHeight: 1 }}>{fRank}</span>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: fRank === 1 ? '2.2rem' : fRank === 2 ? '1.7rem' : fRank === 3 ? '1.35rem' : fRank === 4 ? '1.05rem' : '0.9rem', color: `rgba(255,255,255,${fOpacity})`, lineHeight: 1 }}>{fRank}</span>
                       {fRank <= 3 && <>
                         <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: `rgba(255,255,255,${fOpacity * 0.65})`, textAlign: 'center', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>{fEntry.category}</span>
                         <span style={{ fontFamily: 'Hanken Grotesk, sans-serif', fontSize: '10px', color: `rgba(255,255,255,${fOpacity * 0.8})`, textAlign: 'center', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>{fEntry.restaurant}</span>
@@ -332,10 +329,7 @@ export default function HomePage() {
                       style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer' }}
                     >
                       <div style={{ width: '100%', height: s.depth, background: s.barColor, borderRadius: '0 0 6px 6px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, overflow: 'hidden', padding: '0.5rem 0.25rem' }}>
-                        <span style={{ fontSize: s.rank === 1 ? '1.1rem' : '0.9rem', lineHeight: 1 }}>
-                          {s.rank === 1 ? '💀' : s.rank === 2 ? '😬' : s.rank === 3 ? '🤢' : '😑'}
-                        </span>
-                        <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: s.rank === 1 ? '1.5rem' : '1.1rem', color: `rgba(255,255,255,${s.scoreOpacity})`, lineHeight: 1 }}>{s.rank}</span>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: s.rank === 1 ? '2.2rem' : s.rank === 2 ? '1.7rem' : s.rank === 3 ? '1.35rem' : s.rank === 4 ? '1.05rem' : '0.9rem', color: `rgba(255,255,255,${s.scoreOpacity})`, lineHeight: 1 }}>{s.rank}</span>
                         {s.rank <= 3 && <>
                           <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: `rgba(255,255,255,${s.scoreOpacity * 0.65})`, textAlign: 'center', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>{s.entry.category}</span>
                           <span style={{ fontFamily: 'Hanken Grotesk, sans-serif', fontSize: '10px', color: `rgba(255,255,255,${s.scoreOpacity * 0.8})`, textAlign: 'center', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>{s.entry.restaurant}</span>
