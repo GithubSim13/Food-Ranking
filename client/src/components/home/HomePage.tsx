@@ -80,11 +80,12 @@ export default function HomePage() {
   const avgRating = ratedEntryLatest.length ? ratedEntryLatest.reduce((a, b) => a + b, 0) / ratedEntryLatest.length : null
 
   // ── top 5 ──────────────────────────────────────────────────────────────────
-  type Top5Entry = { id: number; name: string; flag: string | null; score: number; starred: boolean; category: string; restaurant: string; reviewCount: number }
+  type Top5Entry = { id: number; name: string; flag: string | null; score: number; starred: boolean; category: string; restaurant: string; reviewCount: number; quote: string }
   const top5: Top5Entry[] = [...entries]
     .map(e => {
       const score = latestRating(e.reviews)
-      return { id: e.id, name: e.foodName, flag: e.flag, score, starred: e.starred, category: e.category, restaurant: e.restaurant.name, reviewCount: e.reviews.length }
+      const quote = sortReviewsByDateDesc(e.reviews)[0]?.notes?.split('\n')[0]?.trim() ?? ''
+      return { id: e.id, name: e.foodName, flag: e.flag, score, starred: e.starred, category: e.category, restaurant: e.restaurant.name, reviewCount: e.reviews.length, quote }
     })
     .filter((e): e is Top5Entry => e.score !== null)
     .sort((a, b) => b.score - a.score)
@@ -95,7 +96,8 @@ export default function HomePage() {
   const shameList: Top5Entry[] = [...entries]
     .map(e => {
       const score = latestRating(e.reviews)
-      return { id: e.id, name: e.foodName, flag: e.flag, score, starred: e.starred, category: e.category, restaurant: e.restaurant.name, reviewCount: e.reviews.length }
+      const quote = sortReviewsByDateDesc(e.reviews)[0]?.notes?.split('\n')[0]?.trim() ?? ''
+      return { id: e.id, name: e.foodName, flag: e.flag, score, starred: e.starred, category: e.category, restaurant: e.restaurant.name, reviewCount: e.reviews.length, quote }
     })
     .filter((e): e is Top5Entry => e.score !== null)
     .sort((a, b) => a.score - b.score)
@@ -347,6 +349,7 @@ export default function HomePage() {
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: `rgba(255,255,255,${fOpacity * 0.65})`, textAlign: 'center', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%', opacity: shameExpanded ? 0 : 1, transition: 'opacity 300ms ease-in-out' }}>{fEntry.category}</span>
                       <span style={{ fontFamily: 'Hanken Grotesk, sans-serif', fontSize: '10px', color: `rgba(255,255,255,${fOpacity * 0.8})`, textAlign: 'center', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%', opacity: shameExpanded ? 0 : 1, transition: 'opacity 300ms ease-in-out' }}>{fEntry.restaurant}</span>
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: `rgba(255,255,255,${fOpacity * 0.55})`, textAlign: 'center', lineHeight: 1.3, opacity: shameExpanded ? 0 : 1, transition: 'opacity 300ms ease-in-out' }}>{fEntry.reviewCount} {fEntry.reviewCount === 1 ? 'review' : 'reviews'}</span>
+                      {fEntry.quote && <span style={{ fontFamily: 'Hanken Grotesk, sans-serif', fontSize: '0.68rem', fontStyle: 'italic', color: 'rgba(255,255,255,0.55)', textAlign: 'center', lineHeight: 1.3, marginTop: '6px', padding: '0 6px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', opacity: shameExpanded ? 0 : 1, transition: 'opacity 300ms ease-in-out' }}>"{fEntry.quote}"</span>}
                     </>}
                   </div>
                 </div>
@@ -377,6 +380,7 @@ export default function HomePage() {
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: `rgba(255,255,255,${sOpacity * 0.65})`, textAlign: 'center', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%', opacity: shameExpanded ? 1 : 0, transition: 'opacity 400ms ease-in-out 150ms' }}>{sEntry.category}</span>
                       <span style={{ fontFamily: 'Hanken Grotesk, sans-serif', fontSize: '10px', color: `rgba(255,255,255,${sOpacity * 0.8})`, textAlign: 'center', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%', opacity: shameExpanded ? 1 : 0, transition: 'opacity 400ms ease-in-out 150ms' }}>{sEntry.restaurant}</span>
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: `rgba(255,255,255,${sOpacity * 0.55})`, textAlign: 'center', lineHeight: 1.3, opacity: shameExpanded ? 1 : 0, transition: 'opacity 400ms ease-in-out 150ms' }}>{sEntry.reviewCount} {sEntry.reviewCount === 1 ? 'review' : 'reviews'}</span>
+                      {sEntry.quote && <span style={{ fontFamily: 'Hanken Grotesk, sans-serif', fontSize: '0.68rem', fontStyle: 'italic', color: 'rgba(255,255,255,0.55)', textAlign: 'center', lineHeight: 1.3, marginTop: '6px', padding: '0 6px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', opacity: shameExpanded ? 1 : 0, transition: 'opacity 400ms ease-in-out 150ms' }}>"{sEntry.quote}"</span>}
                     </>}
                   </div>
                   <div style={{ textAlign: 'center', marginTop: '0.5rem', padding: '0 0.25rem', width: '100%', opacity: shameExpanded ? 1 : 0, transition: 'opacity 400ms ease-in-out 150ms' }}>
