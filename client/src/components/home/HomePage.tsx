@@ -313,12 +313,13 @@ export default function HomePage() {
           {/* Ghost: Hall of Fame watermark */}
           <div className="hall-title-fame" style={{
             position: 'absolute', top: 0, left: 0, right: 0,
-            fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '12rem',
+            fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '11rem',
             color: 'var(--ink)',
             opacity: shameExpanded ? 0 : 0.13,
             transition: 'opacity 500ms ease-in-out',
             textAlign: 'center', pointerEvents: 'none', userSelect: 'none',
             lineHeight: 1.1, letterSpacing: '-0.04em', zIndex: 0,
+            marginTop: '0.9rem',
           }}>
             Hall of Fame
           </div>
@@ -393,7 +394,7 @@ export default function HomePage() {
           </div>
 
           {/* Ghost: Hall of Shame watermark — fades in as shame expands */}
-          <div className="hall-title-shame" style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '12rem', color: 'var(--ink)', opacity: shameExpanded ? 0.13 : 0, transition: 'opacity 500ms ease-in-out', textAlign: 'center', pointerEvents: 'none', userSelect: 'none', lineHeight: 1.1, letterSpacing: '-0.04em', marginTop: '-7.6rem' }}>
+          <div className="hall-title-shame" style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '11rem', color: 'var(--ink)', opacity: shameExpanded ? 0.13 : 0, transition: 'opacity 500ms ease-in-out', textAlign: 'center', pointerEvents: 'none', userSelect: 'none', lineHeight: 1.1, letterSpacing: '-0.04em', marginTop: '-7.35rem' }}>
             Hall of Shame
           </div>
         </div>
