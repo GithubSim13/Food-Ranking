@@ -156,8 +156,8 @@ client/src/
     home/
       HomePage.tsx      # / — dashboard: greeting, stat grid, top 5 podium, Hall of Fame/Shame, Reigning Champion, Fresh off the fork, Top Tables, Regulars, Logging pace, Best value
     entries/
-      EntryList.tsx     # /entries — card list + search + scope filters (Everything/Starred/Abroad/Home) + sort pills (Most recent/Top rated/A-Z)
-      EntryCard.tsx     # card: flag SVG, name, category, restaurant, avg overallRating; gold styling when starred
+      EntryList.tsx     # /entries — responsive card grid (3 columns desktop, 2 tablet, 1 mobile) + search + scope filters (Everything/Starred/Abroad/Home) + sort pills (Most recent/Top rated/A-Z)
+      EntryCard.tsx     # card: flag SVG + food name + quote (first line of latest review notes, 2-line clamp, omitted if no notes) + category · restaurant + rating pinned bottom right; gold styling when starred
       EntryForm.tsx     # /entries/new — form + live dupe detection (list format) + FlagPicker + category combo box + restaurant combo box (fetches GET /api/restaurants) + optional inline review section (toggle, RatingInput for Taste/Value/Consistency, Notes, date auto-set to ISO timestamp at POST time) + Category Comparison Panel when review section is open + React-side validation (no native HTML validation)
       EntryDetail.tsx   # /entries/:id — entry info + inline editing + star toggle + reviews list + ReviewForm + delete entry/review; fully dark themed
       EntryModal.tsx    # modal wrapper around EntryDetail; onClose navigates back
