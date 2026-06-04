@@ -284,8 +284,8 @@ export default function HomePage() {
         <div style={{ position: 'relative', paddingTop: PODIUM_TOP_PAD }}>
 
           {/* Ghost: Hall of Fame — watermark behind fame bars */}
-          <div className="hall-title-fame" style={{ position: 'absolute', top: 0, left: 0, right: 0, fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '4rem', color: 'var(--ink)', opacity: 1, textAlign: 'center', pointerEvents: 'none', userSelect: 'none', lineHeight: 1.1, letterSpacing: '-0.04em', zIndex: 0 }}>
-            🏆 Hall of Fame
+          <div className="hall-title-fame" style={{ position: 'absolute', top: 0, left: 0, right: 0, fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '12rem', color: 'var(--ink)', opacity: 0.13, textAlign: 'center', pointerEvents: 'none', userSelect: 'none', lineHeight: 1.1, letterSpacing: '-0.04em', zIndex: 0 }}>
+          Hall of Fame
           </div>
 
           {/* Divider — sits exactly at the fame/shame junction */}
@@ -356,8 +356,8 @@ export default function HomePage() {
         </div>
 
         {/* Ghost: Hall of Shame — in-flow below shame bars so bars don't overlap it */}
-        <div className="hall-title-shame" style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '4rem', color: 'var(--ink)', opacity: 1, textAlign: 'center', pointerEvents: 'none', userSelect: 'none', lineHeight: 1.1, letterSpacing: '-0.04em', marginTop: '0.5rem' }}>
-          💀 Hall of Shame
+        <div className="hall-title-shame" style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '12rem', color: 'var(--ink)', opacity: 0.13, textAlign: 'center', pointerEvents: 'none', userSelect: 'none', lineHeight: 1.1, letterSpacing: '-0.04em', marginTop: '-7.6rem' }}>
+          Hall of Shame
         </div>
 
       </Card>
