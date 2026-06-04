@@ -77,13 +77,33 @@ export default function EntryList() {
         }
       />
 
+      <style>{`
+        .entry-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 1rem;
+          width: 100%;
+          min-width: 0;
+          box-sizing: border-box;
+        }
+        .entry-grid > * {
+          min-width: 0;
+          box-sizing: border-box;
+        }
+        @media (max-width: 1100px) {
+          .entry-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 580px) {
+          .entry-grid { grid-template-columns: 1fr; }
+        }
+      `}</style>
       {isLoading ? (
         <p style={{ color: 'var(--ink-mute)' }}>Loading…</p>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <div className="entry-grid">
           {sorted.map(entry => <EntryCard key={entry.id} entry={entry} />)}
-          {!isLoading && sorted.length === 0 && (
-            <p style={{ color: 'var(--ink-mute)' }}>No entries found.</p>
+          {sorted.length === 0 && (
+            <p style={{ color: 'var(--ink-mute)', gridColumn: '1 / -1' }}>No entries found.</p>
           )}
         </div>
       )}
