@@ -330,24 +330,36 @@ export default function RankingsPage() {
     )
   }
 
+  const q = search.toLowerCase()
+  const wordRe = q.length > 0
+    ? new RegExp(`\\b${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i')
+    : null
+
   function matchesEntry(entry: RankedEntry): boolean {
-    const q = search.toLowerCase()
     if (q.length > 0) {
       const hit =
         entry.foodName.toLowerCase().includes(q) ||
         entry.category.toLowerCase().includes(q) ||
         entry.restaurant.toLowerCase().includes(q) ||
-        entry.reviews.some(r => r.notes?.toLowerCase().includes(q))
+        (wordRe != null && entry.reviews.some(r => r.notes != null && wordRe.test(r.notes)))
       if (!hit) return false
     }
     return matchesScope(entry, scope)
   }
 
+  function prioritySort(arr: RankedEntry[]): RankedEntry[] {
+    if (wordRe === null) return arr
+    const isP1 = (e: RankedEntry) =>
+      wordRe.test(e.foodName) || wordRe.test(e.category) || wordRe.test(e.restaurant) ||
+      e.reviews.some(r => r.notes != null && wordRe.test(r.notes))
+    return [...arr.filter(isP1), ...arr.filter(e => !isP1(e))]
+  }
+
   const filteredCategories = displayCategories
     .map(({ category, ratedEntries, unratedEntries }) => ({
       category,
-      ratedEntries: ratedEntries.filter(matchesEntry),
-      unratedEntries: unratedEntries.filter(matchesEntry),
+      ratedEntries: prioritySort(ratedEntries.filter(matchesEntry)),
+      unratedEntries: prioritySort(unratedEntries.filter(matchesEntry)),
     }))
     .filter(c => c.ratedEntries.length > 0 || c.unratedEntries.length > 0)
 

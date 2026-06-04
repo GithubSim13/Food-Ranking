@@ -21,26 +21,38 @@ export default function EntryList() {
     queryFn: getEntries,
   })
 
+  const q = search.toLowerCase()
+  const wordRe = q.length > 0
+    ? new RegExp(`\\b${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i')
+    : null
+
   const scoped = entries.filter(e => {
-    const q = search.toLowerCase()
-    const matchesSearch =
+    const matchesSearch = q.length === 0 || (
       e.foodName.toLowerCase().includes(q) ||
       e.category.toLowerCase().includes(q) ||
       e.restaurant.name.toLowerCase().includes(q) ||
-      e.reviews.some(r => r.notes?.toLowerCase().includes(q))
+      (wordRe != null && e.reviews.some(r => r.notes != null && wordRe.test(r.notes)))
+    )
     if (!matchesSearch) return false
     return matchesScope(e, scope)
   })
 
-  const sorted = [...scoped].sort((a, b) => {
-    if (sort === 'az') return a.foodName.localeCompare(b.foodName)
-    if (sort === 'rated') {
-      const ra = latestRating(a.reviews) ?? -1
-      const rb = latestRating(b.reviews) ?? -1
-      return rb - ra
-    }
-    return b.id - a.id
-  })
+  const sorted = q.length === 0
+    ? [...scoped].sort((a, b) => {
+        if (sort === 'az') return a.foodName.localeCompare(b.foodName)
+        if (sort === 'rated') {
+          const ra = latestRating(a.reviews) ?? -1
+          const rb = latestRating(b.reviews) ?? -1
+          return rb - ra
+        }
+        return b.id - a.id
+      })
+    : (() => {
+        const isP1 = (e: typeof scoped[0]) =>
+          wordRe!.test(e.foodName) || wordRe!.test(e.category) || wordRe!.test(e.restaurant.name) ||
+          e.reviews.some(r => r.notes != null && wordRe!.test(r.notes))
+        return [...scoped.filter(isP1), ...scoped.filter(e => !isP1(e))]
+      })()
 
   const sortPills: { key: Sort; label: string }[] = [
     { key: 'recent', label: 'Most recent' },
@@ -68,7 +80,7 @@ export default function EntryList() {
         onScopeChange={setScope}
         searchPlaceholder="Search by name, category, restaurant, or notes…"
         rightSlot={
-          <div style={{ display: 'flex', gap: '0.375rem' }}>
+          <div style={{ display: 'flex', gap: '0.375rem', opacity: q.length > 0 ? 0.4 : 1, pointerEvents: q.length > 0 ? 'none' : 'auto' }}>
             {sortPills.map(p => (
               <button key={p.key} onClick={() => setSort(p.key)} style={pillStyle(sort === p.key)}>
                 {p.label}
