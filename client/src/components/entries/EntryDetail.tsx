@@ -11,7 +11,7 @@ import { updateReview, deleteReview } from '../../api/reviews'
 import ReviewForm from '../reviews/ReviewForm'
 import type { EntryDetail as EntryDetailType, Review } from '../../types'
 import { useToast } from '../../context/ToastContext'
-import { sortReviewsByDateDesc, latestRatedReview } from '../../utils'
+import { sortReviewsByDateDesc, latestRatedReview, formatReviewDate } from '../../utils'
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -281,7 +281,7 @@ function ReviewCard({ review: r, onUpdated, onEditStart, onEditEnd }: ReviewCard
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <span style={{ fontSize: '0.8rem', color: 'var(--ink-mute)' }}>
-            {r.date ? new Date(r.date).toLocaleDateString() : 'No date'}
+            {r.date ? formatReviewDate(r.date) : 'No date'}
           </span>
           {r.retroactive && (
             <span style={{ fontSize: '0.7rem', fontFamily: 'var(--font-mono)', color: 'var(--ink-mute)', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>

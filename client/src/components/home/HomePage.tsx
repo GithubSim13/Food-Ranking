@@ -3,15 +3,10 @@ import { useMemo, useRef, useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { getEntries } from '../../api/entries'
 import FlagImage from '../common/FlagImage'
-import { sortReviewsByDateDesc, latestRating, latestRatedReview, scoreColor } from '../../utils'
+import { sortReviewsByDateDesc, latestRating, latestRatedReview, scoreColor, formatReviewDate } from '../../utils'
 import SectionErrorBoundary from '../common/SectionErrorBoundary'
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
-
-function formatDate(dateStr: string): string {
-  const d = new Date(dateStr)
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
-}
 
 function firstNoteLine(notes: string | null | undefined): string {
   if (!notes) return ''
@@ -517,7 +512,7 @@ export default function HomePage() {
               <div key={entry.id} onClick={() => navigate(`/entries/${entry.id}`, { state: { background: location } })} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.35rem 0.5rem', borderRadius: 6, background: 'var(--paper)', cursor: 'pointer' }}>
                 <FlagImage code={entry.flag} />
                 <span style={{ flex: 1, fontSize: '0.88rem', color: 'var(--ink)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{entry.name}</span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: 'var(--ink-mute)', flexShrink: 0 }}>{formatDate(entry.reviewDate!)}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: 'var(--ink-mute)', flexShrink: 0 }}>{formatReviewDate(entry.reviewDate!)}</span>
               </div>
             ))}
           </div>
