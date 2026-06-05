@@ -171,7 +171,7 @@ client/src/
     rankings/
       RankingsPage.tsx  # /rankings — grouped by category alphabetically; rated entries sorted by overallRating desc (automatic); unrated entries below, drag-and-drop reorder via @dnd-kit (gated behind Edit Rankings mode); search bar + scope filters (Everything/Starred/Abroad/Home); reads ?category= URL param on mount to pre-fill search bar (used by CategoriesPage card clicks); search covers name/category/restaurant (substring) and review notes (whole-word regex); when search is active, results are priority-sorted within each category group (whole-word matches first, partial matches second)
     categories/
-      CategoriesPage.tsx  # /categories — searchable card grid (4 columns); each card shows category name, entry count, avg overallRating (color-coded); pencil/trash icon buttons; clicking a card navigates to /rankings?category=<name> which pre-fills the Rankings search bar
+      CategoriesPage.tsx  # /categories — full-width sortable table (columns: #, Category, Entries, Avg rating, Actions); search bar top-right; clicking a row navigates to /rankings?category=<name>; sort by any column asc/desc (default: Category asc); avg rating cell shows color-coded score + inline proportional bar; pencil/trash icon buttons for rename/delete
     restaurants/
       RestaurantsPage.tsx # /restaurants — searchable list; each row shows restaurant name, entry count badge, avg overallRating badge, pencil/trash icon buttons; click to expand and show entries (food name + category, indented); collapsed by default
   context/

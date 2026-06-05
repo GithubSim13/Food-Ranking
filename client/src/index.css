@@ -114,3 +114,11 @@ input[type="range"].rating-slider::-moz-range-thumb {
   border: none;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.55);
 }
+
+/* ─── restaurants page icon button hover states ───────────────────────────── */
+.rest-icon-btn-edit:hover {
+  background: var(--surface) !important;
+}
+.rest-icon-btn-delete:hover {
+  background: rgba(239, 68, 68, 0.15) !important;
+}
