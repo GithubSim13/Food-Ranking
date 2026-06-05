@@ -31,9 +31,6 @@ export default function EntryCard({ entry }: { entry: Entry }) {
         <FlagImage code={entry.flag} />
         {entry.starred && <span style={{ fontSize: '0.75rem', color: 'var(--gold)', flexShrink: 0 }}>★</span>}
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.foodName}</span>
-        {entry.tryAgain && <span style={{ width: 8, height: 8, borderRadius: '50%', display: 'inline-block', background: '#3b82f6', flexShrink: 0 }} />}
-        {entry.neverAgain && <span style={{ width: 8, height: 8, borderRadius: '50%', display: 'inline-block', background: '#ef4444', flexShrink: 0 }} />}
-        {entry.reviews.some(r => r.uncertainRating === true) && <span style={{ width: 8, height: 8, borderRadius: '50%', display: 'inline-block', background: '#eab308', flexShrink: 0 }} />}
       </div>
 
       {/* Quote — first line of most recent review with notes */}
@@ -48,11 +45,16 @@ export default function EntryCard({ entry }: { entry: Entry }) {
         <div style={{ fontSize: '0.8rem', color: 'var(--ink-mute)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {entry.category} · {entry.restaurant.name}
         </div>
-        {avg !== null && (
-          <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '1rem', color: scoreColor(avg), flexShrink: 0 }}>
-            {avg.toFixed(2)}
-          </div>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+          {entry.tryAgain && <span style={{ width: 8, height: 8, borderRadius: '50%', display: 'inline-block', background: '#3b82f6' }} />}
+          {entry.neverAgain && <span style={{ width: 8, height: 8, borderRadius: '50%', display: 'inline-block', background: '#ef4444' }} />}
+          {entry.reviews.some(r => r.uncertainRating === true) && <span style={{ width: 8, height: 8, borderRadius: '50%', display: 'inline-block', background: '#eab308' }} />}
+          {avg !== null && (
+            <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '1rem', color: scoreColor(avg) }}>
+              {avg.toFixed(2)}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   )
