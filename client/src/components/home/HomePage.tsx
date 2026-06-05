@@ -341,16 +341,13 @@ export default function HomePage() {
                     style={{ height: PODIUM_CONTAINER_H, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', cursor: 'pointer' }}
                   >
                     <div style={{ textAlign: 'center', marginBottom: '0.5rem', padding: '0 0.25rem', width: '100%', opacity: shameExpanded ? 0 : 1, transform: shameExpanded ? 'translateY(12px)' : 'translateY(0)', transition: contentTr }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', fontSize: fRank <= 3 ? '0.85rem' : '0.75rem', fontWeight: 600, color: fRank <= 3 ? 'var(--ink)' : 'var(--ink-mute)', marginBottom: '0.2rem' }}>
-                        <FlagImage code={fEntry.flag} />
-                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fEntry.name}</span>
-                      </div>
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: fRank <= 3 ? '0.82rem' : '0.72rem', fontWeight: 700, color: scoreColor(fEntry.score), opacity: fOpacity }}>
-                        {fEntry.score.toFixed(2)}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', fontSize: fRank <= 3 ? '0.85rem' : '0.75rem', fontWeight: 600, color: fRank <= 3 ? 'var(--ink)' : 'var(--ink-mute)' }}>
+                        {fEntry.flag && <div style={{ marginBottom: '0.25rem' }}><FlagImage code={fEntry.flag} /></div>}
+                        <span style={{ fontSize: '1rem', whiteSpace: 'normal', wordBreak: 'break-word', textAlign: 'center' }}>{fEntry.name}</span>
                       </div>
                     </div>
                     <div style={{ width: '100%', height: fHeight, background: `linear-gradient(to bottom, ${fColor}, transparent)`, borderRadius: '6px 6px 0 0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, overflow: 'hidden', padding: '0.5rem 0.25rem', transform: shameExpanded ? 'scaleY(0)' : 'scaleY(1)', transformOrigin: 'bottom', transition: barTr }}>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: fRank === 1 ? '2.2rem' : fRank === 2 ? '1.7rem' : fRank === 3 ? '1.35rem' : fRank === 4 ? '1.05rem' : '0.9rem', color: `rgba(255,255,255,${fOpacity})`, lineHeight: 1, opacity: shameExpanded ? 0 : 1, transform: shameExpanded ? 'translateY(12px)' : 'translateY(0)', transition: contentTr }}>{fRank}</span>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: fRank === 1 ? '2.2rem' : fRank === 2 ? '1.7rem' : fRank === 3 ? '1.35rem' : fRank === 4 ? '1.05rem' : '0.9rem', color: scoreColor(fEntry.score), lineHeight: 1, opacity: shameExpanded ? 0 : 1, transform: shameExpanded ? 'translateY(12px)' : 'translateY(0)', transition: contentTr }}>{fEntry.score.toFixed(2)}</span>
                       {fRank <= 3 && <>
                         <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: `rgba(255,255,255,${fOpacity * 0.65})`, textAlign: 'center', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%', opacity: shameExpanded ? 0 : 1, transform: shameExpanded ? 'translateY(12px)' : 'translateY(0)', transition: contentTr }}>{fEntry.category}</span>
                         <span style={{ fontFamily: 'Hanken Grotesk, sans-serif', fontSize: '10px', color: `rgba(255,255,255,${fOpacity * 0.8})`, textAlign: 'center', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%', opacity: shameExpanded ? 0 : 1, transform: shameExpanded ? 'translateY(12px)' : 'translateY(0)', transition: contentTr }}>{fEntry.restaurant}</span>
@@ -391,7 +388,7 @@ export default function HomePage() {
                     style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer' }}
                   >
                     <div style={{ width: '100%', height: sDepth, background: `linear-gradient(to top, ${sColor}, transparent)`, borderRadius: '0 0 6px 6px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, overflow: 'hidden', padding: '0.5rem 0.25rem', transform: shameExpanded ? 'scaleY(1)' : 'scaleY(0)', transformOrigin: 'top', transition: barTr }}>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: sRank === 1 ? '2.2rem' : sRank === 2 ? '1.7rem' : sRank === 3 ? '1.35rem' : sRank === 4 ? '1.05rem' : '0.9rem', color: `rgba(255,255,255,${sOpacity})`, lineHeight: 1, opacity: shameExpanded ? 1 : 0, transform: shameExpanded ? 'translateY(0)' : 'translateY(12px)', transition: contentTr }}>{sRank}</span>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: sRank === 1 ? '2.2rem' : sRank === 2 ? '1.7rem' : sRank === 3 ? '1.35rem' : sRank === 4 ? '1.05rem' : '0.9rem', color: scoreColor(sEntry.score), lineHeight: 1, opacity: shameExpanded ? 1 : 0, transform: shameExpanded ? 'translateY(0)' : 'translateY(12px)', transition: contentTr }}>{sEntry.score.toFixed(2)}</span>
                       {sRank <= 3 && <>
                         <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: `rgba(255,255,255,${sOpacity * 0.65})`, textAlign: 'center', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%', opacity: shameExpanded ? 1 : 0, transform: shameExpanded ? 'translateY(0)' : 'translateY(12px)', transition: contentTr }}>{sEntry.category}</span>
                         <span style={{ fontFamily: 'Hanken Grotesk, sans-serif', fontSize: '10px', color: `rgba(255,255,255,${sOpacity * 0.8})`, textAlign: 'center', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%', opacity: shameExpanded ? 1 : 0, transform: shameExpanded ? 'translateY(0)' : 'translateY(12px)', transition: contentTr }}>{sEntry.restaurant}</span>
@@ -400,12 +397,9 @@ export default function HomePage() {
                       </>}
                     </div>
                     <div style={{ textAlign: 'center', marginTop: '0.5rem', padding: '0 0.25rem', width: '100%', opacity: shameExpanded ? 1 : 0, transform: shameExpanded ? 'translateY(0)' : 'translateY(12px)', transition: contentTr }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', fontSize: sRank <= 3 ? '0.85rem' : '0.75rem', fontWeight: 600, color: sRank <= 3 ? 'var(--ink)' : 'var(--ink-mute)', marginBottom: '0.2rem' }}>
-                        <FlagImage code={sEntry.flag} />
-                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sEntry.name}</span>
-                      </div>
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: sRank <= 3 ? '0.82rem' : '0.72rem', fontWeight: 700, color: scoreColor(sEntry.score), opacity: sOpacity }}>
-                        {sEntry.score.toFixed(2)}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', fontSize: sRank <= 3 ? '0.85rem' : '0.75rem', fontWeight: 600, color: sRank <= 3 ? 'var(--ink)' : 'var(--ink-mute)' }}>
+                        {sEntry.flag && <div style={{ marginBottom: '0.25rem' }}><FlagImage code={sEntry.flag} /></div>}
+                        <span style={{ fontSize: '1rem', whiteSpace: 'normal', wordBreak: 'break-word', textAlign: 'center' }}>{sEntry.name}</span>
                       </div>
                     </div>
                   </div>
