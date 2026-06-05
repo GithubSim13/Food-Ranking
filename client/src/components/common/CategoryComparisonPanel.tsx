@@ -2,8 +2,7 @@ import { useState } from 'react'
 import ReactDOM from 'react-dom'
 import { useQuery } from '@tanstack/react-query'
 import { getEntries } from '../../api/entries'
-import FlagImage from './FlagImage'
-import { sortReviewsByDateDesc, latestRatedReview, scoreColor, formatReviewDate } from '../../utils'
+import { sortReviewsByDateDesc, latestRatedReview } from '../../utils'
 
 interface Props {
   category: string
@@ -14,13 +13,14 @@ interface ComparisonRow {
   id: number
   foodName: string
   flag: string | null
+  restaurantName: string
   overall: number
   taste: number | null
   value: number | null
   consistency: number | null
   reviewCount: number
   latestDate: string | null
-  firstNote: string | null
+  latestNotes: string[]
 }
 
 interface HoveredRow {
@@ -42,20 +42,23 @@ export default function CategoryComparisonPanel({ category, currentEntryId }: Pr
       const latest = latestRatedReview(e.reviews)
       if (latest === null) return null
       const sorted = sortReviewsByDateDesc(e.reviews)
-      const firstNote =
-        sorted.find(r => r.notes?.trim())?.notes?.split('\n').find(l => l.trim()) ?? null
+      const latestReview = sorted[0] ?? null
       const latestDate = sorted.find(r => r.date)?.date ?? null
+      const latestNotes = latestReview?.notes
+        ? latestReview.notes.split('\n').map(l => l.trim()).filter(Boolean)
+        : []
       return {
         id: e.id,
         foodName: e.foodName,
         flag: e.flag,
+        restaurantName: e.restaurant.name,
         overall: latest.overallRating!,
-        taste: sorted.find(r => r.rating1 !== null)?.rating1 ?? null,
-        value: sorted.find(r => r.rating2 !== null)?.rating2 ?? null,
-        consistency: sorted.find(r => r.rating3 !== null)?.rating3 ?? null,
+        taste: latestReview?.rating1 ?? null,
+        value: latestReview?.rating2 ?? null,
+        consistency: latestReview?.rating3 ?? null,
         reviewCount: e.reviews.length,
         latestDate,
-        firstNote,
+        latestNotes,
       }
     })
     .filter((e): e is ComparisonRow => e !== null)
@@ -83,39 +86,18 @@ export default function CategoryComparisonPanel({ category, currentEntryId }: Pr
               pointerEvents: 'none',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.4rem' }}>
-              <FlagImage code={hoveredRow.flag} style={{ width: '1em', flexShrink: 0 }} />
-              <span style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--ink)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {hoveredRow.foodName}
-              </span>
-              <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '0.9rem', color: scoreColor(hoveredRow.overall), flexShrink: 0 }}>
-                {hoveredRow.overall.toFixed(2)}
-              </span>
+            <div style={{ fontSize: '0.78rem', color: 'var(--ink-mute)', marginBottom: hoveredRow.latestNotes.length ? '0.5rem' : 0 }}>
+              {hoveredRow.restaurantName}
             </div>
-            <div style={{ display: 'flex', gap: '0.5rem', fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--ink-mute)', marginBottom: hoveredRow.firstNote ? '0.4rem' : '0.35rem' }}>
-              <span>T {fmt1(hoveredRow.taste)}</span>
-              <span>V {fmt1(hoveredRow.value)}</span>
-              <span>C {fmt1(hoveredRow.consistency)}</span>
-            </div>
-            {hoveredRow.firstNote && (
-              <p style={{
-                fontStyle: 'italic',
-                fontSize: '0.78rem',
-                color: 'var(--ink-mute)',
-                margin: '0 0 0.4rem',
-                lineHeight: 1.4,
-                overflow: 'hidden',
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-              } as React.CSSProperties}>
-                "{hoveredRow.firstNote}"
-              </p>
+            {hoveredRow.latestNotes.length > 0 && (
+              <ul style={{ margin: 0, paddingLeft: '1.1rem', listStyle: 'disc' }}>
+                {hoveredRow.latestNotes.map((line, i) => (
+                  <li key={i} style={{ fontSize: '0.78rem', color: 'var(--ink-mute)', lineHeight: 1.5 }}>
+                    {line}
+                  </li>
+                ))}
+              </ul>
             )}
-            <div style={{ fontSize: '0.72rem', color: 'var(--ink-mute)', fontFamily: 'var(--font-mono)' }}>
-              {hoveredRow.reviewCount} {hoveredRow.reviewCount === 1 ? 'review' : 'reviews'}
-              {hoveredRow.latestDate && ` · ${formatReviewDate(hoveredRow.latestDate)}`}
-            </div>
           </div>,
           document.body
         )
