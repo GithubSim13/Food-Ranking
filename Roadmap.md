@@ -12,11 +12,7 @@ Planned features, in-progress work, and completed feature history.
 
 ## Planned
 
-### 1. Head-to-Head via Category Comparison Panel
-
-When hovering over an entry in the Category Comparison Panel (TVC sidebar shown during review add/edit), show a mini popup with that entry's full breakdown — quote, all three sub-ratings, review count, date. No new pages; works entirely within the existing modal system.
-
-### 2. Review Images
+### 1. Review Images
 
 - Separate `ReviewImage` table:
 
@@ -27,7 +23,7 @@ When hovering over an entry in the Category Comparison Panel (TVC sidebar shown 
 - Flow: image uploaded to R2 → URL stored in `ReviewImage`
 - Raw image bytes never stored in PostgreSQL
 
-### 3. Map View
+### 2. Map View
 
 **Concept**
 - Default view: all reviewed restaurants near current location, pinned by rating
@@ -49,7 +45,7 @@ Restaurant — id, name, googlePlaceId?, mapboxId?
 - New entries: link Places ID at creation time
 - Existing entries: backfill gradually, no rush
 
-### 4. Hosting & Auth
+### 3. Hosting & Auth
 
 **Infrastructure**
 - **Frontend** → Vercel
@@ -69,13 +65,6 @@ Restaurant — id, name, googlePlaceId?, mapboxId?
 - IP-based failed-attempt lockout: 5 failures → 15-minute cooldown, in-memory counter (resets on server restart, acceptable for personal use)
 - Request middleware swaps Prisma client instance based on whether the user is authenticated (real DB) or in demo mode (demo DB)
 
-### 5. Code Audit
-
-Focus areas:
-- `HomePage.tsx` — split into section sub-components (file is large)
-- Date formatting consistency — audit all `review.date` display sites after timezone bug fix; ensure `formatReviewDate()` helper used everywhere
-- CSS variable consistency — audit inline styles added during podium redesign sessions
-- Flag badge component — extract shared `EntryFlagBadges` component used across cards, detail modal, and any dashboard widgets
 
 ---
 
@@ -176,3 +165,5 @@ Ideas documented for later, not currently prioritised:
 - [x] Hall of Fame / Hall of Shame bar gradients — bars fade from solid at the peak to transparent at the divider (fame: top→bottom, shame: bottom→top)
 - [x] Hall of Fame / Hall of Shame transition animation — full cinematic expand/collapse: bars grow from divider outward (transformOrigin: 'bottom' for fame, 'top' for shame), per-bar scaleY stagger (80ms apart, 800ms duration, spring easing), content text flows in with translateY after bar opens (200ms delay, 600ms duration), watermark title assembles letter-by-letter with 60ms per-character stagger (500ms per letter), reverse stagger on collapse. Grid 0fr→1fr trick for container height so no dead space below.
 - [x] Entry flags — tryAgain, neverAgain (XOR toggles on entry detail), uncertainRating (derived from latest review); badge dots on entry cards; filter pills on Entries page
+- [x] Head-to-Head via Category Comparison Panel — hovering an entry in the panel shows a popup with restaurant name and all notes from the latest review only (sortReviewsByDateDesc logic); T/V/C and review count not repeated in popup as they're already visible in the row
+- [x] Code Audit — HomePage.tsx split 619→248 lines into HomeShared.tsx, PodiumSection.tsx, ReigningChampionCard.tsx, LoggingPaceCard.tsx, BestValueCard.tsx; EntryFlagBadges extracted to common/EntryFlagBadges.tsx (badge CSS variables --badge-try-again, --badge-never-again, --badge-uncertain added to :root); CSS variable pass (#9b8fc0→var(--ink-mute), #e6a817→var(--gold)); date formatting audit confirmed formatReviewDate() already consistent everywhere
