@@ -19,6 +19,10 @@
   --gold: #e7b54a;
   --gold-wash: #352c1c;
 
+  --badge-try-again: #3b82f6;
+  --badge-never-again: #ef4444;
+  --badge-uncertain: #eab308;
+
   --font-display: 'Bricolage Grotesque', sans-serif;
   --font-body: 'Hanken Grotesk', sans-serif;
   --font-mono: 'Space Mono', monospace;

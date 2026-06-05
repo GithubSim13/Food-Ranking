@@ -242,6 +242,23 @@ CLIENT_URL=http://localhost:5173
 
 Run `npm run db:migrate` after setting up PostgreSQL to create the database tables.
 
+## Hosting & Auth
+
+**Two databases** (both on Railway Postgres):
+- `DATABASE_URL` — real DB, password-protected
+- `DEMO_DATABASE_URL` — demo DB, pre-seeded snapshot, nightly reset via `--clear` import script
+
+**Prisma singleton** (`src/lib/prisma.ts`) will need to support two clients — one per database URL — swapped per-request based on auth state rather than at module load time.
+
+**Auth middleware** (planned in `server/src/index.ts`):
+- Basic Auth over HTTPS; password from env var
+- IP-based lockout: 5 failed attempts → 15-minute cooldown, tracked in an in-memory counter (resets on server restart — acceptable for personal use)
+- Middleware attaches the correct Prisma client to `res.locals` based on whether the request is authenticated (real DB) or in demo mode (demo DB)
+
+**Capacitor app**: credentials baked in as a build-time env variable; the app sends them automatically on every request — no login screen is ever shown.
+
+**Web login page**: two options — enter password (real DB) or Try the Demo (demo DB). Demo mode toggle also available somewhere in the app UI (e.g. sidebar footer) for showing the app in person.
+
 ## Code review effort
 
 Default to low or medium effort unless the task is explicitly complex. Only use high effort for architecture decisions or difficult debugging.

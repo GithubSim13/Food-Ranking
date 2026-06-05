@@ -49,10 +49,25 @@ Restaurant — id, name, googlePlaceId?, mapboxId?
 - New entries: link Places ID at creation time
 - Existing entries: backfill gradually, no rush
 
-### 4. Hosting
+### 4. Hosting & Auth
 
+**Infrastructure**
 - **Frontend** → Vercel
 - **Backend + DB** → Railway
+
+**Two Railway Postgres databases**
+- **Real DB** — your data, password-protected
+- **Demo DB** — pre-seeded snapshot of real data, writable by anyone, resets automatically on a nightly cron using the existing `--clear` import script
+
+**Auth model**
+- Web visitors hit a login page with two options: enter password (real DB) or Try the Demo (demo DB)
+- Capacitor app has credentials baked in as a build-time env variable — opens straight to real DB, no login screen ever shown
+- Demo mode toggle somewhere in the app UI (e.g. sidebar footer) for showing the app to people in person without risking real data
+
+**Server middleware**
+- Basic Auth over HTTPS — password configured via env var
+- IP-based failed-attempt lockout: 5 failures → 15-minute cooldown, in-memory counter (resets on server restart, acceptable for personal use)
+- Request middleware swaps Prisma client instance based on whether the user is authenticated (real DB) or in demo mode (demo DB)
 
 ### 5. Code Audit
 

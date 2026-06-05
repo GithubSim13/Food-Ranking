@@ -526,20 +526,20 @@ export default function EntryDetail({ onPanelChange }: EntryDetailProps = {}) {
                 disabled={isPatchingFlag}
                 style={{
                   background: entry.tryAgain ? 'rgba(59,130,246,0.15)' : 'var(--surface)',
-                  border: entry.tryAgain ? '2px solid #3b82f6' : '2px solid var(--line)',
+                  border: entry.tryAgain ? '2px solid var(--badge-try-again)' : '2px solid var(--line)',
                   cursor: isPatchingFlag ? 'default' : 'pointer',
                   padding: '0.4rem 0.875rem',
                   borderRadius: 8,
                   fontSize: '0.875rem',
                   fontWeight: 600,
-                  color: entry.tryAgain ? '#3b82f6' : 'var(--ink-mute)',
+                  color: entry.tryAgain ? 'var(--badge-try-again)' : 'var(--ink-mute)',
                   opacity: isPatchingFlag ? 0.5 : 1,
                   transition: 'all 0.15s',
                   display: 'flex',
                   alignItems: 'center',
                 }}
               >
-                <span style={{ width: 8, height: 8, borderRadius: '50%', display: 'inline-block', background: '#3b82f6', marginRight: 6, flexShrink: 0 }} />
+                <span style={{ width: 8, height: 8, borderRadius: '50%', display: 'inline-block', background: 'var(--badge-try-again)', marginRight: 6, flexShrink: 0 }} />
                 Try Again
               </button>
               <button
@@ -550,25 +550,25 @@ export default function EntryDetail({ onPanelChange }: EntryDetailProps = {}) {
                 disabled={isPatchingFlag}
                 style={{
                   background: entry.neverAgain ? 'rgba(239,68,68,0.15)' : 'var(--surface)',
-                  border: entry.neverAgain ? '2px solid #ef4444' : '2px solid var(--line)',
+                  border: entry.neverAgain ? '2px solid var(--badge-never-again)' : '2px solid var(--line)',
                   cursor: isPatchingFlag ? 'default' : 'pointer',
                   padding: '0.4rem 0.875rem',
                   borderRadius: 8,
                   fontSize: '0.875rem',
                   fontWeight: 600,
-                  color: entry.neverAgain ? '#ef4444' : 'var(--ink-mute)',
+                  color: entry.neverAgain ? 'var(--badge-never-again)' : 'var(--ink-mute)',
                   opacity: isPatchingFlag ? 0.5 : 1,
                   transition: 'all 0.15s',
                   display: 'flex',
                   alignItems: 'center',
                 }}
               >
-                <span style={{ width: 8, height: 8, borderRadius: '50%', display: 'inline-block', background: '#ef4444', marginRight: 6, flexShrink: 0 }} />
+                <span style={{ width: 8, height: 8, borderRadius: '50%', display: 'inline-block', background: 'var(--badge-never-again)', marginRight: 6, flexShrink: 0 }} />
                 Never Again
               </button>
               {sortReviewsByDateDesc(entry.reviews)[0]?.uncertainRating === true && (
                 <div style={{ display: 'flex', alignItems: 'center', padding: '0.4rem 0.875rem', fontSize: '0.875rem', fontWeight: 600, color: 'var(--ink-mute)' }}>
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', display: 'inline-block', background: '#eab308', marginRight: 6, flexShrink: 0 }} />
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', display: 'inline-block', background: 'var(--badge-uncertain)', marginRight: 6, flexShrink: 0 }} />
                   Uncertain Rating
                 </div>
               )}

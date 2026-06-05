@@ -1,6 +1,7 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import type { Entry } from '../../types'
 import FlagImage from '../common/FlagImage'
+import EntryFlagBadges from '../common/EntryFlagBadges'
 import { latestRating, sortReviewsByDateDesc, scoreColor } from '../../utils'
 
 export default function EntryCard({ entry }: { entry: Entry }) {
@@ -46,9 +47,7 @@ export default function EntryCard({ entry }: { entry: Entry }) {
           {entry.category} · {entry.restaurant.name}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-          {entry.tryAgain && <span style={{ width: 8, height: 8, borderRadius: '50%', display: 'inline-block', background: '#3b82f6' }} />}
-          {entry.neverAgain && <span style={{ width: 8, height: 8, borderRadius: '50%', display: 'inline-block', background: '#ef4444' }} />}
-          {sorted[0]?.uncertainRating === true && <span style={{ width: 8, height: 8, borderRadius: '50%', display: 'inline-block', background: '#eab308' }} />}
+          <EntryFlagBadges tryAgain={entry.tryAgain} neverAgain={entry.neverAgain} uncertainRating={sorted[0]?.uncertainRating === true} />
           {avg !== null && (
             <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '1rem', color: scoreColor(avg) }}>
               {avg.toFixed(2)}
