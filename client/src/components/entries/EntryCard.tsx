@@ -31,6 +31,9 @@ export default function EntryCard({ entry }: { entry: Entry }) {
         <FlagImage code={entry.flag} />
         {entry.starred && <span style={{ fontSize: '0.75rem', color: 'var(--gold)', flexShrink: 0 }}>★</span>}
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.foodName}</span>
+        {entry.tryAgain && <span style={{ width: 8, height: 8, borderRadius: '50%', display: 'inline-block', background: '#3b82f6', flexShrink: 0 }} />}
+        {entry.neverAgain && <span style={{ width: 8, height: 8, borderRadius: '50%', display: 'inline-block', background: '#ef4444', flexShrink: 0 }} />}
+        {entry.reviews.some(r => r.uncertainRating === true) && <span style={{ width: 8, height: 8, borderRadius: '50%', display: 'inline-block', background: '#eab308', flexShrink: 0 }} />}
       </div>
 
       {/* Quote — first line of most recent review with notes */}

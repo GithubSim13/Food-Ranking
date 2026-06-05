@@ -7,7 +7,7 @@ export interface Review {
   rating2: number | null;
   rating3: number | null;
   overallRating: number | null;
-  retroactive: boolean;
+  uncertainRating: boolean;
   createdAt: string;
 }
 
@@ -18,10 +18,12 @@ export interface Entry {
   restaurantId: number;
   starred: boolean;
   flag: string | null;
+  tryAgain: boolean;
+  neverAgain: boolean;
   createdAt: string;
   updatedAt: string;
   restaurant: { name: string };
-  reviews: Pick<Review, 'overallRating' | 'date' | 'rating1' | 'rating2' | 'rating3' | 'notes'>[];
+  reviews: Pick<Review, 'overallRating' | 'date' | 'rating1' | 'rating2' | 'rating3' | 'notes' | 'uncertainRating'>[];
 }
 
 export interface EntryDetail extends Omit<Entry, 'reviews'> {
@@ -34,6 +36,8 @@ export interface RankedEntry {
   category: string;
   starred: boolean;
   flag: string | null;
+  tryAgain: boolean;
+  neverAgain: boolean;
   restaurant: string;
   avgRating: number | null;
   reviewCount: number;

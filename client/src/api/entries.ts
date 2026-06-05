@@ -12,7 +12,7 @@ export const searchEntries = (q: string) =>
 
 export const patchEntry = (
   id: number,
-  data: { starred?: boolean; foodName?: string; category?: string; flag?: string | null }
+  data: { starred?: boolean; foodName?: string; category?: string; flag?: string | null; tryAgain?: boolean; neverAgain?: boolean }
 ) => axios.patch<Omit<Entry, 'reviews'>>(`/api/entries/${id}`, data).then(r => r.data);
 
 export const deleteEntry = (id: number) =>

@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef } from 'react'
 
-export type Scope = 'all' | 'starred' | 'abroad' | 'home'
+export type Scope = 'all' | 'starred' | 'abroad' | 'home' | 'tryAgain' | 'neverAgain' | 'uncertain'
 
 export function pillStyle(active: boolean): React.CSSProperties {
   return {
@@ -16,12 +16,15 @@ export function pillStyle(active: boolean): React.CSSProperties {
 }
 
 export function matchesScope(
-  entry: { starred: boolean; flag: string | null },
+  entry: { starred: boolean; flag: string | null; tryAgain?: boolean; neverAgain?: boolean; reviews?: { uncertainRating?: boolean }[] },
   scope: Scope,
 ): boolean {
   if (scope === 'starred') return entry.starred
   if (scope === 'abroad') return entry.flag !== null
   if (scope === 'home') return entry.flag === null
+  if (scope === 'tryAgain') return entry.tryAgain === true
+  if (scope === 'neverAgain') return entry.neverAgain === true
+  if (scope === 'uncertain') return (entry.reviews ?? []).some(r => r.uncertainRating === true)
   return true
 }
 
@@ -31,6 +34,7 @@ interface Props {
   scope: Scope
   onScopeChange: (s: Scope) => void
   searchPlaceholder?: string
+  extraScopePills?: { key: Scope; label: string }[]
   rightSlot?: React.ReactNode
 }
 
@@ -47,6 +51,7 @@ export function SearchAndScopeBar({
   scope,
   onScopeChange,
   searchPlaceholder = 'Search…',
+  extraScopePills,
   rightSlot,
 }: Props) {
   const rootRef = useRef<HTMLDivElement>(null)
@@ -92,6 +97,11 @@ export function SearchAndScopeBar({
       <div style={{ display: 'flex', justifyContent: rightSlot ? 'space-between' : undefined, alignItems: 'center', gap: '0.375rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
         <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap' }}>
           {SCOPE_PILLS.map(p => (
+            <button key={p.key} onClick={() => onScopeChange(p.key)} style={pillStyle(scope === p.key)}>
+              {p.label}
+            </button>
+          ))}
+          {extraScopePills?.map(p => (
             <button key={p.key} onClick={() => onScopeChange(p.key)} style={pillStyle(scope === p.key)}>
               {p.label}
             </button>

@@ -149,14 +149,14 @@ function ReviewCard({ review: r, onUpdated, onEditStart, onEditEnd }: ReviewCard
     rating2: number | null
     rating3: number | null
     notes: string
-    retroactive: boolean
+    uncertainRating: boolean
   }>({
     date: '',
     rating1: null,
     rating2: null,
     rating3: null,
     notes: '',
-    retroactive: false,
+    uncertainRating: false,
   })
 
   // If the card unmounts while editing (e.g. the review was deleted by a
@@ -177,7 +177,7 @@ function ReviewCard({ review: r, onUpdated, onEditStart, onEditEnd }: ReviewCard
         rating2: form.rating2,
         rating3: form.rating3,
         notes: form.notes || null,
-        retroactive: form.retroactive,
+        uncertainRating: form.uncertainRating,
       }),
     onSuccess: () => {
       setIsEditing(false)
@@ -209,7 +209,7 @@ function ReviewCard({ review: r, onUpdated, onEditStart, onEditEnd }: ReviewCard
       rating2: r.rating2 ?? null,
       rating3: r.rating3 ?? null,
       notes: r.notes ?? '',
-      retroactive: r.retroactive,
+      uncertainRating: r.uncertainRating,
     })
     setIsEditing(true)
     onEditStart()
@@ -250,8 +250,8 @@ function ReviewCard({ review: r, onUpdated, onEditStart, onEditEnd }: ReviewCard
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--ink-mute)', cursor: 'pointer' }}>
             <input
               type="checkbox"
-              checked={form.retroactive}
-              onChange={e => setForm(f => ({ ...f, retroactive: e.target.checked }))}
+              checked={form.uncertainRating}
+              onChange={e => setForm(f => ({ ...f, uncertainRating: e.target.checked }))}
             />
             Ratings added after the fact
           </label>
@@ -283,7 +283,7 @@ function ReviewCard({ review: r, onUpdated, onEditStart, onEditEnd }: ReviewCard
           <span style={{ fontSize: '0.8rem', color: 'var(--ink-mute)' }}>
             {r.date ? formatReviewDate(r.date) : 'No date'}
           </span>
-          {r.retroactive && (
+          {r.uncertainRating && (
             <span style={{ fontSize: '0.7rem', fontFamily: 'var(--font-mono)', color: 'var(--ink-mute)', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
               &#x1F559; ratings added later
             </span>
@@ -409,6 +409,16 @@ export default function EntryDetail({ onPanelChange }: EntryDetailProps = {}) {
     onSuccess: (_data, _vars, ctx) => {
       showToast(ctx?.newStarred ? 'Starred ★' : 'Unstarred')
     },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['entries', entryId] })
+      queryClient.invalidateQueries({ queryKey: ['entries'] })
+      queryClient.invalidateQueries({ queryKey: ['rankings'] })
+    },
+  })
+
+  const { mutate: patchFlag, isPending: isPatchingFlag } = useMutation({
+    mutationFn: (data: { tryAgain?: boolean; neverAgain?: boolean }) => patchEntry(entryId, data),
+    onError: () => showToast('Failed to update', 'error'),
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['entries', entryId] })
       queryClient.invalidateQueries({ queryKey: ['entries'] })
@@ -606,6 +616,60 @@ export default function EntryDetail({ onPanelChange }: EntryDetailProps = {}) {
               >
                 {entry.starred ? '★ Starred' : '☆ Star'}
               </button>
+              <button
+                onClick={() => entry.tryAgain
+                  ? patchFlag({ tryAgain: false })
+                  : patchFlag({ tryAgain: true, neverAgain: false })
+                }
+                disabled={isPatchingFlag}
+                style={{
+                  background: entry.tryAgain ? 'rgba(59,130,246,0.15)' : 'var(--surface)',
+                  border: entry.tryAgain ? '2px solid #3b82f6' : '2px solid var(--line)',
+                  cursor: isPatchingFlag ? 'default' : 'pointer',
+                  padding: '0.4rem 0.875rem',
+                  borderRadius: 8,
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  color: entry.tryAgain ? '#3b82f6' : 'var(--ink-mute)',
+                  opacity: isPatchingFlag ? 0.5 : 1,
+                  transition: 'all 0.15s',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+              >
+                <span style={{ width: 8, height: 8, borderRadius: '50%', display: 'inline-block', background: '#3b82f6', marginRight: 6, flexShrink: 0 }} />
+                Try Again
+              </button>
+              <button
+                onClick={() => entry.neverAgain
+                  ? patchFlag({ neverAgain: false })
+                  : patchFlag({ neverAgain: true, tryAgain: false })
+                }
+                disabled={isPatchingFlag}
+                style={{
+                  background: entry.neverAgain ? 'rgba(239,68,68,0.15)' : 'var(--surface)',
+                  border: entry.neverAgain ? '2px solid #ef4444' : '2px solid var(--line)',
+                  cursor: isPatchingFlag ? 'default' : 'pointer',
+                  padding: '0.4rem 0.875rem',
+                  borderRadius: 8,
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  color: entry.neverAgain ? '#ef4444' : 'var(--ink-mute)',
+                  opacity: isPatchingFlag ? 0.5 : 1,
+                  transition: 'all 0.15s',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+              >
+                <span style={{ width: 8, height: 8, borderRadius: '50%', display: 'inline-block', background: '#ef4444', marginRight: 6, flexShrink: 0 }} />
+                Never Again
+              </button>
+              {entry.reviews.some(r => r.uncertainRating === true) && (
+                <div style={{ display: 'flex', alignItems: 'center', padding: '0.4rem 0.875rem', fontSize: '0.875rem', fontWeight: 600, color: 'var(--ink-mute)' }}>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', display: 'inline-block', background: '#eab308', marginRight: 6, flexShrink: 0 }} />
+                  Uncertain Rating
+                </div>
+              )}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               <p style={{ color: 'var(--ink-mute)', fontSize: '0.9rem', margin: 0 }}>

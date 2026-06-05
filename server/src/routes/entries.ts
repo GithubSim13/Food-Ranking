@@ -30,7 +30,7 @@ router.get('/', async (_req, res) => {
     const entries = await prisma.entry.findMany({
       include: {
         restaurant: restaurantNameSelect,
-        reviews: { select: { overallRating: true, date: true, rating1: true, rating2: true, rating3: true, notes: true } },
+        reviews: { select: { overallRating: true, date: true, rating1: true, rating2: true, rating3: true, notes: true, uncertainRating: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -71,17 +71,21 @@ router.patch('/:id', async (req, res) => {
     return;
   }
 
-  const { starred, foodName, category, flag } = req.body as {
+  const { starred, foodName, category, flag, tryAgain, neverAgain } = req.body as {
     starred?: unknown;
     foodName?: unknown;
     category?: unknown;
     flag?: unknown;
+    tryAgain?: unknown;
+    neverAgain?: unknown;
   };
-  const data: { starred?: boolean; foodName?: string; category?: string; flag?: string | null } = {};
+  const data: { starred?: boolean; foodName?: string; category?: string; flag?: string | null; tryAgain?: boolean; neverAgain?: boolean } = {};
   if (starred !== undefined) data.starred = Boolean(starred);
   if (foodName !== undefined) data.foodName = String(foodName);
   if (category !== undefined) data.category = String(category);
   if (flag !== undefined) data.flag = flag != null ? String(flag) : null;
+  if (tryAgain !== undefined) data.tryAgain = Boolean(tryAgain);
+  if (neverAgain !== undefined) data.neverAgain = Boolean(neverAgain);
 
   try {
     const entry = await prisma.entry.update({

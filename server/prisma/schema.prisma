@@ -23,6 +23,8 @@ model Entry {
   starred      Boolean    @default(false)
   flag         String?
   manualRank   Int?
+  tryAgain     Boolean    @default(false)
+  neverAgain   Boolean    @default(false)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
   reviews      Review[]
@@ -38,6 +40,6 @@ model Review {
   rating2       Float?
   rating3       Float?
   overallRating Float?
-  retroactive   Boolean   @default(false)
+  uncertainRating Boolean   @default(false)
   createdAt     DateTime  @default(now())
 }

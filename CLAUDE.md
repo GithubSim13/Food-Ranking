@@ -63,8 +63,8 @@ Restaurant ──< Entry ──< Review
 ```
 
 - **Restaurant** — `id`, `name`
-- **Entry** — `id`, `foodName`, `category`, `restaurantId`, `starred` (bool), `flag` (String?, nullable 2-letter ISO code), `manualRank` (Int?, nullable — per-category drag order), `createdAt`, `updatedAt`
-- **Review** — `id`, `entryId`, `date?` (DateTime, nullable), `notes?`, `rating1?` (Taste), `rating2?` (Value), `rating3?` (Consistency), `overallRating?`, `retroactive` (Boolean, default false), `createdAt`
+- **Entry** — `id`, `foodName`, `category`, `restaurantId`, `starred` (bool), `flag` (String?, nullable 2-letter ISO code), `manualRank` (Int?, nullable — per-category drag order), `tryAgain` (Boolean, default false), `neverAgain` (Boolean, default false), `createdAt`, `updatedAt`
+- **Review** — `id`, `entryId`, `date?` (DateTime, nullable), `notes?`, `rating1?` (Taste), `rating2?` (Value), `rating3?` (Consistency), `overallRating?`, `uncertainRating` (Boolean, default false, renamed from `retroactive`), `createdAt`
 
 `Entry.flag` is a nullable 2-letter ISO 3166-1 alpha-2 country code (e.g. `"SG"`, `"JP"`). `null` means the food was eaten locally (home country). Non-null means eaten abroad.
 
@@ -189,7 +189,8 @@ client/src/
 - **Query invalidation**: after any mutation, relevant TanStack Query keys invalidated for immediate UI update — `['entries']`, `['entries', id]`, `['rankings']`, `['restaurants']`, `['categories']` as appropriate
 - **Starred entries**: gold card styling on entry list and rankings; toggle button on entry detail page
 - **Review notes**: stored as newline-separated text; rendered as `<ul><li>` bullet list
-- **Retroactive reviews**: `Review.retroactive` boolean — when true, review card shows a small muted clock badge "ratings added later". Checkbox in both new and edit review forms.
+- **Retroactive reviews**: `Review.uncertainRating` boolean (renamed from `retroactive`) — when true, review card shows a small muted clock badge "ratings added later". Checkbox in both new and edit review forms.
+- **Entry flags**: `Entry.tryAgain` and `Entry.neverAgain` booleans — mutually exclusive (XOR enforced at app layer). `uncertainRating` badge on entry is derived from whether any review has `uncertainRating: true`. Badges: 🔄 tryAgain, 🚫 neverAgain, ⚠️ uncertainRating. Filter pills on Entries page.
 - **Inline review editing**: Edit button on each review card; saves via PUT /api/reviews/:id; includes retroactive checkbox
 - **Inline entry editing**: Edit button on `/entries/:id` — edits foodName, category (combo box), flag (FlagPicker), restaurant name. Fires PATCH /api/restaurants/:id and PATCH /api/entries/:id in parallel if both changed.
 - **Delete flows**: Delete Entry button on entry detail (confirms, deletes entry + all reviews, navigates to /entries). Delete button on each review card. Categories/Restaurants block delete if entries exist.

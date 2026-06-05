@@ -79,6 +79,11 @@ export default function EntryList() {
         scope={scope}
         onScopeChange={setScope}
         searchPlaceholder="Search by name, category, restaurant, or notes…"
+        extraScopePills={[
+          { key: 'tryAgain', label: 'Try Again' },
+          { key: 'neverAgain', label: 'Never Again' },
+          { key: 'uncertain', label: 'Uncertain' },
+        ]}
         rightSlot={
           <div style={{ display: 'flex', gap: '0.375rem', opacity: q.length > 0 ? 0.4 : 1, pointerEvents: q.length > 0 ? 'none' : 'auto' }}>
             {sortPills.map(p => (

@@ -23,7 +23,7 @@ export default function ReviewForm({ entryId, onSuccess }: Props) {
     { rating1: null, rating2: null, rating3: null }
   )
   const [notes, setNotes] = useState('')
-  const [retroactive, setRetroactive] = useState(false)
+  const [uncertainRating, setUncertainRating] = useState(false)
 
   const { mutate, isPending } = useMutation({
     mutationFn: createReview,
@@ -31,7 +31,7 @@ export default function ReviewForm({ entryId, onSuccess }: Props) {
       setDate(today)
       setRatings({ rating1: null, rating2: null, rating3: null })
       setNotes('')
-      setRetroactive(false)
+      setUncertainRating(false)
       onSuccess()
     },
     onError: () => {
@@ -48,7 +48,7 @@ export default function ReviewForm({ entryId, onSuccess }: Props) {
       rating1: ratings.rating1 ?? undefined,
       rating2: ratings.rating2 ?? undefined,
       rating3: ratings.rating3 ?? undefined,
-      retroactive,
+      uncertainRating,
     })
   }
 
@@ -83,8 +83,8 @@ export default function ReviewForm({ entryId, onSuccess }: Props) {
       <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--ink-mute)', cursor: 'pointer' }}>
         <input
           type="checkbox"
-          checked={retroactive}
-          onChange={e => setRetroactive(e.target.checked)}
+          checked={uncertainRating}
+          onChange={e => setUncertainRating(e.target.checked)}
         />
         Ratings added after the fact
       </label>

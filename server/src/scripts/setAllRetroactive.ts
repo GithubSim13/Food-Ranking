@@ -8,9 +8,9 @@ const prisma = new PrismaClient();
 
 async function main() {
   const result = await prisma.review.updateMany({
-    data: { retroactive: true },
+    data: { uncertainRating: true },
   });
-  console.log(`Updated ${result.count} review(s) → retroactive = true`);
+  console.log(`Updated ${result.count} review(s) → uncertainRating = true`);
 }
 
 main()

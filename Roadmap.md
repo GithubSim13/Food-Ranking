@@ -12,9 +12,39 @@ Planned features, in-progress work, and completed feature history.
 
 ## Planned
 
-### 1. Review Images
+### 1. Entry Flags
+
+Three boolean flags on `Entry`, surfaced as badges on entry cards, detail modal, and Entries page filter pills.
+
+**Schema addition**
+```
+Entry — tryAgain (Boolean, default false), neverAgain (Boolean, default false)
+```
+
+**Logic**
+- `tryAgain` XOR `neverAgain` — mutually exclusive; setting one clears the other. Enforced at app layer (server PATCH + UI toggle), not DB level.
+- `uncertainRating` is not a stored field — derived at display time from whether any of the entry's reviews have `uncertainRating: true` (see below).
+
+**Rename**
+- `Review.retroactive` → `Review.uncertainRating` across DB migration, server routes, client components, `types.ts`, and the `setAllRetroactive` script reference.
+
+**Badges**
+- 🔄 `tryAgain` — worth revisiting
+- 🚫 `neverAgain` — written off for good
+- ⚠️ `uncertainRating` — derived from any review having `uncertainRating: true`
+
+**Scope filter pills** on Entries page — filterable alongside existing Everything / Starred / Abroad / Home pills.
+
+**Dashboard widgets** (TBD) — possible "Redemption List" (tryAgain entries) and blacklist count in stat row.
+
+### 2. Head-to-Head via Category Comparison Panel
+
+When hovering over an entry in the Category Comparison Panel (TVC sidebar shown during review add/edit), show a mini popup with that entry's full breakdown — quote, all three sub-ratings, review count, date. No new pages; works entirely within the existing modal system.
+
+### 3. Review Images
 
 - Separate `ReviewImage` table:
+
   ```
   ReviewImage — id, reviewId, url, caption?, sortOrder, createdAt
   ```
@@ -22,7 +52,7 @@ Planned features, in-progress work, and completed feature history.
 - Flow: image uploaded to R2 → URL stored in `ReviewImage`
 - Raw image bytes never stored in PostgreSQL
 
-### 2. Map View
+### 4. Map View
 
 **Concept**
 - Default view: all reviewed restaurants near current location, pinned by rating
@@ -44,10 +74,31 @@ Restaurant — id, name, googlePlaceId?, mapboxId?
 - New entries: link Places ID at creation time
 - Existing entries: backfill gradually, no rush
 
-### 3. Hosting
+### 5. Hosting
 
 - **Frontend** → Vercel
 - **Backend + DB** → Railway
+
+### 6. Code Audit
+
+Scheduled post-entry-flags, after that feature touches cards, detail modal, entries page, and server.
+
+Focus areas:
+- `HomePage.tsx` — split into section sub-components (file is large)
+- Date formatting consistency — audit all `review.date` display sites after timezone bug fix; ensure `formatReviewDate()` helper used everywhere
+- CSS variable consistency — audit inline styles added during podium redesign sessions
+- Flag badge component — extract shared `EntryFlagBadges` component used across cards, detail modal, and any dashboard widgets
+
+---
+
+## Shelved
+
+Ideas documented for later, not currently prioritised:
+
+- **Rating history chart** — per-entry line chart of overallRating over time (+ T/V/C toggleable); part of a broader analytics push; uses existing recharts
+- **Shareable entry cards** — generate a pretty image card (Spotify Wrapped style) for a single entry
+- **Tags** — freeform tags on entries beyond category (e.g. "spicy", "late night"); filterable on Entries and Rankings
+- **Budget tracker** — optional price field on reviews; avg spend per restaurant, best value per dollar alongside Value rating
 
 ---
 
