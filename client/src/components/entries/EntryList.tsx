@@ -5,7 +5,7 @@ import { getEntries } from '../../api/entries'
 import EntryCard from './EntryCard'
 import { SearchAndScopeBar, pillStyle, matchesScope } from '../common/SearchAndScopeBar'
 import type { Scope } from '../common/SearchAndScopeBar'
-import { latestRating } from '../../utils'
+import { latestRating, sortReviewsByDateDesc } from '../../utils'
 import { kickerStyle, pageTitleStyle } from '../common/pageStyles'
 
 type Sort = 'recent' | 'rated' | 'az'
@@ -34,6 +34,7 @@ export default function EntryList() {
       (wordRe != null && e.reviews.some(r => r.notes != null && wordRe.test(r.notes)))
     )
     if (!matchesSearch) return false
+    if (scope === 'uncertain') return sortReviewsByDateDesc(e.reviews)[0]?.uncertainRating === true
     return matchesScope(e, scope)
   })
 

@@ -48,7 +48,7 @@ export default function EntryCard({ entry }: { entry: Entry }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
           {entry.tryAgain && <span style={{ width: 8, height: 8, borderRadius: '50%', display: 'inline-block', background: '#3b82f6' }} />}
           {entry.neverAgain && <span style={{ width: 8, height: 8, borderRadius: '50%', display: 'inline-block', background: '#ef4444' }} />}
-          {entry.reviews.some(r => r.uncertainRating === true) && <span style={{ width: 8, height: 8, borderRadius: '50%', display: 'inline-block', background: '#eab308' }} />}
+          {sorted[0]?.uncertainRating === true && <span style={{ width: 8, height: 8, borderRadius: '50%', display: 'inline-block', background: '#eab308' }} />}
           {avg !== null && (
             <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '1rem', color: scoreColor(avg) }}>
               {avg.toFixed(2)}

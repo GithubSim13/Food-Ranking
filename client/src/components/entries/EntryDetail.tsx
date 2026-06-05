@@ -664,7 +664,7 @@ export default function EntryDetail({ onPanelChange }: EntryDetailProps = {}) {
                 <span style={{ width: 8, height: 8, borderRadius: '50%', display: 'inline-block', background: '#ef4444', marginRight: 6, flexShrink: 0 }} />
                 Never Again
               </button>
-              {entry.reviews.some(r => r.uncertainRating === true) && (
+              {sortReviewsByDateDesc(entry.reviews)[0]?.uncertainRating === true && (
                 <div style={{ display: 'flex', alignItems: 'center', padding: '0.4rem 0.875rem', fontSize: '0.875rem', fontWeight: 600, color: 'var(--ink-mute)' }}>
                   <span style={{ width: 8, height: 8, borderRadius: '50%', display: 'inline-block', background: '#eab308', marginRight: 6, flexShrink: 0 }} />
                   Uncertain Rating
