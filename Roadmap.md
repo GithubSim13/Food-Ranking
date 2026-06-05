@@ -12,36 +12,11 @@ Planned features, in-progress work, and completed feature history.
 
 ## Planned
 
-### 1. Entry Flags
-
-Three boolean flags on `Entry`, surfaced as badges on entry cards, detail modal, and Entries page filter pills.
-
-**Schema addition**
-```
-Entry — tryAgain (Boolean, default false), neverAgain (Boolean, default false)
-```
-
-**Logic**
-- `tryAgain` XOR `neverAgain` — mutually exclusive; setting one clears the other. Enforced at app layer (server PATCH + UI toggle), not DB level.
-- `uncertainRating` is not a stored field — derived at display time from whether any of the entry's reviews have `uncertainRating: true` (see below).
-
-**Rename**
-- `Review.retroactive` → `Review.uncertainRating` across DB migration, server routes, client components, `types.ts`, and the `setAllRetroactive` script reference.
-
-**Badges**
-- 🔄 `tryAgain` — worth revisiting
-- 🚫 `neverAgain` — written off for good
-- ⚠️ `uncertainRating` — derived from any review having `uncertainRating: true`
-
-**Scope filter pills** on Entries page — filterable alongside existing Everything / Starred / Abroad / Home pills.
-
-**Dashboard widgets** (TBD) — possible "Redemption List" (tryAgain entries) and blacklist count in stat row.
-
-### 2. Head-to-Head via Category Comparison Panel
+### 1. Head-to-Head via Category Comparison Panel
 
 When hovering over an entry in the Category Comparison Panel (TVC sidebar shown during review add/edit), show a mini popup with that entry's full breakdown — quote, all three sub-ratings, review count, date. No new pages; works entirely within the existing modal system.
 
-### 3. Review Images
+### 2. Review Images
 
 - Separate `ReviewImage` table:
 
@@ -52,7 +27,7 @@ When hovering over an entry in the Category Comparison Panel (TVC sidebar shown 
 - Flow: image uploaded to R2 → URL stored in `ReviewImage`
 - Raw image bytes never stored in PostgreSQL
 
-### 4. Map View
+### 3. Map View
 
 **Concept**
 - Default view: all reviewed restaurants near current location, pinned by rating
@@ -74,14 +49,12 @@ Restaurant — id, name, googlePlaceId?, mapboxId?
 - New entries: link Places ID at creation time
 - Existing entries: backfill gradually, no rush
 
-### 5. Hosting
+### 4. Hosting
 
 - **Frontend** → Vercel
 - **Backend + DB** → Railway
 
-### 6. Code Audit
-
-Scheduled post-entry-flags, after that feature touches cards, detail modal, entries page, and server.
+### 5. Code Audit
 
 Focus areas:
 - `HomePage.tsx` — split into section sub-components (file is large)
@@ -137,10 +110,10 @@ Ideas documented for later, not currently prioritised:
 - [x] Full dark theme — all modals, dropdowns, inputs, FlagPicker themed with CSS variables
 - [x] Home dashboard — stat grid, podium, Hall of Fame/Shame, Top Tables, Regulars, Logging pace
 - [x] Home dashboard date fix — Logging pace and Fresh off the fork use review.date, not createdAt
-- [x] Review.retroactive flag — checkbox on form, badge on review card, persisted via POST/PUT reviews
+- [x] Review.uncertainRating flag (renamed from retroactive) — checkbox on form, badge on review card, persisted via POST/PUT reviews
 - [x] Weighted overallRating — Taste 60%, Consistency 30%, Value 10%; weights redistributed for partial ratings
 - [x] Codebase audit — dead code, redundancy, type safety gaps, CSS variable consistency
-- [x] setAllRetroactive script — all 494 imported reviews marked retroactive = true
+- [x] setAllRetroactive script — all 494 imported reviews marked uncertainRating = true
 - [x] Rankings sorting — rated entries auto-sort by overallRating desc; drag-and-drop restricted to unrated entries only
 - [x] Rankings search + scope filters (Everything / Starred / Abroad / Home) — category groups hidden when no matches
 - [x] Category Comparison Panel — shown on entry detail when review form is open; rated entries in same category sorted by overallRating desc; Taste/Value/Consistency breakdowns displayed
@@ -187,3 +160,4 @@ Ideas documented for later, not currently prioritised:
 - [x] Hall of Fame / Hall of Shame podium quotes — first line of latest review notes shown on ranks 1–3 bars (italic, muted, 2-line clamp)
 - [x] Hall of Fame / Hall of Shame bar gradients — bars fade from solid at the peak to transparent at the divider (fame: top→bottom, shame: bottom→top)
 - [x] Hall of Fame / Hall of Shame transition animation — full cinematic expand/collapse: bars grow from divider outward (transformOrigin: 'bottom' for fame, 'top' for shame), per-bar scaleY stagger (80ms apart, 800ms duration, spring easing), content text flows in with translateY after bar opens (200ms delay, 600ms duration), watermark title assembles letter-by-letter with 60ms per-character stagger (500ms per letter), reverse stagger on collapse. Grid 0fr→1fr trick for container height so no dead space below.
+- [x] Entry flags — tryAgain, neverAgain (XOR toggles on entry detail), uncertainRating (derived from latest review); badge dots on entry cards; filter pills on Entries page

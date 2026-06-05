@@ -44,7 +44,7 @@ npx ts-node src/scripts/import.ts <path-to-entries.md> --clear   # wipe + reimpo
 
 ### One-off scripts (`/server`)
 ```bash
-npx ts-node src/scripts/setAllRetroactive.ts   # sets retroactive = true on all existing reviews (already run)
+npx ts-node src/scripts/setAllRetroactive.ts   # sets uncertainRating = true on all existing reviews (already run)
 ```
 Safe to re-run: upserts entries, backfills reviews and flags for entries that have none yet.
 
@@ -69,8 +69,6 @@ Restaurant ──< Entry ──< Review
 `Entry.flag` is a nullable 2-letter ISO 3166-1 alpha-2 country code (e.g. `"SG"`, `"JP"`). `null` means the food was eaten locally (home country). Non-null means eaten abroad.
 
 `Entry.manualRank` is a nullable integer used to persist drag-and-drop order within a category on the Rankings page. `null` means unranked (new entries). Lower value = higher position within the drag order tier.
-
-`Review.retroactive` flags that ratings were added after the fact, not at time of eating. Shown as a badge on review cards.
 
 The generated Prisma client lives at `server/src/generated/prisma/` (Prisma v6 TypeScript client, **not** the default `@prisma/client`). Always import via the singleton at `src/lib/prisma.ts`.
 
@@ -104,16 +102,16 @@ server/
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/` | Health check — `{ status: "ok" }` |
-| GET | `/api/entries` | All entries, newest first; includes `reviews: [{ overallRating, date }]` for avg and date calculations |
+| GET | `/api/entries` | All entries, newest first; includes `reviews: [{ overallRating, date, rating1, rating2, rating3, notes, uncertainRating }]` |
 | GET | `/api/entries/:id` | Single entry with full restaurant + reviews, ordered by `createdAt` asc |
 | POST | `/api/entries` | Create entry — body: `{ foodName, category, restaurantName, starred?, flag? }`. Find-or-creates restaurant. |
-| PATCH | `/api/entries/:id` | Partial update — body: `{ starred?, foodName?, category?, flag? }`. Only provided fields are written. |
+| PATCH | `/api/entries/:id` | Partial update — body: `{ starred?, foodName?, category?, flag?, tryAgain?, neverAgain? }`. Only provided fields are written. |
 | DELETE | `/api/entries/:id` | Delete entry and all its reviews. |
 | GET | `/api/entries/search?q=` | Case-insensitive foodName search (ILIKE) for duplicate detection |
-| POST | `/api/reviews` | Create review — body: `{ entryId, date?, rating1?, rating2?, rating3?, notes?, retroactive? }`. `overallRating` computed server-side. |
-| PUT | `/api/reviews/:id` | Update review — same optional fields as POST including `retroactive?`. `overallRating` recomputed server-side. |
+| POST | `/api/reviews` | Create review — body: `{ entryId, date?, rating1?, rating2?, rating3?, notes?, uncertainRating? }`. `overallRating` computed server-side. |
+| PUT | `/api/reviews/:id` | Update review — same optional fields as POST including `uncertainRating?`. `overallRating` recomputed server-side. |
 | DELETE | `/api/reviews/:id` | Delete a single review. |
-| GET | `/api/rankings` | All entries grouped by category, alphabetically sorted by category name; within each category: rated entries by `overallRating` desc (latest review's), unrated by `manualRank` asc nulls last. Includes `flag` and `manualRank` per entry. |
+| GET | `/api/rankings` | All entries grouped by category, alphabetically sorted by category name; within each category: rated entries by `overallRating` desc (latest review's), unrated by `manualRank` asc nulls last. Includes `flag`, `manualRank`, `tryAgain`, `neverAgain` per entry. |
 | PATCH | `/api/rankings/reorder` | Persist drag order — body: `{ category: string, orderedIds: number[] }`. Writes `manualRank` (0-based index). |
 | GET | `/api/categories` | Distinct categories with entry count — `[{ name, entryCount }]`, sorted alphabetically. |
 | PATCH | `/api/categories/:name` | Rename a category — body: `{ name: string }`. Bulk-updates all entries. `:name` is URL-encoded. |
@@ -156,13 +154,13 @@ client/src/
     home/
       HomePage.tsx      # / — dashboard: greeting, stat grid, Hall of Fame / Hall of Shame podiums, Reigning Champion, Fresh off the fork, Top Tables, Regulars, Logging pace, Best value; Hall of Fame = top 5 by overallRating as full-width upward podium (purple); Hall of Shame = bottom 5 as full-width downward podium (orange) directly below; rank numbers (no emojis) inside bars scaled by position (1→2.2rem … 5→0.9rem, weight 800); scroll-driven reveal: shame peeks at 90px and expands as user scrolls, fame collapses to 60px strip; shameExpanded state + podiumCardRef + scroll listener on closest('main'); watermarks fade in/out with their section
     entries/
-      EntryList.tsx     # /entries — responsive card grid (3 columns desktop, 2 tablet, 1 mobile) + search + scope filters (Everything/Starred/Abroad/Home) + sort pills (Most recent/Top rated/A-Z); search covers name/category/restaurant (substring) and review notes (whole-word regex); when search is active, sort pills are greyed out/disabled and results are priority-sorted (whole-word matches first, partial matches second); sort pills resume normal behaviour when search is cleared
-      EntryCard.tsx     # card: flag SVG + food name + quote (first line of latest review notes, 2-line clamp, omitted if no notes) + category · restaurant + rating pinned bottom right; gold styling when starred
+      EntryList.tsx     # /entries — responsive card grid (3 columns desktop, 2 tablet, 1 mobile) + search + scope filters (Everything/Starred/Abroad/Home/Try Again/Never Again/Uncertain) + sort pills (Most recent/Top rated/A-Z); search covers name/category/restaurant (substring) and review notes (whole-word regex); when search is active, sort pills are greyed out/disabled and results are priority-sorted (whole-word matches first, partial matches second); sort pills resume normal behaviour when search is cleared; Uncertain filter checks latest review only
+      EntryCard.tsx     # card: flag SVG + food name + quote (first line of latest review notes, 2-line clamp, omitted if no notes) + category · restaurant + rating pinned bottom right + badge dots (blue=tryAgain, red=neverAgain, yellow=uncertainRating on latest review); gold styling when starred
       EntryForm.tsx     # /entries/new — form + live dupe detection (list format) + FlagPicker + category combo box + restaurant combo box (fetches GET /api/restaurants) + optional inline review section (toggle, RatingInput for Taste/Value/Consistency, Notes, date auto-set to ISO timestamp at POST time) + Category Comparison Panel when review section is open + React-side validation (no native HTML validation)
-      EntryDetail.tsx   # /entries/:id — entry info + inline editing + star toggle + reviews list + ReviewForm + delete entry/review; fully dark themed
+      EntryDetail.tsx   # /entries/:id — entry info + inline editing + star toggle + tryAgain/neverAgain toggle buttons (XOR, colored dot + label, patchEntry on click) + uncertainRating display badge (yellow dot, derived from latest review, read-only) + reviews list + ReviewForm + delete entry/review; fully dark themed
       EntryModal.tsx    # modal wrapper around EntryDetail; onClose navigates back
     reviews/
-      ReviewForm.tsx    # add review: Taste/Value/Consistency via RatingInput component + date + notes + retroactive checkbox; rating inputs also clamped in edit form
+      ReviewForm.tsx    # add review: Taste/Value/Consistency via RatingInput component + date + notes + uncertainRating checkbox ("Ratings added after the fact"); rating inputs also clamped in edit form
       RatingInput.tsx   # reusable rating field: label (left) + range slider (full red→yellow→green spectrum gradient, 6px track) + number input (right, 70px fixed width); fully synced bidirectionally; clamped 0–10 on onChange; step="any" for decimal precision; used in all review add/edit forms
     rankings/
       RankingsPage.tsx  # /rankings — grouped by category alphabetically; rated entries sorted by overallRating desc (automatic); unrated entries below, drag-and-drop reorder via @dnd-kit (gated behind Edit Rankings mode); search bar + scope filters (Everything/Starred/Abroad/Home); reads ?category= URL param on mount to pre-fill search bar (used by CategoriesPage card clicks); search covers name/category/restaurant (substring) and review notes (whole-word regex); when search is active, results are priority-sorted within each category group (whole-word matches first, partial matches second)
@@ -172,7 +170,7 @@ client/src/
       RestaurantsPage.tsx # /restaurants — searchable list; each row shows restaurant name, entry count badge, avg overallRating badge, pencil/trash icon buttons; click to expand and show entries (food name + category, indented); collapsed by default
   context/
     ToastContext.tsx    # ToastProvider + useToast() hook; showToast(message, variant?)
-  types.ts              # Entry, EntryDetail, Review (includes retroactive), RankedEntry, Rankings, CategorySummary, RestaurantSummary
+  types.ts              # Entry, EntryDetail, Review (includes uncertainRating), RankedEntry (includes tryAgain, neverAgain), Rankings, CategorySummary, RestaurantSummary
   utils.ts              # shared helpers: sortReviewsByDateDesc, latestRating, latestRatedReview, scoreColor
   pageStyles.ts         # shared inline style objects: kickerStyle, pageTitleStyle, smallPrimaryBtnStyle, smallSecondaryBtnStyle, smallDeleteBtnStyle
   App.tsx               # routes + React Router background-location modal pattern for /entries/:id; catch-all <Route path="*"> renders NotFoundPage
@@ -189,9 +187,9 @@ client/src/
 - **Query invalidation**: after any mutation, relevant TanStack Query keys invalidated for immediate UI update — `['entries']`, `['entries', id]`, `['rankings']`, `['restaurants']`, `['categories']` as appropriate
 - **Starred entries**: gold card styling on entry list and rankings; toggle button on entry detail page
 - **Review notes**: stored as newline-separated text; rendered as `<ul><li>` bullet list
-- **Retroactive reviews**: `Review.uncertainRating` boolean (renamed from `retroactive`) — when true, review card shows a small muted clock badge "ratings added later". Checkbox in both new and edit review forms.
-- **Entry flags**: `Entry.tryAgain` and `Entry.neverAgain` booleans — mutually exclusive (XOR enforced at app layer). `uncertainRating` badge on entry is derived from whether any review has `uncertainRating: true`. Badges: 🔄 tryAgain, 🚫 neverAgain, ⚠️ uncertainRating. Filter pills on Entries page.
-- **Inline review editing**: Edit button on each review card; saves via PUT /api/reviews/:id; includes retroactive checkbox
+- **Uncertain rating**: `Review.uncertainRating` boolean (renamed from `retroactive`) — when true, review card shows a small muted clock badge "ratings added later". Checkbox ("Ratings added after the fact") in both new and edit review forms.
+- **Entry flags**: `Entry.tryAgain` and `Entry.neverAgain` booleans — mutually exclusive (XOR enforced at app layer via patchEntry). Toggle buttons on entry detail show a colored dot (blue=tryAgain, red=neverAgain) + label; clicking an active flag turns it off, clicking an inactive one turns it on and clears the other. `uncertainRating` on entry detail is a read-only display badge (yellow dot + "Uncertain Rating") derived from whether the **latest review** has `uncertainRating: true`. Badge dots on entry cards (8×8px circles, bottom-right area): blue=tryAgain, red=neverAgain, yellow=latest review uncertainRating. Filter pills on Entries page: Try Again, Never Again, Uncertain (Uncertain filter checks latest review only).
+- **Inline review editing**: Edit button on each review card; saves via PUT /api/reviews/:id; includes uncertainRating checkbox
 - **Inline entry editing**: Edit button on `/entries/:id` — edits foodName, category (combo box), flag (FlagPicker), restaurant name. Fires PATCH /api/restaurants/:id and PATCH /api/entries/:id in parallel if both changed.
 - **Delete flows**: Delete Entry button on entry detail (confirms, deletes entry + all reviews, navigates to /entries). Delete button on each review card. Categories/Restaurants block delete if entries exist.
 - **Flag display**: `FlagImage` renders SVG flags everywhere. Falls back to raw text for unknown codes; renders nothing for null.
@@ -231,7 +229,7 @@ Sections (top to bottom) and how to compute each:
 
 - **Scroll-driven podium reveal**: Hall of Fame and Hall of Shame share one `<Card>` wrapped in `<div ref={podiumCardRef}>`. `shameExpanded` boolean state (starts `false`) drives all transitions. A `scroll` event listener on `podiumCardRef.current.closest('main')` fires on each scroll event; when the card's vertical midpoint is above the container's midpoint `setShameExpanded(true)`, scrolling back reverses it. Each podium container uses CSS grid `0fr → 1fr` (`gridTemplateRows`) for layout-aware height collapse with no dead space. Individual bars animate via `transform: scaleY(0↔1)` — Fame uses `transformOrigin: 'bottom'` (bars grow upward from divider), Shame uses `transformOrigin: 'top'` (bars grow downward); bars stagger 80ms apart left-to-right on expand, right-to-left on collapse (800ms spring `cubic-bezier(0.34, 1.2, 0.64, 1)`). Bar content (rank, category, restaurant, count, quote) fades in with `translateY` slide 200ms after its bar starts (600ms duration on appear, 300ms on collapse). Watermark titles split into per-character `<span>`s: letters animate `opacity + translateY` with 60ms stagger and 150ms initial offset on appear (500ms/letter, `cubic-bezier(0.34, 1.1, 0.64, 1)`), reverse stagger on disappear.
 - **Sidebar**: primary nav (Home, Entries, Rankings) + EXPLORE section (Categories, Restaurants). Footer shows total foods rated + avg rating.
-- **Scope filters on Entries**: Everything / ★ Starred / Abroad / Home. Sort pills: Most recent / Top rated / A–Z.
+- **Scope filters on Entries**: Everything / ★ Starred / Abroad / Home / Try Again / Never Again / Uncertain. Sort pills: Most recent / Top rated / A–Z. All seven pills share one active state; Uncertain checks latest review's `uncertainRating` only.
 
 ### Environment
 
