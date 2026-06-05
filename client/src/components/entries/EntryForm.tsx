@@ -195,7 +195,7 @@ export default function EntryForm() {
       if (showReview) {
         const reviewPayload: Parameters<typeof createReview>[0] = {
           entryId: entry.id,
-          date: new Date().toISOString(),
+          date: (() => { const now = new Date(); return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`; })(),
         }
         if (ratings.rating1 != null) reviewPayload.rating1 = ratings.rating1
         if (ratings.rating2 != null) reviewPayload.rating2 = ratings.rating2

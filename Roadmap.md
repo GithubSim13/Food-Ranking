@@ -90,6 +90,7 @@ Ideas documented for later, not currently prioritised:
 
 ## Completed
 
+- [x] Restaurants page redesign — rebuilt as full-width sortable table (mirrors Categories page); columns: #, Restaurant (initials avatar, color-cycled), Foods, Avg Rating (score + inline bar), Actions; expandable rows show entries sub-table (flag, food name, category, rating); sort by Restaurant/Foods/Avg Rating via column headers; search bar top-right
 - [x] Categories page table redesign — replaced 4-column card grid with full-width sortable table; columns: row index, category name, entry count, avg rating (color-coded score + inline bar), actions; default sort by name asc; clickable rows navigate to Rankings filtered by category
 - [x] Server scaffolded, type-checks clean (`npx tsc --noEmit`)
 - [x] PostgreSQL running, `food_ranking` database created, migrations applied

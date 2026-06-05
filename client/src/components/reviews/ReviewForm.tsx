@@ -17,7 +17,8 @@ const RATING_FIELDS = [
 
 export default function ReviewForm({ entryId, onSuccess }: Props) {
   const { showToast } = useToast()
-  const today = new Date().toISOString().split('T')[0]
+  const now = new Date()
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
   const [date, setDate] = useState(today)
   const [ratings, setRatings] = useState<{ rating1: number | null; rating2: number | null; rating3: number | null }>(
     { rating1: null, rating2: null, rating3: null }
