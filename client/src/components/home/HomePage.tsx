@@ -238,19 +238,19 @@ export default function HomePage() {
   const PODIUM_CONTAINER_H = 320
   const PODIUM_TOP_PAD = 16
   const podiumOrder = (p1 && p2 && p3) ? [
-    p4 ? { entry: p4, rank: 4, height: Math.round(PODIUM_CONTAINER_H * 0.28), barColor: '#1a1728', scoreOpacity: 0.35 } : null,
-    { entry: p2, rank: 2, height: Math.round(PODIUM_CONTAINER_H * 0.50), barColor: '#2a2240', scoreOpacity: 0.55 },
-    { entry: p1, rank: 1, height: Math.round(PODIUM_CONTAINER_H * 0.65), barColor: '#6c47d4', scoreOpacity: 1 },
-    { entry: p3, rank: 3, height: Math.round(PODIUM_CONTAINER_H * 0.40), barColor: '#201b32', scoreOpacity: 0.35 },
-    p5 ? { entry: p5, rank: 5, height: Math.round(PODIUM_CONTAINER_H * 0.18), barColor: '#1a1728', scoreOpacity: 0.35 } : null,
+    p4 ? { entry: p4, rank: 4, height: Math.round(PODIUM_CONTAINER_H * 0.28), barColor: '#170840', scoreOpacity: 0.35 } : null,
+    { entry: p2, rank: 2, height: Math.round(PODIUM_CONTAINER_H * 0.50), barColor: '#5135a0', scoreOpacity: 0.55 },
+    { entry: p1, rank: 1, height: Math.round(PODIUM_CONTAINER_H * 0.65), barColor: '#7956dc', scoreOpacity: 1 },
+    { entry: p3, rank: 3, height: Math.round(PODIUM_CONTAINER_H * 0.40), barColor: '#2a1660', scoreOpacity: 0.35 },
+    p5 ? { entry: p5, rank: 5, height: Math.round(PODIUM_CONTAINER_H * 0.18), barColor: '#08021b', scoreOpacity: 0.35 } : null,
   ].filter((x): x is NonNullable<typeof x> => x !== null) : []
 
   const shamePodiumOrder = (s1 && s2 && s3) ? [
-    s4 ? { entry: s4, rank: 4, depth: Math.round(PODIUM_CONTAINER_H * 0.28), barColor: '#321808', scoreOpacity: 0.35 } : null,
-    { entry: s2, rank: 2, depth: Math.round(PODIUM_CONTAINER_H * 0.50), barColor: '#7a3a12', scoreOpacity: 0.55 },
-    { entry: s1, rank: 1, depth: Math.round(PODIUM_CONTAINER_H * 0.65), barColor: '#c05c1e', scoreOpacity: 1 },
-    { entry: s3, rank: 3, depth: Math.round(PODIUM_CONTAINER_H * 0.40), barColor: '#4d240c', scoreOpacity: 0.35 },
-    s5 ? { entry: s5, rank: 5, depth: Math.round(PODIUM_CONTAINER_H * 0.18), barColor: '#321808', scoreOpacity: 0.35 } : null,
+    s4 ? { entry: s4, rank: 4, depth: Math.round(PODIUM_CONTAINER_H * 0.28), barColor: '#522204', scoreOpacity: 0.35 } : null,
+    { entry: s2, rank: 2, depth: Math.round(PODIUM_CONTAINER_H * 0.50), barColor: '#9d4813', scoreOpacity: 0.55 },
+    { entry: s1, rank: 1, depth: Math.round(PODIUM_CONTAINER_H * 0.65), barColor: '#d46c2c', scoreOpacity: 1 },
+    { entry: s3, rank: 3, depth: Math.round(PODIUM_CONTAINER_H * 0.40), barColor: '#6d2e07', scoreOpacity: 0.35 },
+    s5 ? { entry: s5, rank: 5, depth: Math.round(PODIUM_CONTAINER_H * 0.18), barColor: '#3b1701', scoreOpacity: 0.35 } : null,
   ].filter((x): x is NonNullable<typeof x> => x !== null) : []
 
   return (
