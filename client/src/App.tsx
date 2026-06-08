@@ -8,6 +8,7 @@ import EntryModal from './components/entries/EntryModal'
 import RankingsPage from './components/rankings/RankingsPage'
 import CategoriesPage from './components/categories/CategoriesPage'
 import RestaurantsPage from './components/restaurants/RestaurantsPage'
+import AnalyticsPage from './components/analytics/AnalyticsPage'
 import NotFoundPage from './components/NotFoundPage'
 
 export default function App() {
@@ -26,6 +27,7 @@ export default function App() {
           <Route path="rankings" element={<RankingsPage />} />
           <Route path="categories" element={<CategoriesPage />} />
           <Route path="restaurants" element={<RestaurantsPage />} />
+          <Route path="analytics" element={<AnalyticsPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>

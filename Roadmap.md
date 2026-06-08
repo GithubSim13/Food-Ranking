@@ -122,6 +122,7 @@ Ideas documented for later, not currently prioritised:
 - [x] setAllRetroactive script — all 494 imported reviews marked uncertainRating = true
 - [x] Rankings sorting — rated entries auto-sort by overallRating desc; drag-and-drop restricted to unrated entries only
 - [x] Rankings search + scope filters (Everything / Starred / Abroad / Home) — category groups hidden when no matches
+- [x] Notepad importer — standalone throwaway HTML tool (`importer.html`, gitignored); pastes raw notepad entries in "Food Name (Restaurant Name) [⭐]" format, parses into a review queue, user fills category + flag + edits fields, POSTs to /api/entries only (no ratings — user rates via the app afterward); Skip/Add per entry, done summary screen
 - [x] Category Comparison Panel — shown on entry detail when review form is open; rated entries in same category sorted by overallRating desc; Taste/Value/Consistency breakdowns displayed
 - [x] Home dashboard layout rebuilt (Session 1) — new section order, stat row compacted to 4 cards, Reigning Champion card, Best Value split card, Logging Pace bar chart; all placeholder values
 - [x] Home dashboard data wiring (Session 2) — all sections wired to real computed data from ['entries'] query; no new API calls
