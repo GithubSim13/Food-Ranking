@@ -51,6 +51,9 @@
   background: #6c47d4;
 }
 
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+
 body {
   font-family: var(--font-body);
   font-size: 16px;

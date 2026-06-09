@@ -84,6 +84,8 @@ type Mover = { entry: Entry; first: number; latest: number; delta: number }
 type MoverFilter = 'improved' | 'declined' | 'all'
 
 const STARRED_PAGE_SIZE = 9
+const GEMS_PAGE_SIZE = 9
+const LTNS_PAGE_SIZE = 10
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
@@ -112,7 +114,8 @@ export default function AnalyticsPage() {
   const [heatmapTooltip, setHeatmapTooltip] = useState<{ x: number; y: number; dateStr: string; count: number } | null>(null)
   const [countrySortCol, setCountrySortCol] = useState<'country' | 'entries' | 'avg' | 'best'>('avg')
   const [countrySortDir, setCountrySortDir] = useState<'asc' | 'desc'>('desc')
-  const [selectedBreakdownCat, setSelectedBreakdownCat] = useState<string | null>(null)
+  const [gemsPage, setGemsPage] = useState(0)
+  const [ltnsPage, setLtnsPage] = useState(0)
   const [scatterWidth, setScatterWidth] = useState(600)
   const [hoveredDotId, setHoveredDotId] = useState<number | null>(null)
   const [scatterTooltip, setScatterTooltip] = useState<{
@@ -129,8 +132,11 @@ export default function AnalyticsPage() {
     price: number; overall: number
   } | null>(null)
   const priceContainerRef = useRef<HTMLDivElement>(null)
+  const pillScrollRef = useRef<HTMLDivElement>(null)
+  const pillRefsMap = useRef<Map<string, HTMLButtonElement>>(new Map())
+  const [catPillScroll, setCatPillScroll] = useState({ left: false, right: true })
 
-  useEffect(() => { setStarredPage(0) }, [entries])
+  useEffect(() => { setStarredPage(0); setGemsPage(0); setLtnsPage(0) }, [entries])
 
   useEffect(() => {
     const el = scatterContainerRef.current
@@ -150,6 +156,20 @@ export default function AnalyticsPage() {
     })
     ro.observe(el)
     return () => ro.disconnect()
+  }, [])
+
+  useEffect(() => {
+    const el = pillScrollRef.current
+    if (!el) return
+    const update = () => setCatPillScroll({
+      left: el.scrollLeft > 0,
+      right: el.scrollLeft + el.clientWidth < el.scrollWidth - 1,
+    })
+    el.addEventListener('scroll', update, { passive: true })
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    update()
+    return () => { el.removeEventListener('scroll', update); ro.disconnect() }
   }, [])
 
   function selectMoverFilter(f: MoverFilter) {
@@ -255,27 +275,6 @@ export default function AnalyticsPage() {
     return map
   }, [entries])
 
-  const qualifyingCategories = useMemo(() => {
-    const cats: string[] = []
-    catRestMap.forEach((restMap, category) => {
-      if (Array.from(restMap.values()).some(b => b.ratings.length >= 2)) cats.push(category)
-    })
-    return cats.sort((a, b) => a.localeCompare(b))
-  }, [catRestMap])
-
-  const effectiveCategory = activeCategory && qualifyingCategories.includes(activeCategory)
-    ? activeCategory
-    : qualifyingCategories[0] ?? null
-
-  const bestSpotList = useMemo(() => {
-    if (!effectiveCategory) return []
-    const restMap = catRestMap.get(effectiveCategory)
-    if (!restMap) return []
-    return Array.from(restMap.values())
-      .filter(b => b.ratings.length >= 2)
-      .map(b => ({ name: b.name, count: b.ratings.length, avg: b.ratings.reduce((a, c) => a + c, 0) / b.ratings.length }))
-      .sort((a, b) => b.avg - a.avg)
-  }, [catRestMap, effectiveCategory])
 
   // ── rating trajectory ──────────────────────────────────────────────────────
   const movers = useMemo(() => {
@@ -380,7 +379,7 @@ export default function AnalyticsPage() {
       const visitMs = new Date(y, m - 1, d).getTime()
       result.push({ entry: e, dateStr: date, daysAgo: Math.floor((todayMs - visitMs) / 86400000) })
     })
-    return result.sort((a, b) => b.daysAgo - a.daysAgo).slice(0, 20)
+    return result.sort((a, b) => b.daysAgo - a.daysAgo)
   }, [entries])
 
   // ── score breakdown by category ───────────────────────────────────────────
@@ -397,14 +396,28 @@ export default function AnalyticsPage() {
   const defaultBreakdownCat = breakdownCategories.length
     ? breakdownCategories.reduce((best, c) => c.count > best.count ? c : best).name
     : null
-  const effectiveBreakdownCat = (selectedBreakdownCat && breakdownCategories.some(c => c.name === selectedBreakdownCat))
-    ? selectedBreakdownCat
-    : defaultBreakdownCat
+  const effectiveCategory = activeCategory ?? defaultBreakdownCat
+
+  // Must be placed after effectiveCategory is defined
+  useEffect(() => {
+    if (!effectiveCategory) return
+    pillRefsMap.current.get(effectiveCategory)?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' })
+  }, [effectiveCategory])
+
+  const bestSpotList = useMemo(() => {
+    if (!effectiveCategory) return []
+    const restMap = catRestMap.get(effectiveCategory)
+    if (!restMap) return []
+    return Array.from(restMap.values())
+      .filter(b => b.ratings.length >= 2)
+      .map(b => ({ name: b.name, count: b.ratings.length, avg: b.ratings.reduce((a, c) => a + c, 0) / b.ratings.length }))
+      .sort((a, b) => b.avg - a.avg)
+  }, [catRestMap, effectiveCategory])
 
   const breakdownData = useMemo(() => {
-    if (!effectiveBreakdownCat) return null
+    if (!effectiveCategory) return null
     const r1s: number[] = [], r2s: number[] = [], r3s: number[] = []
-    entries.filter(e => e.category === effectiveBreakdownCat).forEach(e => {
+    entries.filter(e => e.category === effectiveCategory).forEach(e => {
       const sorted = sortReviewsByDateDesc(e.reviews)
       const lr1 = sorted.find(r => r.rating1 !== null)?.rating1 ?? null
       const lr2 = sorted.find(r => r.rating2 !== null)?.rating2 ?? null
@@ -419,7 +432,7 @@ export default function AnalyticsPage() {
       value: { avg: avg(r2s), count: r2s.length },
       consistency: { avg: avg(r3s), count: r3s.length },
     }
-  }, [entries, effectiveBreakdownCat])
+  }, [entries, effectiveCategory])
 
   // ── price vs rating scatter ───────────────────────────────────────────────
   const priceScatterData = useMemo(() => {
@@ -514,6 +527,12 @@ export default function AnalyticsPage() {
   const pagedStarredPicks = starredPicks.slice(starredPage * STARRED_PAGE_SIZE, (starredPage + 1) * STARRED_PAGE_SIZE)
   const starredShowStart = starredPage * STARRED_PAGE_SIZE + 1
   const starredShowEnd = Math.min((starredPage + 1) * STARRED_PAGE_SIZE, starredPicks.length)
+  const pagedGems = underratedGems.slice(gemsPage * GEMS_PAGE_SIZE, (gemsPage + 1) * GEMS_PAGE_SIZE)
+  const gemsShowStart = gemsPage * GEMS_PAGE_SIZE + 1
+  const gemsShowEnd = Math.min((gemsPage + 1) * GEMS_PAGE_SIZE, underratedGems.length)
+  const pagedLtns = longTimeNoSee.slice(ltnsPage * LTNS_PAGE_SIZE, (ltnsPage + 1) * LTNS_PAGE_SIZE)
+  const ltnsShowStart = ltnsPage * LTNS_PAGE_SIZE + 1
+  const ltnsShowEnd = Math.min((ltnsPage + 1) * LTNS_PAGE_SIZE, longTimeNoSee.length)
 
   return (
     <div style={{ width: '100%' }}>
@@ -643,28 +662,95 @@ export default function AnalyticsPage() {
         </SectionErrorBoundary>
       </div>
 
-      {/* F. Best spot per category */}
-      <SectionErrorBoundary title="Best Spot per Category">
+      {/* F + L. Category Insights — Best Spot + Score Breakdown (shared pill row) */}
+      <SectionErrorBoundary title="Category Insights">
         <Card style={{ marginBottom: '1.5rem' }}>
-          <SectionLabel>Best Spot per Category</SectionLabel>
-          <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--ink-mute)', marginTop: '-0.5rem', marginBottom: '1rem' }}>
-            Restaurant with highest avg rating · min 2 entries per category
-          </p>
-          {qualifyingCategories.length > 0 ? (
+          <p style={kickerStyle}>CATEGORY INSIGHTS</p>
+          {breakdownCategories.length > 0 ? (
             <>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
-                {qualifyingCategories.map(cat => (
-                  <button key={cat} onClick={() => setActiveCategory(cat)} style={pillStyle(cat === effectiveCategory)}>{cat}</button>
-                ))}
+              <div style={{ position: 'relative', marginBottom: '1.25rem' }}>
+                <div style={{
+                  position: 'absolute', top: 0, left: 0, width: 32, height: '100%',
+                  background: 'linear-gradient(to right, var(--paper-2), transparent)',
+                  pointerEvents: 'none', zIndex: 1,
+                  opacity: catPillScroll.left ? 1 : 0,
+                  transition: 'opacity 150ms',
+                }} />
+                <div style={{
+                  position: 'absolute', top: 0, right: 0, width: 32, height: '100%',
+                  background: 'linear-gradient(to left, var(--paper-2), transparent)',
+                  pointerEvents: 'none', zIndex: 1,
+                  opacity: catPillScroll.right ? 1 : 0,
+                  transition: 'opacity 150ms',
+                }} />
+                <div
+                  ref={pillScrollRef}
+                  className="hide-scrollbar"
+                  style={{ display: 'flex', overflowX: 'auto', flexWrap: 'nowrap', gap: '6px', padding: '2px 0' }}
+                >
+                  {breakdownCategories.map(c => (
+                    <button
+                      key={c.name}
+                      ref={el => { if (el) pillRefsMap.current.set(c.name, el); else pillRefsMap.current.delete(c.name) }}
+                      onClick={() => setActiveCategory(c.name)}
+                      style={{ ...pillStyle(c.name === effectiveCategory), flexShrink: 0 }}
+                    >
+                      {c.name}
+                    </button>
+                  ))}
+                </div>
               </div>
+              <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1rem', color: 'var(--ink)', margin: '0 0 0.35rem' }}>Best Spot per Category</p>
+              <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--ink-mute)', margin: '0 0 0.75rem' }}>
+                Restaurant with highest avg rating · min 2 entries per restaurant
+              </p>
               {bestSpotList.length >= 2 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem', marginBottom: '1.25rem' }}>
                   {bestSpotList.map((r, i) => (
                     <div key={r.name} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.5rem', borderRadius: 6, background: 'var(--paper)' }}>
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', color: 'var(--ink-mute)', width: 16, flexShrink: 0 }}>{i + 1}</span>
                       <span style={{ flex: 1, fontSize: '0.88rem', color: 'var(--ink)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{r.name}</span>
                       <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '0.85rem', color: scoreColor(r.avg), flexShrink: 0 }}>{r.avg.toFixed(1)}</span>
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', color: 'var(--ink-mute)', width: 70, textAlign: 'right' as const, flexShrink: 0 }}>{r.count} entries</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ marginBottom: '1.25rem' }}><EmptyMsg>Not enough data for this category</EmptyMsg></div>
+              )}
+              <hr style={{ border: 'none', borderTop: '1px solid var(--line)', margin: '0 0 1.25rem' }} />
+              <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1rem', color: 'var(--ink)', margin: '0 0 0.25rem' }}>Score Breakdown by Category</p>
+              <p style={{ fontFamily: 'Hanken Grotesk, sans-serif', fontSize: '0.8rem', color: 'var(--ink-mute)', margin: '0 0 1rem' }}>
+                Average Taste, Value, and Consistency across all rated entries per category
+              </p>
+              {breakdownData ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {([
+                    { label: 'Taste', d: breakdownData.taste },
+                    { label: 'Value', d: breakdownData.value },
+                    { label: 'Consistency', d: breakdownData.consistency },
+                  ] as const).map(({ label, d }) => (
+                    <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <span style={{ width: 96, flexShrink: 0, fontFamily: 'Hanken Grotesk, sans-serif', fontSize: '0.85rem', color: 'var(--ink-mute)' }}>
+                        {label}
+                      </span>
+                      <div style={{ flex: 1, height: 12, borderRadius: 6, background: 'var(--surface)', border: '1px solid var(--line)', overflow: 'hidden' }}>
+                        <div style={{
+                          height: '100%',
+                          borderRadius: 6,
+                          width: d.avg !== null ? `${(d.avg / 10) * 100}%` : '0%',
+                          background: 'linear-gradient(to right, #e74c3c, #f39c12, #2ecc71)',
+                          transition: 'width 400ms ease',
+                        }} />
+                      </div>
+                      <div style={{ width: 56, flexShrink: 0, textAlign: 'right' as const }}>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', color: 'var(--ink)', lineHeight: 1.2 }}>
+                          {d.avg !== null ? d.avg.toFixed(2) : '—'}
+                        </div>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--ink-mute)', lineHeight: 1.2 }}>
+                          {d.count > 0 ? `(${d.count})` : ''}
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -721,74 +807,76 @@ export default function AnalyticsPage() {
       <SectionErrorBoundary title="Logging Activity">
         <Card style={{ marginBottom: '1.5rem' }}>
           <p style={kickerStyle}>ACTIVITY</p>
-          <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.1rem', color: 'var(--ink)', margin: '0 0 1rem' }}>Logging Activity</p>
-          {availableYears.length > 0 ? (
-            <>
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.1rem', color: 'var(--ink)', margin: 0 }}>Logging Activity</p>
+            {availableYears.length > 0 && (
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                 {availableYears.map(y => (
                   <button key={y} onClick={() => setSelectedYearOverride(y)} style={pillStyle(y === selectedYear)}>{y}</button>
                 ))}
               </div>
-              <div style={{ overflowX: 'auto' }}>
-                <div style={{ display: 'inline-block', minWidth: 'max-content' }}>
-                  {/* Month labels */}
-                  <div style={{ position: 'relative', height: 18, marginLeft: 36, marginBottom: 4 }}>
-                    {heatmapGrid.monthLabels.map(({ label, col }) => (
-                      <span key={label} style={{
-                        position: 'absolute',
-                        left: col * 16,
+            )}
+          </div>
+          {availableYears.length > 0 ? (
+            <div style={{ overflowX: 'auto' }}>
+              <div style={{ display: 'inline-block', minWidth: 'max-content' }}>
+                {/* Month labels */}
+                <div style={{ position: 'relative', height: 18, marginLeft: 36, marginBottom: 4 }}>
+                  {heatmapGrid.monthLabels.map(({ label, col }) => (
+                    <span key={label} style={{
+                      position: 'absolute',
+                      left: col * 13,
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '0.7rem',
+                      color: 'var(--ink-mute)',
+                      userSelect: 'none',
+                    }}>
+                      {label}
+                    </span>
+                  ))}
+                </div>
+                {/* Day labels + grid */}
+                <div style={{ display: 'flex', gap: 4, alignItems: 'flex-start' }}>
+                  {/* Day-of-week labels */}
+                  <div style={{ display: 'grid', gridTemplateRows: 'repeat(7, 11px)', gap: 2, width: 28, flexShrink: 0 }}>
+                    {[0, 1, 2, 3, 4, 5, 6].map(i => (
+                      <span key={i} style={{
                         fontFamily: 'var(--font-mono)',
-                        fontSize: '0.7rem',
+                        fontSize: '0.65rem',
                         color: 'var(--ink-mute)',
-                        userSelect: 'none',
+                        lineHeight: '11px',
+                        textAlign: 'right' as const,
+                        visibility: ([1, 3, 5].includes(i) ? 'visible' : 'hidden') as React.CSSProperties['visibility'],
+                        userSelect: 'none' as const,
                       }}>
-                        {label}
+                        {i === 1 ? 'Mon' : i === 3 ? 'Wed' : i === 5 ? 'Fri' : ''}
                       </span>
                     ))}
                   </div>
-                  {/* Day labels + grid */}
-                  <div style={{ display: 'flex', gap: 4, alignItems: 'flex-start' }}>
-                    {/* Day-of-week labels */}
-                    <div style={{ display: 'grid', gridTemplateRows: 'repeat(7, 13px)', gap: 3, width: 28, flexShrink: 0 }}>
-                      {[0, 1, 2, 3, 4, 5, 6].map(i => (
-                        <span key={i} style={{
-                          fontFamily: 'var(--font-mono)',
-                          fontSize: '0.65rem',
-                          color: 'var(--ink-mute)',
-                          lineHeight: '13px',
-                          textAlign: 'right' as const,
-                          visibility: ([1, 3, 5].includes(i) ? 'visible' : 'hidden') as React.CSSProperties['visibility'],
-                          userSelect: 'none' as const,
-                        }}>
-                          {i === 1 ? 'Mon' : i === 3 ? 'Wed' : i === 5 ? 'Fri' : ''}
-                        </span>
-                      ))}
-                    </div>
-                    {/* Heatmap grid */}
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateRows: 'repeat(7, 13px)',
-                      gridAutoFlow: 'column',
-                      gap: 3,
-                    }}>
-                      {heatmapGrid.cells.map((cell, k) => (
-                        cell.dateStr ? (
-                          <div
-                            key={k}
-                            style={{ width: 13, height: 13, borderRadius: 3, cursor: 'default', boxSizing: 'border-box', ...cellColor(cell.count) }}
-                            onMouseEnter={(e) => setHeatmapTooltip({ x: e.clientX, y: e.clientY, dateStr: cell.dateStr!, count: cell.count })}
-                            onMouseLeave={() => setHeatmapTooltip(null)}
-                            onMouseMove={(e) => setHeatmapTooltip(t => t ? { ...t, x: e.clientX, y: e.clientY } : null)}
-                          />
-                        ) : (
-                          <div key={k} style={{ width: 13, height: 13 }} />
-                        )
-                      ))}
-                    </div>
+                  {/* Heatmap grid */}
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateRows: 'repeat(7, 11px)',
+                    gridAutoFlow: 'column',
+                    gap: 2,
+                  }}>
+                    {heatmapGrid.cells.map((cell, k) => (
+                      cell.dateStr ? (
+                        <div
+                          key={k}
+                          style={{ width: 11, height: 11, borderRadius: 2, cursor: 'default', boxSizing: 'border-box', ...cellColor(cell.count) }}
+                          onMouseEnter={(e) => setHeatmapTooltip({ x: e.clientX, y: e.clientY, dateStr: cell.dateStr!, count: cell.count })}
+                          onMouseLeave={() => setHeatmapTooltip(null)}
+                          onMouseMove={(e) => setHeatmapTooltip(t => t ? { ...t, x: e.clientX, y: e.clientY } : null)}
+                        />
+                      ) : (
+                        <div key={k} style={{ width: 11, height: 11 }} />
+                      )
+                    ))}
                   </div>
                 </div>
               </div>
-            </>
+            </div>
           ) : (
             <EmptyMsg>No dated reviews yet</EmptyMsg>
           )}
@@ -818,7 +906,7 @@ export default function AnalyticsPage() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
       {/* N. Consistency vs Taste scatter */}
       <SectionErrorBoundary title="Consistency vs Taste">
-        <Card>
+        <Card style={{ minWidth: 0 }}>
           <p style={kickerStyle}>SCATTER</p>
           <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.1rem', color: 'var(--ink)', margin: '0 0 0.25rem' }}>Consistency vs Taste</p>
           <p style={{ fontFamily: 'Hanken Grotesk, sans-serif', fontSize: '0.8rem', color: 'var(--ink-mute)', margin: '0 0 1rem' }}>
@@ -827,7 +915,7 @@ export default function AnalyticsPage() {
           {scatterData.length < 3 ? (
             <EmptyMsg>Not enough data — need at least 3 entries with both Taste and Consistency ratings.</EmptyMsg>
           ) : (
-            <div ref={scatterContainerRef} style={{ width: '100%' }}>
+            <div ref={scatterContainerRef} style={{ width: '100%', overflow: 'hidden' }}>
               {(() => {
                 const ML = 50, MR = 16, MT = 20, MB = 44
                 const PW = Math.max(scatterWidth - ML - MR, 10)
@@ -900,7 +988,7 @@ export default function AnalyticsPage() {
       </SectionErrorBoundary>
       {/* O. Price vs Rating scatter */}
       <SectionErrorBoundary title="Price vs Rating">
-        <Card>
+        <Card style={{ minWidth: 0 }}>
           <p style={kickerStyle}>VALUE</p>
           <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.1rem', color: 'var(--ink)', margin: '0 0 0.25rem' }}>Price vs Rating</p>
           <p style={{ fontFamily: 'Hanken Grotesk, sans-serif', fontSize: '0.8rem', color: 'var(--ink-mute)', margin: '0 0 1rem' }}>
@@ -909,7 +997,7 @@ export default function AnalyticsPage() {
           {priceScatterData.length < 3 ? (
             <EmptyMsg>Not enough price data yet — add prices to your reviews to unlock this chart.</EmptyMsg>
           ) : (
-            <div ref={priceContainerRef} style={{ width: '100%' }}>
+            <div ref={priceContainerRef} style={{ width: '100%', overflow: 'hidden' }}>
               {(() => {
                 const ML = 50, MR = 16, MT = 20, MB = 44
                 const PW = Math.max(priceWidth - ML - MR, 10)
@@ -1029,64 +1117,6 @@ export default function AnalyticsPage() {
         </div>
       )}
 
-      {/* L. Score Breakdown by Category */}
-      <SectionErrorBoundary title="Score Breakdown by Category">
-        <Card style={{ marginBottom: '1.5rem' }}>
-          <p style={kickerStyle}>BREAKDOWN</p>
-          <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.1rem', color: 'var(--ink)', margin: '0 0 0.25rem' }}>Score Breakdown by Category</p>
-          <p style={{ fontFamily: 'Hanken Grotesk, sans-serif', fontSize: '0.8rem', color: 'var(--ink-mute)', margin: '0 0 1.25rem' }}>
-            Average Taste, Value, and Consistency across all rated entries per category
-          </p>
-          {breakdownCategories.length > 0 ? (
-            <>
-              <div style={{ overflowX: 'auto', marginBottom: '1.5rem' }}>
-                <div style={{ display: 'flex', gap: '0.5rem', minWidth: 'max-content' }}>
-                  {breakdownCategories.map(c => (
-                    <button key={c.name} onClick={() => setSelectedBreakdownCat(c.name)} style={pillStyle(c.name === effectiveBreakdownCat)}>
-                      {c.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              {breakdownData && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  {([
-                    { label: 'Taste', d: breakdownData.taste },
-                    { label: 'Value', d: breakdownData.value },
-                    { label: 'Consistency', d: breakdownData.consistency },
-                  ] as const).map(({ label, d }) => (
-                    <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      <span style={{ width: 96, flexShrink: 0, fontFamily: 'Hanken Grotesk, sans-serif', fontSize: '0.85rem', color: 'var(--ink-mute)' }}>
-                        {label}
-                      </span>
-                      <div style={{ flex: 1, height: 12, borderRadius: 6, background: 'var(--surface)', border: '1px solid var(--line)', overflow: 'hidden' }}>
-                        <div style={{
-                          height: '100%',
-                          borderRadius: 6,
-                          width: d.avg !== null ? `${(d.avg / 10) * 100}%` : '0%',
-                          background: 'linear-gradient(to right, #e74c3c, #f39c12, #2ecc71)',
-                          transition: 'width 400ms ease',
-                        }} />
-                      </div>
-                      <div style={{ width: 56, flexShrink: 0, textAlign: 'right' as const }}>
-                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', color: 'var(--ink)', lineHeight: 1.2 }}>
-                          {d.avg !== null ? d.avg.toFixed(2) : '—'}
-                        </div>
-                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--ink-mute)', lineHeight: 1.2 }}>
-                          {d.count > 0 ? `(${d.count})` : ''}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>
-          ) : (
-            <EmptyMsg>Not enough data</EmptyMsg>
-          )}
-        </Card>
-      </SectionErrorBoundary>
-
       {/* M. Long Time No See */}
       <SectionErrorBoundary title="Long Time No See">
         <Card style={{ marginBottom: '1.5rem' }}>
@@ -1096,6 +1126,7 @@ export default function AnalyticsPage() {
             Entries you've only visited once and haven't been back to
           </p>
           {longTimeNoSee.length > 0 ? (
+            <>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid var(--line)' }}>
@@ -1108,7 +1139,7 @@ export default function AnalyticsPage() {
                 </tr>
               </thead>
               <tbody>
-                {longTimeNoSee.map(({ entry, dateStr, daysAgo }, i) => {
+                {pagedLtns.map(({ entry, dateStr, daysAgo }, i) => {
                   const daysColor = daysAgo > 365
                     ? 'var(--badge-never-again)'
                     : daysAgo >= 180
@@ -1121,7 +1152,7 @@ export default function AnalyticsPage() {
                       onMouseEnter={e => { (e.currentTarget as HTMLTableRowElement).style.background = 'var(--paper-2)' }}
                       onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.background = '' }}
                     >
-                      <td style={{ ...countryTdStyle, textAlign: 'center', color: 'var(--ink-mute)', fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}>{i + 1}</td>
+                      <td style={{ ...countryTdStyle, textAlign: 'center', color: 'var(--ink-mute)', fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}>{ltnsPage * LTNS_PAGE_SIZE + i + 1}</td>
                       <td style={countryTdStyle}>
                         <div
                           style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}
@@ -1140,6 +1171,18 @@ export default function AnalyticsPage() {
                 })}
               </tbody>
             </table>
+            {longTimeNoSee.length > LTNS_PAGE_SIZE && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '1rem' }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', color: 'var(--ink-mute)' }}>
+                  Showing {ltnsShowStart}–{ltnsShowEnd} of {longTimeNoSee.length}
+                </span>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button onClick={() => setLtnsPage(p => p - 1)} disabled={ltnsPage === 0} style={smallSecondaryBtnStyle}>Prev</button>
+                  <button onClick={() => setLtnsPage(p => p + 1)} disabled={ltnsShowEnd >= longTimeNoSee.length} style={smallSecondaryBtnStyle}>Next</button>
+                </div>
+              </div>
+            )}
+            </>
           ) : (
             <EmptyMsg>Nothing here — either you revisit everything or you haven't started logging dates yet.</EmptyMsg>
           )}
@@ -1267,8 +1310,9 @@ export default function AnalyticsPage() {
             .gem-card:hover { border-color: var(--accent); }
           `}</style>
           {underratedGems.length > 0 ? (
+            <>
             <div className="analytics-gems-grid">
-              {underratedGems.map(({ entry, rating }) => (
+              {pagedGems.map(({ entry, rating }) => (
                 <div
                   key={entry.id}
                   className="gem-card"
@@ -1308,6 +1352,18 @@ export default function AnalyticsPage() {
                 </div>
               ))}
             </div>
+            {underratedGems.length > GEMS_PAGE_SIZE && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '1rem' }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', color: 'var(--ink-mute)' }}>
+                  Showing {gemsShowStart}–{gemsShowEnd} of {underratedGems.length}
+                </span>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button onClick={() => setGemsPage(p => p - 1)} disabled={gemsPage === 0} style={smallSecondaryBtnStyle}>Prev</button>
+                  <button onClick={() => setGemsPage(p => p + 1)} disabled={gemsShowEnd >= underratedGems.length} style={smallSecondaryBtnStyle}>Next</button>
+                </div>
+              </div>
+            )}
+            </>
           ) : (
             <EmptyMsg>No gems yet — revisit your favourites to move them out of here.</EmptyMsg>
           )}
