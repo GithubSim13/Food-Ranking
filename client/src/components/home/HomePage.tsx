@@ -7,6 +7,7 @@ import SectionErrorBoundary from '../common/SectionErrorBoundary'
 import { Card, firstNoteLine, type Top5Entry } from './HomeShared'
 import PodiumSection from './PodiumSection'
 import ReigningChampionCard from './ReigningChampionCard'
+import { kickerStyle } from '../common/pageStyles'
 
 export default function HomePage() {
   const navigate = useNavigate()
@@ -88,11 +89,11 @@ export default function HomePage() {
 
       {/* 2. Stat row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
-        {/* Avg Rating — purple tinted card */}
-        <div style={{ background: '#1a1430', border: '1px solid #6c47d4', borderRadius: 14, padding: '1.25rem 1.5rem' }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '2rem', fontWeight: 700, color: '#6c47d4', lineHeight: 1 }}>{avgRating != null ? avgRating.toFixed(2) : '—'}</div>
-          <div style={{ marginTop: '0.4rem', fontFamily: 'var(--font-mono)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--ink-mute)' }}>Avg Rating</div>
-        </div>
+        {/* Categories */}
+        <Card>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '2rem', fontWeight: 700, color: 'var(--ink)', lineHeight: 1 }}>{totalCategories}</div>
+          <div style={{ marginTop: '0.4rem', fontFamily: 'var(--font-mono)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--ink-mute)' }}>Categories</div>
+        </Card>
         {/* Foods Logged */}
         <Card>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: '2rem', fontWeight: 700, color: 'var(--ink)', lineHeight: 1 }}>{totalFoods}</div>
@@ -144,6 +145,37 @@ export default function HomePage() {
         </Card>
         </SectionErrorBoundary>
       </div>
+
+      {/* 5. About */}
+      <SectionErrorBoundary title="About">
+        <Card style={{ position: 'relative', overflow: 'hidden', marginBottom: '1.5rem' }}>
+          {/* Watermark */}
+          <div style={{ position: 'absolute', bottom: '-1rem', left: '50%', transform: 'translateX(-50%)', fontSize: '10rem', fontWeight: 800, fontFamily: 'var(--font-display)', color: 'var(--ink)', opacity: 0.04, pointerEvents: 'none', userSelect: 'none', whiteSpace: 'nowrap' }}>
+            Food Ranking
+          </div>
+          {/* Foreground */}
+          <div style={{ position: 'relative', zIndex: 1, display: 'flex', gap: '3rem', padding: '2rem', alignItems: 'center' }}>
+            {/* Left column */}
+            <div style={{ flex: '0 0 60%' }}>
+              <div style={kickerStyle}>ABOUT</div>
+              <h2 style={{ fontSize: '1.6rem', fontWeight: 700, fontFamily: 'var(--font-display)', margin: '0.4rem 0 1rem' }}>Why I built this</h2>
+              <p style={{ color: 'var(--ink-mute)', lineHeight: 1.7, fontFamily: 'var(--font-body)', fontSize: '0.95rem', margin: 0 }}>
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugat nulla pariatur.
+              </p>
+              <p style={{ color: 'var(--ink-mute)', lineHeight: 1.7, fontFamily: 'var(--font-body)', fontSize: '0.95rem', margin: 0, marginTop: '0.75rem' }}>
+                Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Curabitur pretium tincidunt lacus nec porta.
+              </p>
+            </div>
+            {/* Right column */}
+            <div style={{ flex: '0 0 40%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+              <div style={{ fontSize: '3.5rem', fontWeight: 800, fontFamily: 'var(--font-mono)', color: 'var(--accent)', lineHeight: 1 }}>{entries.length}</div>
+              <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--ink-mute)' }}>foods logged</div>
+              <hr style={{ width: '40px', border: 'none', borderTop: '1px solid var(--line)', margin: '0.25rem 0' }} />
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', color: 'var(--ink-mute)' }}>est. 2025</div>
+            </div>
+          </div>
+        </Card>
+      </SectionErrorBoundary>
 
     </div>
   )
