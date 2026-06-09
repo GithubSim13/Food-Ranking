@@ -76,6 +76,7 @@ Ideas documented for later, not currently prioritised:
 - **Shareable entry cards** — generate a pretty image card (Spotify Wrapped style) for a single entry
 - **Tags** — freeform tags on entries beyond category (e.g. "spicy", "late night"); filterable on Entries and Rankings
 - **Budget tracker** — optional price is now on reviews. Remaining shelved work: avg spend per restaurant, best value per dollar analysis alongside Value rating
+- **Move entries active category detection improvement** — attempted to fix sticky header `getBoundingClientRect` clamping issue via non-sticky sentinel divs; reverted due to sentinel divs interfering with move mode dimming logic. Current implementation requires scrolling slightly past a category header for it to register as active. Possible future fix: use IntersectionObserver instead of scroll listener + getBoundingClientRect.
 
 ---
 

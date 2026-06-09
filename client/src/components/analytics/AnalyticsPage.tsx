@@ -270,7 +270,7 @@ export default function AnalyticsPage() {
       {/* B + C. Rating distribution / Starred ratio */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
         <SectionErrorBoundary title="Rating Distribution">
-          <Card>
+          <Card style={{ minWidth: 0 }}>
             <SectionLabel>Rating Distribution</SectionLabel>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
               <Donut
@@ -293,7 +293,7 @@ export default function AnalyticsPage() {
         </SectionErrorBoundary>
 
         <SectionErrorBoundary title="Starred Ratio">
-          <Card>
+          <Card style={{ minWidth: 0 }}>
             <SectionLabel>Starred Ratio</SectionLabel>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
               <Donut
@@ -317,7 +317,7 @@ export default function AnalyticsPage() {
       {/* D + E. Top categories / Best restaurants */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
         <SectionErrorBoundary title="Top Categories">
-          <Card>
+          <Card style={{ minWidth: 0 }}>
             <SectionLabel>Top Categories by Avg Rating</SectionLabel>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
               {topCategories.map(c => (
@@ -338,7 +338,7 @@ export default function AnalyticsPage() {
         </SectionErrorBoundary>
 
         <SectionErrorBoundary title="Best Restaurants">
-          <Card>
+          <Card style={{ minWidth: 0 }}>
             <SectionLabel>Best Restaurants by Avg Rating</SectionLabel>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
               {bestRestaurants.map((r, i) => (
@@ -353,7 +353,7 @@ export default function AnalyticsPage() {
       {/* D2 + E2. Most visited stores / Most logged categories */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
         <SectionErrorBoundary title="Most Visited Stores">
-          <Card>
+          <Card style={{ minWidth: 0 }}>
             <p style={kickerStyle}>MOST VISITED STORES</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
               {mostVisitedStores.map((r, i) => (
@@ -369,7 +369,7 @@ export default function AnalyticsPage() {
         </SectionErrorBoundary>
 
         <SectionErrorBoundary title="Most Logged Categories">
-          <Card>
+          <Card style={{ minWidth: 0 }}>
             <p style={kickerStyle}>MOST LOGGED CATEGORIES</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
               {mostLoggedCategories.map((c, i) => (
