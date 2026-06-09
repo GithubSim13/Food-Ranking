@@ -36,6 +36,7 @@ interface Props {
   searchPlaceholder?: string
   extraScopePills?: { key: Scope; label: string }[]
   rightSlot?: React.ReactNode
+  middleContent?: React.ReactNode
 }
 
 const SCOPE_PILLS: { key: Scope; label: string }[] = [
@@ -53,6 +54,7 @@ export function SearchAndScopeBar({
   searchPlaceholder = 'Search…',
   extraScopePills,
   rightSlot,
+  middleContent,
 }: Props) {
   const rootRef = useRef<HTMLDivElement>(null)
 
@@ -94,19 +96,21 @@ export function SearchAndScopeBar({
           boxSizing: 'border-box',
         }}
       />
-      <div style={{ display: 'flex', justifyContent: rightSlot ? 'space-between' : undefined, alignItems: 'center', gap: '0.375rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
-        <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap' }}>
-          {SCOPE_PILLS.map(p => (
-            <button key={p.key} onClick={() => onScopeChange(p.key)} style={pillStyle(scope === p.key)}>
-              {p.label}
-            </button>
-          ))}
-          {extraScopePills?.map(p => (
-            <button key={p.key} onClick={() => onScopeChange(p.key)} style={pillStyle(scope === p.key)}>
-              {p.label}
-            </button>
-          ))}
-        </div>
+      <div style={{ display: 'flex', justifyContent: (rightSlot && !middleContent) ? 'space-between' : undefined, alignItems: 'center', gap: '0.375rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+        {middleContent !== undefined ? middleContent : (
+          <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap' }}>
+            {SCOPE_PILLS.map(p => (
+              <button key={p.key} onClick={() => onScopeChange(p.key)} style={pillStyle(scope === p.key)}>
+                {p.label}
+              </button>
+            ))}
+            {extraScopePills?.map(p => (
+              <button key={p.key} onClick={() => onScopeChange(p.key)} style={pillStyle(scope === p.key)}>
+                {p.label}
+              </button>
+            ))}
+          </div>
+        )}
         {rightSlot}
       </div>
     </div>

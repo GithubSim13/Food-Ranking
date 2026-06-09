@@ -64,6 +64,28 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+router.patch('/bulk-move', async (req, res) => {
+  const { entryIds, category } = req.body as { entryIds?: unknown; category?: unknown };
+  if (!Array.isArray(entryIds) || entryIds.length === 0 || !entryIds.every(id => Number.isInteger(id))) {
+    res.status(400).json({ error: 'entryIds must be a non-empty array of integers' });
+    return;
+  }
+  const trimmed = typeof category === 'string' ? category.trim() : '';
+  if (!trimmed) {
+    res.status(400).json({ error: 'category is required' });
+    return;
+  }
+  try {
+    const result = await prisma.entry.updateMany({
+      where: { id: { in: entryIds as number[] } },
+      data: { category: trimmed },
+    });
+    res.json({ updated: result.count });
+  } catch {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 router.patch('/:id', async (req, res) => {
   const id = parseId(req.params.id);
   if (id === null) {

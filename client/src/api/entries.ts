@@ -18,6 +18,9 @@ export const patchEntry = (
 export const deleteEntry = (id: number) =>
   axios.delete(`/api/entries/${id}`).then(() => {});
 
+export const bulkMoveEntries = (data: { entryIds: number[]; category: string }) =>
+  axios.patch<{ updated: number }>('/api/entries/bulk-move', data).then(r => r.data);
+
 export const createEntry = (data: {
   foodName: string;
   category: string;
