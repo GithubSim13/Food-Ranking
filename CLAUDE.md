@@ -64,7 +64,7 @@ Restaurant ──< Entry ──< Review
 
 - **Restaurant** — `id`, `name`
 - **Entry** — `id`, `foodName`, `category`, `restaurantId`, `starred` (bool), `flag` (String?, nullable 2-letter ISO code), `manualRank` (Int?, nullable — per-category drag order), `tryAgain` (Boolean, default false), `neverAgain` (Boolean, default false), `createdAt`, `updatedAt`
-- **Review** — `id`, `entryId`, `date?` (DateTime, nullable), `notes?`, `rating1?` (Taste), `rating2?` (Value), `rating3?` (Consistency), `overallRating?`, `uncertainRating` (Boolean, default false, renamed from `retroactive`), `createdAt`
+- **Review** — `id`, `entryId`, `date?` (DateTime, nullable), `notes?`, `rating1?` (Taste), `rating2?` (Value), `rating3?` (Consistency), `overallRating?`, `price?` (Float, nullable — cost in ₱ at time of visit), `uncertainRating` (Boolean, default false, renamed from `retroactive`), `createdAt`
 
 `Entry.flag` is a nullable 2-letter ISO 3166-1 alpha-2 country code (e.g. `"SG"`, `"JP"`). `null` means the food was eaten locally (home country). Non-null means eaten abroad.
 
@@ -108,8 +108,8 @@ server/
 | PATCH | `/api/entries/:id` | Partial update — body: `{ starred?, foodName?, category?, flag?, tryAgain?, neverAgain? }`. Only provided fields are written. |
 | DELETE | `/api/entries/:id` | Delete entry and all its reviews. |
 | GET | `/api/entries/search?q=` | Case-insensitive foodName search (ILIKE) for duplicate detection |
-| POST | `/api/reviews` | Create review — body: `{ entryId, date?, rating1?, rating2?, rating3?, notes?, uncertainRating? }`. `overallRating` computed server-side. |
-| PUT | `/api/reviews/:id` | Update review — same optional fields as POST including `uncertainRating?`. `overallRating` recomputed server-side. |
+| POST | `/api/reviews` | Create review — body: `{ entryId, date?, rating1?, rating2?, rating3?, notes?, uncertainRating?, price? }`. `overallRating` computed server-side. |
+| PUT | `/api/reviews/:id` | Update review — same optional fields as POST including `uncertainRating?`, `price?`. `overallRating` recomputed server-side. |
 | DELETE | `/api/reviews/:id` | Delete a single review. |
 | GET | `/api/rankings` | All entries grouped by category, alphabetically sorted by category name; within each category: rated entries by `overallRating` desc (latest review's), unrated by `manualRank` asc nulls last. Includes `flag`, `manualRank`, `tryAgain`, `neverAgain` per entry. |
 | PATCH | `/api/rankings/reorder` | Persist drag order — body: `{ category: string, orderedIds: number[] }`. Writes `manualRank` (0-based index). |
@@ -166,13 +166,13 @@ client/src/
     analytics/
       AnalyticsPage.tsx # /analytics — stats and insights page; sections: Rating Distribution donut chart (avg rating shown as center label in donut hole, var(--accent)), Starred Ratio donut chart (starred count shown as center label in donut hole, var(--gold)), Top Categories by Avg Rating (min 2 rated entries), Best Restaurants by Avg Rating (min 2 rated entries), Most Visited Stores (top 10 by entry count, Nx format), Most Logged Categories (top 10 by entry count, Nx format), Best Spot per Category (category filter pills, min 2 entries per restaurant), Rating Trajectory movers (entries with 2+ reviews, filter: improved/declined/all), Starred Picks grid (paginated, STARRED_PAGE_SIZE = 9, prev/next buttons, "Showing X–Y of Z" label); all computed client-side from ['entries'] query
     entries/
-      EntryList.tsx     # /entries — responsive card grid (3 columns desktop, 2 tablet, 1 mobile) + search + scope filters (Everything/Starred/Abroad/Home/Try Again/Never Again/Uncertain) + sort pills (Most recent/Top rated/A-Z); search covers name/category/restaurant (substring) and review notes (whole-word regex); when search is active, sort pills are greyed out/disabled and results are priority-sorted (whole-word matches first, partial matches second); sort pills resume normal behaviour when search is cleared; Uncertain filter checks latest review only
+      EntryList.tsx     # /entries — responsive card grid (3 columns desktop, 2 tablet, 1 mobile) + search + scope filters (Everything/Starred/Abroad/Home/Try Again/Never Again/Uncertain) + sort pills (Most recent = by latest non-null review.date desc, entries with no dated reviews fall last sorted by createdAt desc; Top rated; A-Z); search covers name/category/restaurant (substring) and review notes (whole-word regex); when search is active, sort pills are greyed out/disabled and results are priority-sorted (whole-word matches first, partial matches second); sort pills resume normal behaviour when search is cleared; Uncertain filter checks latest review only
       EntryCard.tsx     # card: flag SVG + food name + quote (first line of latest review notes, 2-line clamp, omitted if no notes) + category · restaurant + rating pinned bottom right + badge dots (blue=tryAgain, red=neverAgain, yellow=uncertainRating on latest review); gold styling when starred
       EntryForm.tsx     # /entries/new — form + live dupe detection (list format) + FlagPicker + category combo box + restaurant combo box (fetches GET /api/restaurants) + optional inline review section (toggle, RatingInput for Taste/Value/Consistency, Notes, date auto-set to local YYYY-MM-DD string at POST time (uses local calendar date, not UTC, to avoid midnight UTC+8 offset issues)) + Category Comparison Panel when review section is open + React-side validation (no native HTML validation)
       EntryDetail.tsx   # /entries/:id — entry info + inline editing + star toggle + tryAgain/neverAgain toggle buttons (XOR, colored dot + label, patchEntry on click) + uncertainRating display badge (yellow dot, derived from latest review, read-only) + reviews list + ReviewForm + delete entry/review; fully dark themed
       EntryModal.tsx    # modal wrapper around EntryDetail; onClose navigates back
     reviews/
-      ReviewForm.tsx    # add review: Taste/Value/Consistency via RatingInput component + date + notes + uncertainRating checkbox ("Ratings added after the fact"); rating inputs also clamped in edit form
+      ReviewForm.tsx    # add review: Taste/Value/Consistency via RatingInput component + date + optional "Price (₱)" number input + notes + uncertainRating checkbox ("Ratings added after the fact"); rating inputs also clamped in edit form
       RatingInput.tsx   # reusable rating field: label (left) + range slider (full red→yellow→green spectrum gradient, 6px track) + number input (right, 70px fixed width); fully synced bidirectionally; clamped 0–10 on onChange; step="any" for decimal precision; used in all review add/edit forms
     rankings/
       RankingsPage.tsx  # /rankings — grouped by category alphabetically; rated entries sorted by overallRating desc (automatic); unrated entries below, drag-and-drop reorder via @dnd-kit (gated behind Edit Rankings mode); search bar + scope filters (Everything/Starred/Abroad/Home); reads ?category= URL param on mount to pre-fill search bar (used by CategoriesPage card clicks); search covers name/category/restaurant (substring) and review notes (whole-word regex); when search is active, results are priority-sorted within each category group (whole-word matches first, partial matches second)
@@ -183,7 +183,7 @@ client/src/
   context/
     ToastContext.tsx    # ToastProvider + useToast() hook; showToast(message, variant?)
   types.ts              # Entry, EntryDetail, Review (includes uncertainRating), RankedEntry (includes tryAgain, neverAgain), Rankings, CategorySummary, RestaurantSummary
-  utils.ts              # shared helpers: sortReviewsByDateDesc, latestRating, latestRatedReview, scoreColor, formatReviewDate
+  utils.ts              # shared helpers: sortReviewsByDateDesc, latestRating, latestRatedReview, latestPrice, scoreColor, formatReviewDate
   App.tsx               # routes + React Router background-location modal pattern for /entries/:id; /starred redirects to /entries; catch-all <Route path="*"> renders NotFoundPage
   main.tsx              # QueryClientProvider + BrowserRouter + ToastProvider + ToastContainer
 ```
@@ -199,6 +199,7 @@ client/src/
 - **Starred entries**: gold card styling on entry list and rankings; toggle button on entry detail page
 - **Review notes**: stored as newline-separated text; rendered as `<ul><li>` bullet list
 - **Uncertain rating**: `Review.uncertainRating` boolean (renamed from `retroactive`) — when true, review card shows a small muted clock badge "ratings added later". Checkbox ("Ratings added after the fact") in both new and edit review forms.
+- **Review price**: `Review.price` is an optional Float storing the cost in ₱ at time of visit. Displayed next to the date on EntryDetail review cards as `₱{price} · {date}` (or price/date alone if the other is absent). Shown in the CategoryComparisonPanel hover popup (latest price via `latestPrice()` helper) below the restaurant name and above notes. Input via an optional "Price (₱)" number field in ReviewForm (between ratings and notes fields).
 - **Entry flags**: `Entry.tryAgain` and `Entry.neverAgain` booleans — mutually exclusive (XOR enforced at app layer via patchEntry). Toggle buttons on entry detail show a colored dot (blue=tryAgain, red=neverAgain) + label; clicking an active flag turns it off, clicking an inactive one turns it on and clears the other. `uncertainRating` on entry detail is a read-only display badge (yellow dot + "Uncertain Rating") derived from whether the **latest review** has `uncertainRating: true`. Badge dots on entry cards (8×8px circles, bottom-right area) rendered by the shared `EntryFlagBadges` component using CSS variables `--badge-try-again` (blue), `--badge-never-again` (red), `--badge-uncertain` (yellow); used in EntryCard.tsx. Filter pills on Entries page: Try Again, Never Again, Uncertain (Uncertain filter checks latest review only).
 - **Inline review editing**: Edit button on each review card; saves via PUT /api/reviews/:id; includes uncertainRating checkbox
 - **Inline entry editing**: Edit button on `/entries/:id` — edits foodName, category (combo box), flag (FlagPicker), restaurant name. Fires PATCH /api/restaurants/:id and PATCH /api/entries/:id in parallel if both changed.

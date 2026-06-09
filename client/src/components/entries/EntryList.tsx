@@ -46,7 +46,17 @@ export default function EntryList() {
           const rb = latestRating(b.reviews) ?? -1
           return rb - ra
         }
-        return b.id - a.id
+        // sort by most recent non-null review.date; fall back to createdAt
+        const latestDate = (e: typeof scoped[0]) => {
+          const dated = sortReviewsByDateDesc(e.reviews).find(r => r.date != null)
+          return dated ? new Date(dated.date!).getTime() : null
+        }
+        const da = latestDate(a)
+        const db = latestDate(b)
+        if (da !== null && db !== null) return db - da
+        if (da !== null) return -1
+        if (db !== null) return 1
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       })
     : (() => {
         const isP1 = (e: typeof scoped[0]) =>
