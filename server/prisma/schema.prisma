@@ -41,5 +41,6 @@ model Review {
   rating3       Float?
   overallRating Float?
   uncertainRating Boolean   @default(false)
+  price         Float?
   createdAt     DateTime  @default(now())
 }

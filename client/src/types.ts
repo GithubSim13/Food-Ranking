@@ -8,6 +8,7 @@ export interface Review {
   rating3: number | null;
   overallRating: number | null;
   uncertainRating: boolean;
+  price?: number | null;
   createdAt: string;
 }
 
@@ -23,7 +24,7 @@ export interface Entry {
   createdAt: string;
   updatedAt: string;
   restaurant: { name: string };
-  reviews: Pick<Review, 'overallRating' | 'date' | 'rating1' | 'rating2' | 'rating3' | 'notes' | 'uncertainRating'>[];
+  reviews: Pick<Review, 'overallRating' | 'date' | 'rating1' | 'rating2' | 'rating3' | 'notes' | 'uncertainRating' | 'price'>[];
 }
 
 export interface EntryDetail extends Omit<Entry, 'reviews'> {

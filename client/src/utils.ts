@@ -22,6 +22,10 @@ export function latestRatedReview(reviews: Entry['reviews']): Entry['reviews'][0
   return sortReviewsByDateDesc(reviews).find(r => r.overallRating !== null) ?? null
 }
 
+export function latestPrice(reviews: Entry['reviews']): number | null {
+  return sortReviewsByDateDesc(reviews).find(r => r.price != null)?.price ?? null
+}
+
 export function scoreColor(v: number): string {
   return `oklch(0.62 0.16 ${25 + ((v - 3) / 6.5) * 120})`
 }

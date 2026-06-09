@@ -25,6 +25,7 @@ export default function ReviewForm({ entryId, onSuccess }: Props) {
   )
   const [notes, setNotes] = useState('')
   const [uncertainRating, setUncertainRating] = useState(false)
+  const [price, setPrice] = useState<number | null>(null)
 
   const { mutate, isPending } = useMutation({
     mutationFn: createReview,
@@ -33,6 +34,7 @@ export default function ReviewForm({ entryId, onSuccess }: Props) {
       setRatings({ rating1: null, rating2: null, rating3: null })
       setNotes('')
       setUncertainRating(false)
+      setPrice(null)
       onSuccess()
     },
     onError: () => {
@@ -50,6 +52,7 @@ export default function ReviewForm({ entryId, onSuccess }: Props) {
       rating2: ratings.rating2 ?? undefined,
       rating3: ratings.rating3 ?? undefined,
       uncertainRating,
+      price: price ?? undefined,
     })
   }
 
@@ -69,6 +72,22 @@ export default function ReviewForm({ entryId, onSuccess }: Props) {
             onChange={n => setRatings(r => ({ ...r, [key]: n }))}
           />
         ))}
+      </div>
+
+      <div>
+        <label style={labelStyle}>Price (₱)</label>
+        <input
+          type="number"
+          step="0.01"
+          min="0"
+          value={price ?? ''}
+          onChange={e => {
+            const v = parseFloat(e.target.value)
+            setPrice(isNaN(v) ? null : Math.max(0, v))
+          }}
+          style={inputStyle}
+          placeholder="Optional"
+        />
       </div>
 
       <div>

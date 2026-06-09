@@ -52,6 +52,7 @@ function ReviewCard({ review: r, onUpdated, onEditStart, onEditEnd }: ReviewCard
     rating3: number | null
     notes: string
     uncertainRating: boolean
+    price: number | null
   }>({
     date: '',
     rating1: null,
@@ -59,6 +60,7 @@ function ReviewCard({ review: r, onUpdated, onEditStart, onEditEnd }: ReviewCard
     rating3: null,
     notes: '',
     uncertainRating: false,
+    price: null,
   })
 
   // If the card unmounts while editing (e.g. the review was deleted by a
@@ -80,6 +82,7 @@ function ReviewCard({ review: r, onUpdated, onEditStart, onEditEnd }: ReviewCard
         rating3: form.rating3,
         notes: form.notes || null,
         uncertainRating: form.uncertainRating,
+        price: form.price,
       }),
     onSuccess: () => {
       setIsEditing(false)
@@ -112,6 +115,7 @@ function ReviewCard({ review: r, onUpdated, onEditStart, onEditEnd }: ReviewCard
       rating3: r.rating3 ?? null,
       notes: r.notes ?? '',
       uncertainRating: r.uncertainRating,
+      price: r.price ?? null,
     })
     setIsEditing(true)
     onEditStart()
@@ -139,6 +143,21 @@ function ReviewCard({ review: r, onUpdated, onEditStart, onEditEnd }: ReviewCard
                 onChange={n => setForm(f => ({ ...f, [key]: n }))}
               />
             ))}
+          </div>
+          <div>
+            <label style={labelStyle}>Price (₱)</label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={form.price ?? ''}
+              onChange={e => {
+                const v = parseFloat(e.target.value)
+                setForm(f => ({ ...f, price: isNaN(v) ? null : Math.max(0, v) }))
+              }}
+              style={inputStyle}
+              placeholder="Optional"
+            />
           </div>
           <div>
             <label style={labelStyle}>Notes</label>
@@ -182,9 +201,15 @@ function ReviewCard({ review: r, onUpdated, onEditStart, onEditEnd }: ReviewCard
     <div style={cardStyle}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span style={{ fontSize: '0.8rem', color: 'var(--ink-mute)' }}>
-            {r.date ? formatReviewDate(r.date) : 'No date'}
-          </span>
+          {(r.price != null || r.date) && (
+            <span style={{ fontSize: '0.8rem', color: 'var(--ink-mute)' }}>
+              {r.price != null && r.date
+                ? `₱${r.price.toLocaleString()} · ${formatReviewDate(r.date)}`
+                : r.price != null
+                ? `₱${r.price.toLocaleString()}`
+                : formatReviewDate(r.date)}
+            </span>
+          )}
           {r.uncertainRating && (
             <span style={{ fontSize: '0.7rem', fontFamily: 'var(--font-mono)', color: 'var(--ink-mute)', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
               &#x1F559; ratings added later

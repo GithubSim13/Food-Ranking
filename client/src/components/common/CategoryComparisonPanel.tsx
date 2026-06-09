@@ -2,7 +2,7 @@ import { useState } from 'react'
 import ReactDOM from 'react-dom'
 import { useQuery } from '@tanstack/react-query'
 import { getEntries } from '../../api/entries'
-import { sortReviewsByDateDesc, latestRatedReview } from '../../utils'
+import { sortReviewsByDateDesc, latestRatedReview, latestPrice } from '../../utils'
 
 interface Props {
   category: string
@@ -21,6 +21,7 @@ interface ComparisonRow {
   reviewCount: number
   latestDate: string | null
   latestNotes: string[]
+  price: number | null
 }
 
 interface HoveredRow {
@@ -59,6 +60,7 @@ export default function CategoryComparisonPanel({ category, currentEntryId }: Pr
         reviewCount: e.reviews.length,
         latestDate,
         latestNotes,
+        price: latestPrice(e.reviews),
       }
     })
     .filter((e): e is ComparisonRow => e !== null)
@@ -86,9 +88,14 @@ export default function CategoryComparisonPanel({ category, currentEntryId }: Pr
               pointerEvents: 'none',
             }}
           >
-            <div style={{ fontSize: '0.78rem', color: 'var(--ink-mute)', marginBottom: hoveredRow.latestNotes.length ? '0.5rem' : 0 }}>
+            <div style={{ fontSize: '0.78rem', color: 'var(--ink-mute)', marginBottom: (hoveredRow.price != null || hoveredRow.latestNotes.length > 0) ? '0.5rem' : 0 }}>
               {hoveredRow.restaurantName}
             </div>
+            {hoveredRow.price != null && (
+              <div style={{ fontSize: '0.8rem', color: 'var(--ink-mute)', fontFamily: 'var(--font-mono)', marginBottom: hoveredRow.latestNotes.length ? '0.5rem' : 0 }}>
+                ₱{hoveredRow.price.toLocaleString()}
+              </div>
+            )}
             {hoveredRow.latestNotes.length > 0 && (
               <ul style={{ margin: 0, paddingLeft: '1.1rem', listStyle: 'disc' }}>
                 {hoveredRow.latestNotes.map((line, i) => (

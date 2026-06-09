@@ -21,7 +21,7 @@ function computeOverallRating(
 }
 
 router.post('/', async (req, res) => {
-  const { entryId, date, notes, rating1, rating2, rating3, uncertainRating } = req.body;
+  const { entryId, date, notes, rating1, rating2, rating3, uncertainRating, price } = req.body;
 
   if (!entryId || isNaN(Number(entryId))) {
     res.status(400).json({ error: 'entryId is required and must be a number' });
@@ -43,6 +43,7 @@ router.post('/', async (req, res) => {
         rating3: r3,
         overallRating: computeOverallRating(r1, r2, r3),
         uncertainRating: uncertainRating === true,
+        price: price != null ? Number(price) : null,
       },
     });
     res.status(201).json(review);
@@ -58,7 +59,7 @@ router.put('/:id', async (req, res) => {
     return;
   }
 
-  const { date, notes, rating1, rating2, rating3, uncertainRating } = req.body;
+  const { date, notes, rating1, rating2, rating3, uncertainRating, price } = req.body;
 
   const r1 = rating1 != null ? Number(rating1) : null;
   const r2 = rating2 != null ? Number(rating2) : null;
@@ -75,6 +76,7 @@ router.put('/:id', async (req, res) => {
         rating3: r3,
         overallRating: computeOverallRating(r1, r2, r3),
         ...(uncertainRating !== undefined && { uncertainRating: uncertainRating === true }),
+        ...(price !== undefined && { price: price != null ? Number(price) : null }),
       },
     });
     res.json(review);
