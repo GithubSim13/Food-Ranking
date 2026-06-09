@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { getEntries } from '../../api/entries'
@@ -6,8 +6,11 @@ import SectionErrorBoundary from '../common/SectionErrorBoundary'
 import { Card, SectionLabel, RankRow } from '../home/HomeShared'
 import { pillStyle } from '../common/SearchAndScopeBar'
 import { kickerStyle, pageTitleStyle, smallSecondaryBtnStyle } from '../common/pageStyles'
-import { latestRating, sortReviewsByDateDesc, scoreColor } from '../../utils'
+import { latestRating, sortReviewsByDateDesc, scoreColor, formatReviewDate } from '../../utils'
 import type { Entry } from '../../types'
+import FlagImage from '../common/FlagImage'
+import { COUNTRIES } from '../common/countryList'
+import EntryFlagBadges from '../common/EntryFlagBadges'
 
 const COLOR_GOOD = 'var(--accent)'
 const COLOR_MID = 'var(--ink-mute)'
@@ -82,6 +85,20 @@ type MoverFilter = 'improved' | 'declined' | 'all'
 
 const STARRED_PAGE_SIZE = 9
 
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+function cellColor(count: number): React.CSSProperties {
+  if (count === 0) return { background: 'var(--surface)', border: '1px solid var(--line)' }
+  if (count === 1) return { background: 'color-mix(in srgb, var(--accent) 25%, transparent)' }
+  if (count <= 3) return { background: 'color-mix(in srgb, var(--accent) 55%, transparent)' }
+  return { background: 'var(--accent)' }
+}
+
+function formatHeatmapDate(dateStr: string): string {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  return `${MONTH_NAMES[m - 1]} ${d}, ${y}`
+}
+
 export default function AnalyticsPage() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -91,8 +108,49 @@ export default function AnalyticsPage() {
   const [moverFilter, setMoverFilter] = useState<MoverFilter>('improved')
   const [showAllMovers, setShowAllMovers] = useState(false)
   const [starredPage, setStarredPage] = useState(0)
+  const [selectedYearOverride, setSelectedYearOverride] = useState<number | null>(null)
+  const [heatmapTooltip, setHeatmapTooltip] = useState<{ x: number; y: number; dateStr: string; count: number } | null>(null)
+  const [countrySortCol, setCountrySortCol] = useState<'country' | 'entries' | 'avg' | 'best'>('avg')
+  const [countrySortDir, setCountrySortDir] = useState<'asc' | 'desc'>('desc')
+  const [selectedBreakdownCat, setSelectedBreakdownCat] = useState<string | null>(null)
+  const [scatterWidth, setScatterWidth] = useState(600)
+  const [hoveredDotId, setHoveredDotId] = useState<number | null>(null)
+  const [scatterTooltip, setScatterTooltip] = useState<{
+    x: number; y: number
+    foodName: string; restaurant: string; category: string
+    taste: number; consistency: number; overall: number | null
+  } | null>(null)
+  const scatterContainerRef = useRef<HTMLDivElement>(null)
+  const [priceWidth, setPriceWidth] = useState(600)
+  const [hoveredPriceDotId, setHoveredPriceDotId] = useState<number | null>(null)
+  const [priceTooltip, setPriceTooltip] = useState<{
+    x: number; y: number
+    foodName: string; restaurant: string; category: string
+    price: number; overall: number
+  } | null>(null)
+  const priceContainerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => { setStarredPage(0) }, [entries])
+
+  useEffect(() => {
+    const el = scatterContainerRef.current
+    if (!el) return
+    const ro = new ResizeObserver(entries => {
+      if (entries[0]) setScatterWidth(entries[0].contentRect.width)
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  useEffect(() => {
+    const el = priceContainerRef.current
+    if (!el) return
+    const ro = new ResizeObserver(entries => {
+      if (entries[0]) setPriceWidth(entries[0].contentRect.width)
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
 
   function selectMoverFilter(f: MoverFilter) {
     setMoverFilter(f)
@@ -250,6 +308,206 @@ export default function AnalyticsPage() {
     .filter(e => e.starred)
     .map(e => ({ entry: e, rating: latestRating(e.reviews) }))
     .sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1)), [entries])
+
+  // ── logging activity ───────────────────────────────────────────────────────
+  const availableYears = useMemo(() => {
+    const years = new Set<number>()
+    entries.forEach(e => {
+      e.reviews.forEach(r => {
+        if (!r.date) return
+        const y = parseInt(r.date.slice(0, 4), 10)
+        if (!isNaN(y)) years.add(y)
+      })
+    })
+    return Array.from(years).sort((a, b) => b - a)
+  }, [entries])
+
+  const selectedYear = selectedYearOverride ?? availableYears[0] ?? null
+
+  const heatmapCounts = useMemo(() => {
+    const counts = new Map<string, number>()
+    if (!selectedYear) return counts
+    entries.forEach(e => {
+      e.reviews.forEach(r => {
+        if (!r.date) return
+        const dateStr = r.date.slice(0, 10)
+        if (parseInt(dateStr.slice(0, 4), 10) !== selectedYear) return
+        counts.set(dateStr, (counts.get(dateStr) ?? 0) + 1)
+      })
+    })
+    return counts
+  }, [entries, selectedYear])
+
+  const heatmapGrid = useMemo(() => {
+    if (!selectedYear) return { cells: [] as { dateStr: string | null; count: number }[], monthLabels: [] as { label: string; col: number }[] }
+    const jan1DayOfWeek = new Date(selectedYear, 0, 1).getDay()
+    const isLeap = (selectedYear % 4 === 0 && selectedYear % 100 !== 0) || selectedYear % 400 === 0
+    const daysInYear = isLeap ? 366 : 365
+
+    const cells: { dateStr: string | null; count: number }[] = []
+    for (let k = 0; k < 53 * 7; k++) {
+      const daysSinceJan1 = k - jan1DayOfWeek
+      if (daysSinceJan1 < 0 || daysSinceJan1 >= daysInYear) {
+        cells.push({ dateStr: null, count: 0 })
+      } else {
+        const d = new Date(selectedYear, 0, 1 + daysSinceJan1)
+        const dateStr = `${selectedYear}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+        cells.push({ dateStr, count: heatmapCounts.get(dateStr) ?? 0 })
+      }
+    }
+
+    const monthLabels: { label: string; col: number }[] = []
+    const jan1Time = new Date(selectedYear, 0, 1).getTime()
+    for (let m = 0; m < 12; m++) {
+      const daysSinceJan1 = Math.round((new Date(selectedYear, m, 1).getTime() - jan1Time) / 86400000)
+      const col = Math.floor((daysSinceJan1 + jan1DayOfWeek) / 7)
+      monthLabels.push({ label: MONTH_NAMES[m], col })
+    }
+
+    return { cells, monthLabels }
+  }, [selectedYear, heatmapCounts])
+
+  // ── long time no see ──────────────────────────────────────────────────────
+  const longTimeNoSee = useMemo(() => {
+    const today = new Date()
+    const todayMs = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime()
+    const result: { entry: Entry; dateStr: string; daysAgo: number }[] = []
+    entries.forEach(e => {
+      if (e.reviews.length !== 1) return
+      const date = e.reviews[0].date
+      if (!date) return
+      const [y, m, d] = date.slice(0, 10).split('-').map(Number)
+      const visitMs = new Date(y, m - 1, d).getTime()
+      result.push({ entry: e, dateStr: date, daysAgo: Math.floor((todayMs - visitMs) / 86400000) })
+    })
+    return result.sort((a, b) => b.daysAgo - a.daysAgo).slice(0, 20)
+  }, [entries])
+
+  // ── score breakdown by category ───────────────────────────────────────────
+  const breakdownCategories = useMemo(() => {
+    const cats = new Map<string, number>()
+    entries.forEach(e => {
+      if (latestRating(e.reviews) !== null) cats.set(e.category, (cats.get(e.category) ?? 0) + 1)
+    })
+    return Array.from(cats.entries())
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([name, count]) => ({ name, count }))
+  }, [entries])
+
+  const defaultBreakdownCat = breakdownCategories.length
+    ? breakdownCategories.reduce((best, c) => c.count > best.count ? c : best).name
+    : null
+  const effectiveBreakdownCat = (selectedBreakdownCat && breakdownCategories.some(c => c.name === selectedBreakdownCat))
+    ? selectedBreakdownCat
+    : defaultBreakdownCat
+
+  const breakdownData = useMemo(() => {
+    if (!effectiveBreakdownCat) return null
+    const r1s: number[] = [], r2s: number[] = [], r3s: number[] = []
+    entries.filter(e => e.category === effectiveBreakdownCat).forEach(e => {
+      const sorted = sortReviewsByDateDesc(e.reviews)
+      const lr1 = sorted.find(r => r.rating1 !== null)?.rating1 ?? null
+      const lr2 = sorted.find(r => r.rating2 !== null)?.rating2 ?? null
+      const lr3 = sorted.find(r => r.rating3 !== null)?.rating3 ?? null
+      if (lr1 !== null) r1s.push(lr1)
+      if (lr2 !== null) r2s.push(lr2)
+      if (lr3 !== null) r3s.push(lr3)
+    })
+    const avg = (arr: number[]) => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null
+    return {
+      taste: { avg: avg(r1s), count: r1s.length },
+      value: { avg: avg(r2s), count: r2s.length },
+      consistency: { avg: avg(r3s), count: r3s.length },
+    }
+  }, [entries, effectiveBreakdownCat])
+
+  // ── price vs rating scatter ───────────────────────────────────────────────
+  const priceScatterData = useMemo(() => {
+    const result: { entry: Entry; price: number; overall: number }[] = []
+    entries.forEach(e => {
+      const sorted = sortReviewsByDateDesc(e.reviews)
+      const review = sorted.find(r => r.price != null && r.overallRating !== null)
+      if (!review || review.price == null || review.overallRating === null) return
+      result.push({ entry: e, price: review.price, overall: review.overallRating })
+    })
+    return result
+  }, [entries])
+
+  // ── consistency vs taste scatter ──────────────────────────────────────────
+  const scatterData = useMemo(() => {
+    const result: { entry: Entry; taste: number; consistency: number; overall: number | null }[] = []
+    entries.forEach(e => {
+      const sorted = sortReviewsByDateDesc(e.reviews)
+      const taste = sorted.find(r => r.rating1 !== null)?.rating1 ?? null
+      const consistency = sorted.find(r => r.rating3 !== null)?.rating3 ?? null
+      if (taste === null || consistency === null) return
+      const overall = sorted.find(r => r.overallRating !== null)?.overallRating ?? null
+      result.push({ entry: e, taste, consistency, overall })
+    })
+    return result
+  }, [entries])
+
+  // ── underrated gems ───────────────────────────────────────────────────────
+  const underratedGems = useMemo(() => {
+    const result: { entry: Entry; rating: number }[] = []
+    entries.forEach(e => {
+      if (e.reviews.length !== 1) return
+      const r = latestRating(e.reviews)
+      if (r === null || r < 8.0) return
+      result.push({ entry: e, rating: r })
+    })
+    return result.sort((a, b) => b.rating - a.rating)
+  }, [entries])
+
+  // ── rating by country ──────────────────────────────────────────────────────
+  const countryData = useMemo(() => {
+    const map = new Map<string | null, { entries: Entry[]; ratings: number[] }>()
+    entries.forEach(e => {
+      const key = e.flag
+      const bucket = map.get(key) ?? { entries: [], ratings: [] }
+      bucket.entries.push(e)
+      const r = latestRating(e.reviews)
+      if (r !== null) bucket.ratings.push(r)
+      map.set(key, bucket)
+    })
+    return Array.from(map.entries()).map(([flag, bucket]) => {
+      const avg = bucket.ratings.length
+        ? bucket.ratings.reduce((a, c) => a + c, 0) / bucket.ratings.length
+        : null
+      const bestEntry = bucket.entries
+        .map(e => ({ entry: e, rating: latestRating(e.reviews) }))
+        .filter(x => x.rating !== null)
+        .sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1))[0]?.entry ?? null
+      const countryName = flag ? (COUNTRIES.find(c => c.code === flag)?.name ?? flag) : 'Home'
+      return { flag, countryName, entryCount: bucket.entries.length, avg, bestEntry }
+    })
+  }, [entries])
+
+  const sortedCountryData = useMemo(() => {
+    return [...countryData].sort((a, b) => {
+      let cmp = 0
+      if (countrySortCol === 'country') cmp = a.countryName.localeCompare(b.countryName)
+      else if (countrySortCol === 'entries') cmp = a.entryCount - b.entryCount
+      else if (countrySortCol === 'avg') cmp = (a.avg ?? -1) - (b.avg ?? -1)
+      else cmp = (a.bestEntry?.foodName ?? '').localeCompare(b.bestEntry?.foodName ?? '')
+      return countrySortDir === 'asc' ? cmp : -cmp
+    })
+  }, [countryData, countrySortCol, countrySortDir])
+
+  function handleCountrySort(col: 'country' | 'entries' | 'avg' | 'best') {
+    if (countrySortCol === col) {
+      setCountrySortDir(d => d === 'asc' ? 'desc' : 'asc')
+    } else {
+      setCountrySortCol(col)
+      setCountrySortDir(col === 'avg' ? 'desc' : 'asc')
+    }
+  }
+
+  function CountrySortArrow({ col }: { col: 'country' | 'entries' | 'avg' | 'best' }) {
+    if (countrySortCol !== col)
+      return <span style={{ color: 'var(--ink-mute)', marginLeft: 4, fontSize: '0.65rem', opacity: 0.5 }}>↕</span>
+    return <span style={{ color: 'var(--accent)', marginLeft: 4, fontSize: '0.65rem' }}>{countrySortDir === 'asc' ? '▲' : '▼'}</span>
+  }
 
   const goldRowBorder = { borderTop: '1px solid var(--line)', borderRight: '1px solid var(--line)', borderBottom: '1px solid var(--line)', borderLeft: '3px solid var(--gold)' }
 
@@ -459,6 +717,603 @@ export default function AnalyticsPage() {
         </Card>
       </SectionErrorBoundary>
 
+      {/* I. Logging Activity */}
+      <SectionErrorBoundary title="Logging Activity">
+        <Card style={{ marginBottom: '1.5rem' }}>
+          <p style={kickerStyle}>ACTIVITY</p>
+          <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.1rem', color: 'var(--ink)', margin: '0 0 1rem' }}>Logging Activity</p>
+          {availableYears.length > 0 ? (
+            <>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
+                {availableYears.map(y => (
+                  <button key={y} onClick={() => setSelectedYearOverride(y)} style={pillStyle(y === selectedYear)}>{y}</button>
+                ))}
+              </div>
+              <div style={{ overflowX: 'auto' }}>
+                <div style={{ display: 'inline-block', minWidth: 'max-content' }}>
+                  {/* Month labels */}
+                  <div style={{ position: 'relative', height: 18, marginLeft: 36, marginBottom: 4 }}>
+                    {heatmapGrid.monthLabels.map(({ label, col }) => (
+                      <span key={label} style={{
+                        position: 'absolute',
+                        left: col * 16,
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '0.7rem',
+                        color: 'var(--ink-mute)',
+                        userSelect: 'none',
+                      }}>
+                        {label}
+                      </span>
+                    ))}
+                  </div>
+                  {/* Day labels + grid */}
+                  <div style={{ display: 'flex', gap: 4, alignItems: 'flex-start' }}>
+                    {/* Day-of-week labels */}
+                    <div style={{ display: 'grid', gridTemplateRows: 'repeat(7, 13px)', gap: 3, width: 28, flexShrink: 0 }}>
+                      {[0, 1, 2, 3, 4, 5, 6].map(i => (
+                        <span key={i} style={{
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: '0.65rem',
+                          color: 'var(--ink-mute)',
+                          lineHeight: '13px',
+                          textAlign: 'right' as const,
+                          visibility: ([1, 3, 5].includes(i) ? 'visible' : 'hidden') as React.CSSProperties['visibility'],
+                          userSelect: 'none' as const,
+                        }}>
+                          {i === 1 ? 'Mon' : i === 3 ? 'Wed' : i === 5 ? 'Fri' : ''}
+                        </span>
+                      ))}
+                    </div>
+                    {/* Heatmap grid */}
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateRows: 'repeat(7, 13px)',
+                      gridAutoFlow: 'column',
+                      gap: 3,
+                    }}>
+                      {heatmapGrid.cells.map((cell, k) => (
+                        cell.dateStr ? (
+                          <div
+                            key={k}
+                            style={{ width: 13, height: 13, borderRadius: 3, cursor: 'default', boxSizing: 'border-box', ...cellColor(cell.count) }}
+                            onMouseEnter={(e) => setHeatmapTooltip({ x: e.clientX, y: e.clientY, dateStr: cell.dateStr!, count: cell.count })}
+                            onMouseLeave={() => setHeatmapTooltip(null)}
+                            onMouseMove={(e) => setHeatmapTooltip(t => t ? { ...t, x: e.clientX, y: e.clientY } : null)}
+                          />
+                        ) : (
+                          <div key={k} style={{ width: 13, height: 13 }} />
+                        )
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            <EmptyMsg>No dated reviews yet</EmptyMsg>
+          )}
+        </Card>
+      </SectionErrorBoundary>
+      {heatmapTooltip && (
+        <div style={{
+          position: 'fixed',
+          left: heatmapTooltip.x + 12,
+          top: heatmapTooltip.y - 40,
+          zIndex: 9999,
+          pointerEvents: 'none',
+          background: 'var(--paper-2)',
+          border: '1px solid var(--line)',
+          borderRadius: 6,
+          padding: '4px 8px',
+          fontFamily: 'var(--font-mono)',
+          fontSize: '0.72rem',
+          color: 'var(--ink)',
+          whiteSpace: 'nowrap' as const,
+        }}>
+          {formatHeatmapDate(heatmapTooltip.dateStr)} · {heatmapTooltip.count === 0 ? 'No reviews' : `${heatmapTooltip.count} review${heatmapTooltip.count === 1 ? '' : 's'}`}
+        </div>
+      )}
+
+      {/* N + O. Scatter charts */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+      {/* N. Consistency vs Taste scatter */}
+      <SectionErrorBoundary title="Consistency vs Taste">
+        <Card>
+          <p style={kickerStyle}>SCATTER</p>
+          <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.1rem', color: 'var(--ink)', margin: '0 0 0.25rem' }}>Consistency vs Taste</p>
+          <p style={{ fontFamily: 'Hanken Grotesk, sans-serif', fontSize: '0.8rem', color: 'var(--ink-mute)', margin: '0 0 1rem' }}>
+            Each dot is one entry. Hover for details.
+          </p>
+          {scatterData.length < 3 ? (
+            <EmptyMsg>Not enough data — need at least 3 entries with both Taste and Consistency ratings.</EmptyMsg>
+          ) : (
+            <div ref={scatterContainerRef} style={{ width: '100%' }}>
+              {(() => {
+                const ML = 50, MR = 16, MT = 20, MB = 44
+                const PW = Math.max(scatterWidth - ML - MR, 10)
+                const PH = 320 - MT - MB
+                const sx = (v: number) => ML + (v / 10) * PW
+                const sy = (v: number) => MT + (1 - v / 10) * PH
+                const TICKS = [0, 2, 4, 6, 8, 10]
+                return (
+                  <svg width={scatterWidth} height={320} style={{ display: 'block', overflow: 'visible' }}>
+                    {/* Gridlines */}
+                    {TICKS.map(v => (
+                      <g key={v}>
+                        <line x1={sx(v)} y1={MT} x2={sx(v)} y2={MT + PH} stroke="var(--line)" strokeOpacity={0.4} strokeDasharray="4 3" />
+                        <line x1={ML} y1={sy(v)} x2={ML + PW} y2={sy(v)} stroke="var(--line)" strokeOpacity={0.4} strokeDasharray="4 3" />
+                      </g>
+                    ))}
+                    {/* Quadrant dividers */}
+                    <line x1={sx(5)} y1={MT} x2={sx(5)} y2={MT + PH} stroke="var(--line)" strokeOpacity={0.6} />
+                    <line x1={ML} y1={sy(5)} x2={ML + PW} y2={sy(5)} stroke="var(--line)" strokeOpacity={0.6} />
+                    {/* Quadrant labels */}
+                    {([
+                      { label: 'Reliable & Tasty',       x: ML + PW - 6,  y: MT + 13,       anchor: 'end' },
+                      { label: 'Tasty but Inconsistent', x: ML + 6,        y: MT + 13,       anchor: 'start' },
+                      { label: 'Consistent but Bland',   x: ML + PW - 6,  y: MT + PH - 6,   anchor: 'end' },
+                      { label: 'Avoid',                  x: ML + 6,        y: MT + PH - 6,   anchor: 'start' },
+                    ] as const).map(q => (
+                      <text key={q.label} x={q.x} y={q.y} textAnchor={q.anchor} fill="var(--ink-mute)" fontSize={10} fontFamily="var(--font-mono)" opacity={0.6}>{q.label}</text>
+                    ))}
+                    {/* Plot border */}
+                    <rect x={ML} y={MT} width={PW} height={PH} fill="none" stroke="var(--line)" strokeOpacity={0.5} />
+                    {/* X-axis ticks + labels */}
+                    {TICKS.map(v => (
+                      <text key={v} x={sx(v)} y={MT + PH + 16} textAnchor="middle" fill="var(--ink-mute)" fontSize={10} fontFamily="var(--font-mono)">{v}</text>
+                    ))}
+                    {/* Y-axis ticks + labels */}
+                    {TICKS.map(v => (
+                      <text key={v} x={ML - 7} y={sy(v)} textAnchor="end" dominantBaseline="middle" fill="var(--ink-mute)" fontSize={10} fontFamily="var(--font-mono)">{v}</text>
+                    ))}
+                    {/* Axis labels */}
+                    <text x={ML + PW / 2} y={320 - 6} textAnchor="middle" fill="var(--ink-mute)" fontSize={11} fontFamily="var(--font-mono)">Consistency →</text>
+                    <text transform="rotate(-90)" x={-(MT + PH / 2)} y={14} textAnchor="middle" fill="var(--ink-mute)" fontSize={11} fontFamily="var(--font-mono)">Taste ↑</text>
+                    {/* Dots */}
+                    {scatterData.map(({ entry, taste, consistency }) => {
+                      const isHovered = hoveredDotId === entry.id
+                      return (
+                        <circle
+                          key={entry.id}
+                          cx={sx(consistency)}
+                          cy={sy(taste)}
+                          r={isHovered ? 7 : 5}
+                          fill={entry.starred ? 'var(--gold)' : 'var(--accent)'}
+                          opacity={isHovered ? 1 : 0.7}
+                          style={{ cursor: 'pointer', transition: 'r 100ms, opacity 100ms' }}
+                          onMouseEnter={e => {
+                            setHoveredDotId(entry.id)
+                            setScatterTooltip({ x: e.clientX, y: e.clientY, foodName: entry.foodName, restaurant: entry.restaurant.name, category: entry.category, taste, consistency, overall: scatterData.find(d => d.entry.id === entry.id)?.overall ?? null })
+                          }}
+                          onMouseLeave={() => { setHoveredDotId(null); setScatterTooltip(null) }}
+                          onMouseMove={e => setScatterTooltip(t => t ? { ...t, x: e.clientX, y: e.clientY } : null)}
+                          onClick={() => navigate(`/entries/${entry.id}`, { state: { background: location } })}
+                        />
+                      )
+                    })}
+                  </svg>
+                )
+              })()}
+            </div>
+          )}
+        </Card>
+      </SectionErrorBoundary>
+      {/* O. Price vs Rating scatter */}
+      <SectionErrorBoundary title="Price vs Rating">
+        <Card>
+          <p style={kickerStyle}>VALUE</p>
+          <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.1rem', color: 'var(--ink)', margin: '0 0 0.25rem' }}>Price vs Rating</p>
+          <p style={{ fontFamily: 'Hanken Grotesk, sans-serif', fontSize: '0.8rem', color: 'var(--ink-mute)', margin: '0 0 1rem' }}>
+            Does spending more mean rating higher?
+          </p>
+          {priceScatterData.length < 3 ? (
+            <EmptyMsg>Not enough price data yet — add prices to your reviews to unlock this chart.</EmptyMsg>
+          ) : (
+            <div ref={priceContainerRef} style={{ width: '100%' }}>
+              {(() => {
+                const ML = 50, MR = 16, MT = 20, MB = 44
+                const PW = Math.max(priceWidth - ML - MR, 10)
+                const PH = 320 - MT - MB
+                const maxP = Math.max(...priceScatterData.map(d => d.price))
+                const maxPR = Math.ceil(maxP / 50) * 50 || 50
+                const xTicks = [0, 1, 2, 3, 4].map(i => Math.round((i / 4) * maxPR))
+                const yTicks = [0, 2, 4, 6, 8, 10]
+                const sx = (v: number) => ML + (v / maxPR) * PW
+                const sy = (v: number) => MT + (1 - v / 10) * PH
+                return (
+                  <svg width={priceWidth} height={320} style={{ display: 'block', overflow: 'visible' }}>
+                    {xTicks.map(v => (
+                      <line key={`xg${v}`} x1={sx(v)} y1={MT} x2={sx(v)} y2={MT + PH} stroke="var(--line)" strokeOpacity={0.4} strokeDasharray="4 3" />
+                    ))}
+                    {yTicks.map(v => (
+                      <line key={`yg${v}`} x1={ML} y1={sy(v)} x2={ML + PW} y2={sy(v)} stroke="var(--line)" strokeOpacity={0.4} strokeDasharray="4 3" />
+                    ))}
+                    <rect x={ML} y={MT} width={PW} height={PH} fill="none" stroke="var(--line)" strokeOpacity={0.5} />
+                    {xTicks.map(v => (
+                      <text key={`xt${v}`} x={sx(v)} y={MT + PH + 16} textAnchor="middle" fill="var(--ink-mute)" fontSize={10} fontFamily="var(--font-mono)">
+                        {v >= 1000 ? `${v / 1000}k` : v}
+                      </text>
+                    ))}
+                    {yTicks.map(v => (
+                      <text key={`yt${v}`} x={ML - 7} y={sy(v)} textAnchor="end" dominantBaseline="middle" fill="var(--ink-mute)" fontSize={10} fontFamily="var(--font-mono)">{v}</text>
+                    ))}
+                    <text x={ML + PW / 2} y={320 - 6} textAnchor="middle" fill="var(--ink-mute)" fontSize={11} fontFamily="var(--font-mono)">Price (₱) →</text>
+                    <text transform="rotate(-90)" x={-(MT + PH / 2)} y={14} textAnchor="middle" fill="var(--ink-mute)" fontSize={11} fontFamily="var(--font-mono)">Rating ↑</text>
+                    {priceScatterData.map(({ entry, price, overall }) => {
+                      const isHovered = hoveredPriceDotId === entry.id
+                      return (
+                        <circle
+                          key={entry.id}
+                          cx={sx(price)}
+                          cy={sy(overall)}
+                          r={isHovered ? 7 : 5}
+                          fill={entry.starred ? 'var(--gold)' : 'var(--accent)'}
+                          opacity={isHovered ? 1 : 0.7}
+                          style={{ cursor: 'pointer', transition: 'r 100ms, opacity 100ms' }}
+                          onMouseEnter={e => {
+                            setHoveredPriceDotId(entry.id)
+                            setPriceTooltip({ x: e.clientX, y: e.clientY, foodName: entry.foodName, restaurant: entry.restaurant.name, category: entry.category, price, overall })
+                          }}
+                          onMouseLeave={() => { setHoveredPriceDotId(null); setPriceTooltip(null) }}
+                          onMouseMove={e => setPriceTooltip(t => t ? { ...t, x: e.clientX, y: e.clientY } : null)}
+                          onClick={() => navigate(`/entries/${entry.id}`, { state: { background: location } })}
+                        />
+                      )
+                    })}
+                  </svg>
+                )
+              })()}
+            </div>
+          )}
+        </Card>
+      </SectionErrorBoundary>
+      </div>
+      {scatterTooltip && (
+        <div style={{
+          position: 'fixed',
+          left: scatterTooltip.x + 14,
+          top: scatterTooltip.y - 50,
+          zIndex: 9999,
+          pointerEvents: 'none',
+          background: 'var(--paper-2)',
+          border: '1px solid var(--line)',
+          borderRadius: 8,
+          padding: '7px 10px',
+          fontFamily: 'Hanken Grotesk, sans-serif',
+          fontSize: '0.78rem',
+          color: 'var(--ink)',
+          whiteSpace: 'nowrap' as const,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '2px',
+        }}>
+          <span style={{ fontWeight: 700 }}>{scatterTooltip.foodName}</span>
+          <span style={{ color: 'var(--ink-mute)' }}>{scatterTooltip.restaurant}</span>
+          <span style={{ color: 'var(--ink-mute)' }}>{scatterTooltip.category}</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.73rem' }}>
+            T: {scatterTooltip.taste.toFixed(2)} / C: {scatterTooltip.consistency.toFixed(2)}
+          </span>
+          {scatterTooltip.overall !== null && (
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.73rem', color: scoreColor(scatterTooltip.overall) }}>
+              {scatterTooltip.overall.toFixed(2)}
+            </span>
+          )}
+        </div>
+      )}
+      {priceTooltip && (
+        <div style={{
+          position: 'fixed',
+          left: priceTooltip.x + 14,
+          top: priceTooltip.y - 50,
+          zIndex: 9999,
+          pointerEvents: 'none',
+          background: 'var(--paper-2)',
+          border: '1px solid var(--line)',
+          borderRadius: 8,
+          padding: '7px 10px',
+          fontFamily: 'Hanken Grotesk, sans-serif',
+          fontSize: '0.78rem',
+          color: 'var(--ink)',
+          whiteSpace: 'nowrap' as const,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '2px',
+        }}>
+          <span style={{ fontWeight: 700 }}>{priceTooltip.foodName}</span>
+          <span style={{ color: 'var(--ink-mute)' }}>{priceTooltip.restaurant}</span>
+          <span style={{ color: 'var(--ink-mute)' }}>{priceTooltip.category}</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.73rem' }}>₱{priceTooltip.price}</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.73rem', color: scoreColor(priceTooltip.overall) }}>
+            {priceTooltip.overall.toFixed(2)}
+          </span>
+        </div>
+      )}
+
+      {/* L. Score Breakdown by Category */}
+      <SectionErrorBoundary title="Score Breakdown by Category">
+        <Card style={{ marginBottom: '1.5rem' }}>
+          <p style={kickerStyle}>BREAKDOWN</p>
+          <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.1rem', color: 'var(--ink)', margin: '0 0 0.25rem' }}>Score Breakdown by Category</p>
+          <p style={{ fontFamily: 'Hanken Grotesk, sans-serif', fontSize: '0.8rem', color: 'var(--ink-mute)', margin: '0 0 1.25rem' }}>
+            Average Taste, Value, and Consistency across all rated entries per category
+          </p>
+          {breakdownCategories.length > 0 ? (
+            <>
+              <div style={{ overflowX: 'auto', marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', gap: '0.5rem', minWidth: 'max-content' }}>
+                  {breakdownCategories.map(c => (
+                    <button key={c.name} onClick={() => setSelectedBreakdownCat(c.name)} style={pillStyle(c.name === effectiveBreakdownCat)}>
+                      {c.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {breakdownData && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {([
+                    { label: 'Taste', d: breakdownData.taste },
+                    { label: 'Value', d: breakdownData.value },
+                    { label: 'Consistency', d: breakdownData.consistency },
+                  ] as const).map(({ label, d }) => (
+                    <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <span style={{ width: 96, flexShrink: 0, fontFamily: 'Hanken Grotesk, sans-serif', fontSize: '0.85rem', color: 'var(--ink-mute)' }}>
+                        {label}
+                      </span>
+                      <div style={{ flex: 1, height: 12, borderRadius: 6, background: 'var(--surface)', border: '1px solid var(--line)', overflow: 'hidden' }}>
+                        <div style={{
+                          height: '100%',
+                          borderRadius: 6,
+                          width: d.avg !== null ? `${(d.avg / 10) * 100}%` : '0%',
+                          background: 'linear-gradient(to right, #e74c3c, #f39c12, #2ecc71)',
+                          transition: 'width 400ms ease',
+                        }} />
+                      </div>
+                      <div style={{ width: 56, flexShrink: 0, textAlign: 'right' as const }}>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', color: 'var(--ink)', lineHeight: 1.2 }}>
+                          {d.avg !== null ? d.avg.toFixed(2) : '—'}
+                        </div>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--ink-mute)', lineHeight: 1.2 }}>
+                          {d.count > 0 ? `(${d.count})` : ''}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          ) : (
+            <EmptyMsg>Not enough data</EmptyMsg>
+          )}
+        </Card>
+      </SectionErrorBoundary>
+
+      {/* M. Long Time No See */}
+      <SectionErrorBoundary title="Long Time No See">
+        <Card style={{ marginBottom: '1.5rem' }}>
+          <p style={kickerStyle}>OVERDUE</p>
+          <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.1rem', color: 'var(--ink)', margin: '0 0 0.25rem' }}>Long Time No See</p>
+          <p style={{ fontFamily: 'Hanken Grotesk, sans-serif', fontSize: '0.8rem', color: 'var(--ink-mute)', margin: '0 0 1.25rem' }}>
+            Entries you've only visited once and haven't been back to
+          </p>
+          {longTimeNoSee.length > 0 ? (
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+              <thead>
+                <tr style={{ borderBottom: '2px solid var(--line)' }}>
+                  <th style={{ ...countryThStyle, width: 44, textAlign: 'center' }}>#</th>
+                  <th style={{ ...countryThStyle, textAlign: 'left' }}>Entry</th>
+                  <th style={{ ...countryThStyle, textAlign: 'left' }}>Category</th>
+                  <th style={{ ...countryThStyle, textAlign: 'left' }}>Restaurant</th>
+                  <th style={{ ...countryThStyle, textAlign: 'right', width: 130 }}>Visited</th>
+                  <th style={{ ...countryThStyle, textAlign: 'right', width: 80 }}>Days Ago</th>
+                </tr>
+              </thead>
+              <tbody>
+                {longTimeNoSee.map(({ entry, dateStr, daysAgo }, i) => {
+                  const daysColor = daysAgo > 365
+                    ? 'var(--badge-never-again)'
+                    : daysAgo >= 180
+                      ? 'var(--gold)'
+                      : 'var(--ink-mute)'
+                  return (
+                    <tr
+                      key={entry.id}
+                      style={{ borderBottom: '1px solid var(--line)' }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLTableRowElement).style.background = 'var(--paper-2)' }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.background = '' }}
+                    >
+                      <td style={{ ...countryTdStyle, textAlign: 'center', color: 'var(--ink-mute)', fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}>{i + 1}</td>
+                      <td style={countryTdStyle}>
+                        <div
+                          style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}
+                          onClick={() => navigate(`/entries/${entry.id}`, { state: { background: location } })}
+                        >
+                          {entry.flag && <FlagImage code={entry.flag} style={{ width: 16, height: 'auto', flexShrink: 0 }} />}
+                          <span style={{ color: 'var(--accent)', fontWeight: 500, fontSize: '0.88rem' }}>{entry.foodName}</span>
+                        </div>
+                      </td>
+                      <td style={{ ...countryTdStyle, color: 'var(--ink-mute)', fontSize: '0.82rem' }}>{entry.category}</td>
+                      <td style={{ ...countryTdStyle, color: 'var(--ink-mute)', fontSize: '0.82rem', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{entry.restaurant.name}</td>
+                      <td style={{ ...countryTdStyle, textAlign: 'right', fontFamily: 'var(--font-mono)', fontSize: '0.78rem', color: 'var(--ink-mute)' }}>{formatReviewDate(dateStr)}</td>
+                      <td style={{ ...countryTdStyle, textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '0.82rem', color: daysColor }}>{daysAgo}d</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          ) : (
+            <EmptyMsg>Nothing here — either you revisit everything or you haven't started logging dates yet.</EmptyMsg>
+          )}
+        </Card>
+      </SectionErrorBoundary>
+
+      {/* J. Rating by Country */}
+      <SectionErrorBoundary title="Rating by Country">
+        <Card style={{ marginBottom: '1.5rem' }}>
+          <p style={kickerStyle}>ABROAD</p>
+          <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.1rem', color: 'var(--ink)', margin: '0 0 0.25rem' }}>Rating by Country</p>
+          <p style={{ fontFamily: 'Hanken Grotesk, sans-serif', fontSize: '0.8rem', color: 'var(--ink-mute)', margin: '0 0 1.25rem' }}>
+            How your ratings compare across countries — local entries grouped as Home 🏠
+          </p>
+          {sortedCountryData.length > 0 ? (
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+              <thead>
+                <tr style={{ borderBottom: '2px solid var(--line)' }}>
+                  <th style={{ ...countryThStyle, width: 44, textAlign: 'center' }}>#</th>
+                  <th style={{ ...countryThStyle, textAlign: 'left', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleCountrySort('country')}>
+                    Country <CountrySortArrow col="country" />
+                  </th>
+                  <th style={{ ...countryThStyle, textAlign: 'right', cursor: 'pointer', userSelect: 'none', width: 90 }} onClick={() => handleCountrySort('entries')}>
+                    Entries <CountrySortArrow col="entries" />
+                  </th>
+                  <th style={{ ...countryThStyle, textAlign: 'right', cursor: 'pointer', userSelect: 'none', width: 210 }} onClick={() => handleCountrySort('avg')}>
+                    Avg Rating <CountrySortArrow col="avg" />
+                  </th>
+                  <th style={{ ...countryThStyle, textAlign: 'left', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleCountrySort('best')}>
+                    Best Entry <CountrySortArrow col="best" />
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {sortedCountryData.map((row, i) => (
+                  <tr
+                    key={row.flag ?? '__home__'}
+                    style={{ borderBottom: '1px solid var(--line)' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLTableRowElement).style.background = 'var(--paper-2)' }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.background = '' }}
+                  >
+                    <td style={{ ...countryTdStyle, textAlign: 'center', color: 'var(--ink-mute)', fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}>{i + 1}</td>
+                    <td style={countryTdStyle}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        {row.flag && <FlagImage code={row.flag} style={{ width: 20, height: 'auto' }} />}
+                        <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600, color: 'var(--ink)' }}>
+                          {row.flag ? row.countryName : '🏠 Home'}
+                        </span>
+                      </div>
+                    </td>
+                    <td style={{ ...countryTdStyle, textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--ink-mute)', fontSize: '0.82rem' }}>
+                      {row.entryCount}
+                    </td>
+                    <td style={{ ...countryTdStyle, textAlign: 'right' }}>
+                      {row.avg !== null ? (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                          <div style={{ width: 80, height: 5, borderRadius: 3, background: 'var(--line)', flexShrink: 0, overflow: 'hidden' }}>
+                            <div style={{ width: `${(row.avg / 10) * 100}%`, height: '100%', borderRadius: 3, background: scoreColor(row.avg) }} />
+                          </div>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '0.88rem', color: scoreColor(row.avg), minWidth: 38, textAlign: 'right' as const }}>
+                            {row.avg.toFixed(2)}
+                          </span>
+                        </div>
+                      ) : (
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--ink-mute)' }}>—</span>
+                      )}
+                    </td>
+                    <td style={countryTdStyle}>
+                      {row.bestEntry ? (
+                        <span
+                          onClick={e => { e.stopPropagation(); navigate(`/entries/${row.bestEntry!.id}`, { state: { background: location } }) }}
+                          style={{ color: 'var(--accent)', cursor: 'pointer', fontSize: '0.88rem', fontWeight: 500 }}
+                        >
+                          {row.bestEntry.foodName}
+                        </span>
+                      ) : (
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--ink-mute)' }}>—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <EmptyMsg>No entries yet</EmptyMsg>
+          )}
+        </Card>
+      </SectionErrorBoundary>
+
+      {/* K. Underrated Gems */}
+      <SectionErrorBoundary title="Underrated Gems">
+        <Card style={{ marginBottom: '1.5rem' }}>
+          <p style={kickerStyle}>HIDDEN</p>
+          <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.1rem', color: 'var(--ink)', margin: '0 0 0.25rem' }}>Underrated Gems</p>
+          <p style={{ fontFamily: 'Hanken Grotesk, sans-serif', fontSize: '0.8rem', color: 'var(--ink-mute)', margin: '0 0 1.25rem' }}>
+            Highly rated but only visited once — worth going back to
+          </p>
+          <style>{`
+            .analytics-gems-grid {
+              display: grid;
+              grid-template-columns: repeat(3, 1fr);
+              gap: 0.75rem;
+              width: 100%;
+              min-width: 0;
+              box-sizing: border-box;
+            }
+            .analytics-gems-grid > * { min-width: 0; box-sizing: border-box; }
+            @media (max-width: 1023px) {
+              .analytics-gems-grid { grid-template-columns: repeat(2, 1fr); }
+            }
+            @media (max-width: 639px) {
+              .analytics-gems-grid { grid-template-columns: 1fr; }
+            }
+            .gem-card {
+              background: var(--surface);
+              border: 1px solid var(--line);
+              border-radius: 10px;
+              padding: 1rem;
+              cursor: pointer;
+              display: flex;
+              flex-direction: column;
+              gap: 0.35rem;
+              transition: border-color 150ms;
+            }
+            .gem-card:hover { border-color: var(--accent); }
+          `}</style>
+          {underratedGems.length > 0 ? (
+            <div className="analytics-gems-grid">
+              {underratedGems.map(({ entry, rating }) => (
+                <div
+                  key={entry.id}
+                  className="gem-card"
+                  onClick={() => navigate(`/entries/${entry.id}`, { state: { background: location } })}
+                >
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '0.2rem' }}>
+                      {entry.flag && <FlagImage code={entry.flag} style={{ width: 16, height: 'auto', flexShrink: 0 }} />}
+                      <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+                        {entry.foodName}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--ink-mute)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, marginBottom: '0.4rem' }}>
+                      {entry.restaurant.name}
+                    </div>
+                    <span style={{
+                      display: 'inline-block',
+                      background: 'var(--accent-wash)',
+                      color: 'var(--accent-ink)',
+                      borderRadius: 12,
+                      padding: '0.15rem 0.55rem',
+                      fontSize: '0.72rem',
+                      fontWeight: 500,
+                    }}>
+                      {entry.category}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--ink-mute)' }}>1 visit</span>
+                      {entry.tryAgain && <EntryFlagBadges tryAgain={true} neverAgain={false} uncertainRating={false} />}
+                    </div>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: '1.1rem', color: 'var(--accent)' }}>
+                      {rating.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyMsg>No gems yet — revisit your favourites to move them out of here.</EmptyMsg>
+          )}
+        </Card>
+      </SectionErrorBoundary>
+
       {/* H. Starred picks */}
       <SectionErrorBoundary title="Starred Picks">
         <Card>
@@ -519,4 +1374,19 @@ export default function AnalyticsPage() {
 
     </div>
   )
+}
+
+const countryThStyle: React.CSSProperties = {
+  padding: '0.55rem 0.875rem',
+  fontFamily: 'var(--font-body)',
+  fontWeight: 600,
+  fontSize: '0.75rem',
+  color: 'var(--ink-mute)',
+  textTransform: 'uppercase',
+  letterSpacing: '0.06em',
+}
+
+const countryTdStyle: React.CSSProperties = {
+  padding: '0.7rem 0.875rem',
+  verticalAlign: 'middle',
 }
