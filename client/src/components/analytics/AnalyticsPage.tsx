@@ -1,11 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { getEntries } from '../../api/entries'
 import SectionErrorBoundary from '../common/SectionErrorBoundary'
 import { Card, SectionLabel, RankRow } from '../home/HomeShared'
 import { pillStyle } from '../common/SearchAndScopeBar'
-import { kickerStyle, pageTitleStyle } from '../common/pageStyles'
+import { kickerStyle, pageTitleStyle, smallSecondaryBtnStyle } from '../common/pageStyles'
 import { latestRating, sortReviewsByDateDesc, scoreColor } from '../../utils'
 import type { Entry } from '../../types'
 
@@ -17,17 +17,13 @@ function pct(n: number, total: number): number {
   return total > 0 ? (n / total) * 100 : 0
 }
 
-function StatCard({ value, label, subtitle, color }: { value: string; label: string; subtitle?: string; color?: string }) {
-  return (
-    <Card>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1.7rem', fontWeight: 700, color: color ?? 'var(--ink)', lineHeight: 1 }}>{value}</div>
-      <div style={{ marginTop: '0.4rem', fontFamily: 'var(--font-mono)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--ink-mute)' }}>{label}</div>
-      {subtitle && <div style={{ marginTop: '0.2rem', fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: 'var(--ink-mute)' }}>{subtitle}</div>}
-    </Card>
-  )
-}
-
-function Donut({ segments, size = 110 }: { segments: { color: string; pct: number }[]; size?: number }) {
+function Donut({ segments, size = 110, centerTop, centerTopColor = 'var(--accent)', centerBottom }: {
+  segments: { color: string; pct: number }[]
+  size?: number
+  centerTop?: string
+  centerTopColor?: string
+  centerBottom?: string
+}) {
   let acc = 0
   const stops: string[] = []
   segments.forEach(s => {
@@ -41,7 +37,10 @@ function Donut({ segments, size = 110 }: { segments: { color: string; pct: numbe
   const inset = (size - hole) / 2
   return (
     <div style={{ position: 'relative', width: size, height: size, borderRadius: '50%', background: gradient, flexShrink: 0 }}>
-      <div style={{ position: 'absolute', top: inset, left: inset, width: hole, height: hole, borderRadius: '50%', background: 'var(--surface)' }} />
+      <div style={{ position: 'absolute', top: inset, left: inset, width: hole, height: hole, borderRadius: '50%', background: 'var(--surface)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+        {centerTop && <span style={{ fontFamily: 'var(--font-mono)', fontSize: '1.1rem', fontWeight: 800, color: centerTopColor, lineHeight: 1 }}>{centerTop}</span>}
+        {centerBottom && <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', color: 'var(--ink-mute)', lineHeight: 1 }}>{centerBottom}</span>}
+      </div>
     </div>
   )
 }
@@ -81,6 +80,8 @@ function DeltaBadge({ delta }: { delta: number }) {
 type Mover = { entry: Entry; first: number; latest: number; delta: number }
 type MoverFilter = 'improved' | 'declined' | 'all'
 
+const STARRED_PAGE_SIZE = 9
+
 export default function AnalyticsPage() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -89,6 +90,9 @@ export default function AnalyticsPage() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
   const [moverFilter, setMoverFilter] = useState<MoverFilter>('improved')
   const [showAllMovers, setShowAllMovers] = useState(false)
+  const [starredPage, setStarredPage] = useState(0)
+
+  useEffect(() => { setStarredPage(0) }, [entries])
 
   function selectMoverFilter(f: MoverFilter) {
     setMoverFilter(f)
@@ -104,9 +108,6 @@ export default function AnalyticsPage() {
 
   const avgRating = ratedList.length ? ratedList.reduce((s, x) => s + x.rating, 0) / ratedList.length : null
   const starredCount = entries.filter(e => e.starred).length
-  const goodCount = ratedList.filter(x => x.rating >= 7).length
-  const goodPct = ratedList.length ? Math.round(pct(goodCount, ratedList.length)) : 0
-  const tryAgainCount = entries.filter(e => e.tryAgain).length
 
   // ── rating distribution ────────────────────────────────────────────────────
   const distribution = useMemo(() => {
@@ -158,6 +159,27 @@ export default function AnalyticsPage() {
       .map(b => ({ name: b.name, visits: b.count, avg: b.ratings.reduce((a, c) => a + c, 0) / b.ratings.length }))
       .sort((a, b) => b.avg - a.avg)
       .slice(0, 8)
+  }, [entries])
+
+  // ── most visited stores ────────────────────────────────────────────────────
+  const mostVisitedStores = useMemo(() => {
+    const map = new Map<number, { name: string; count: number }>()
+    entries.forEach(e => {
+      const b = map.get(e.restaurantId) ?? { name: e.restaurant.name, count: 0 }
+      b.count++
+      map.set(e.restaurantId, b)
+    })
+    return Array.from(map.values()).sort((a, b) => b.count - a.count).slice(0, 10)
+  }, [entries])
+
+  // ── most logged categories ─────────────────────────────────────────────────
+  const mostLoggedCategories = useMemo(() => {
+    const map = new Map<string, number>()
+    entries.forEach(e => { map.set(e.category, (map.get(e.category) ?? 0) + 1) })
+    return Array.from(map.entries())
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10)
   }, [entries])
 
   // ── best spot per category ─────────────────────────────────────────────────
@@ -231,6 +253,10 @@ export default function AnalyticsPage() {
 
   const goldRowBorder = { borderTop: '1px solid var(--line)', borderRight: '1px solid var(--line)', borderBottom: '1px solid var(--line)', borderLeft: '3px solid var(--gold)' }
 
+  const pagedStarredPicks = starredPicks.slice(starredPage * STARRED_PAGE_SIZE, (starredPage + 1) * STARRED_PAGE_SIZE)
+  const starredShowStart = starredPage * STARRED_PAGE_SIZE + 1
+  const starredShowEnd = Math.min((starredPage + 1) * STARRED_PAGE_SIZE, starredPicks.length)
+
   return (
     <div style={{ width: '100%' }}>
       <p style={kickerStyle}>By the numbers</p>
@@ -241,27 +267,22 @@ export default function AnalyticsPage() {
         </p>
       </div>
 
-      {/* A. Overview stat row */}
-      <SectionErrorBoundary title="Overview">
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
-          <StatCard value={avgRating != null ? avgRating.toFixed(2) : '—'} label="Avg Rating" color="#6c47d4" />
-          <StatCard value={`${starredCount} starred`} label="Starred" subtitle={`${starredCount} of ${totalEntries} entries`} color="var(--gold)" />
-          <StatCard value={`${goodCount} · ${goodPct}%`} label="Good (≥ 7)" />
-          <StatCard value={`${tryAgainCount}`} label="Try Again" />
-        </div>
-      </SectionErrorBoundary>
-
       {/* B + C. Rating distribution / Starred ratio */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
         <SectionErrorBoundary title="Rating Distribution">
           <Card>
             <SectionLabel>Rating Distribution</SectionLabel>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-              <Donut segments={[
-                { color: COLOR_GOOD, pct: pct(distribution.good, distribution.total) },
-                { color: COLOR_MID, pct: pct(distribution.mid, distribution.total) },
-                { color: COLOR_BAD, pct: pct(distribution.bad, distribution.total) },
-              ]} />
+              <Donut
+                segments={[
+                  { color: COLOR_GOOD, pct: pct(distribution.good, distribution.total) },
+                  { color: COLOR_MID, pct: pct(distribution.mid, distribution.total) },
+                  { color: COLOR_BAD, pct: pct(distribution.bad, distribution.total) },
+                ]}
+                centerTop={avgRating != null ? avgRating.toFixed(2) : '—'}
+                centerTopColor="var(--accent)"
+                centerBottom="avg rating"
+              />
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1, minWidth: 0 }}>
                 <LegendRow color={COLOR_GOOD} label="Good (≥ 7)" pct={pct(distribution.good, distribution.total)} count={distribution.good} />
                 <LegendRow color={COLOR_MID} label="Mid (4.5–7)" pct={pct(distribution.mid, distribution.total)} count={distribution.mid} />
@@ -275,10 +296,15 @@ export default function AnalyticsPage() {
           <Card>
             <SectionLabel>Starred Ratio</SectionLabel>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-              <Donut segments={[
-                { color: 'var(--gold)', pct: pct(starredRatio.starred, starredRatio.total) },
-                { color: COLOR_MID, pct: pct(starredRatio.unstarred, starredRatio.total) },
-              ]} />
+              <Donut
+                segments={[
+                  { color: 'var(--gold)', pct: pct(starredRatio.starred, starredRatio.total) },
+                  { color: COLOR_MID, pct: pct(starredRatio.unstarred, starredRatio.total) },
+                ]}
+                centerTop={String(starredCount)}
+                centerTopColor="var(--gold)"
+                centerBottom="starred"
+              />
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1, minWidth: 0 }}>
                 <LegendRow color="var(--gold)" label="Starred" pct={pct(starredRatio.starred, starredRatio.total)} count={starredRatio.starred} />
                 <LegendRow color={COLOR_MID} label="Unstarred" pct={pct(starredRatio.unstarred, starredRatio.total)} count={starredRatio.unstarred} />
@@ -319,6 +345,41 @@ export default function AnalyticsPage() {
                 <RankRow key={r.name} rank={i + 1} name={r.name} visits={r.visits} avg={r.avg} onClick={() => navigate('/restaurants')} />
               ))}
               {bestRestaurants.length === 0 && <EmptyMsg>Not enough data</EmptyMsg>}
+            </div>
+          </Card>
+        </SectionErrorBoundary>
+      </div>
+
+      {/* D2 + E2. Most visited stores / Most logged categories */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+        <SectionErrorBoundary title="Most Visited Stores">
+          <Card>
+            <p style={kickerStyle}>MOST VISITED STORES</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+              {mostVisitedStores.map((r, i) => (
+                <div key={r.name} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.5rem', borderRadius: 6, background: 'var(--paper)' }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', color: 'var(--ink-mute)', width: 16, flexShrink: 0 }}>{i + 1}</span>
+                  <span style={{ flex: 1, fontSize: '0.88rem', color: 'var(--ink)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{r.name}</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '0.85rem', color: 'var(--accent)', flexShrink: 0 }}>{r.count}×</span>
+                </div>
+              ))}
+              {mostVisitedStores.length === 0 && <EmptyMsg>No data yet</EmptyMsg>}
+            </div>
+          </Card>
+        </SectionErrorBoundary>
+
+        <SectionErrorBoundary title="Most Logged Categories">
+          <Card>
+            <p style={kickerStyle}>MOST LOGGED CATEGORIES</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+              {mostLoggedCategories.map((c, i) => (
+                <div key={c.name} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.5rem', borderRadius: 6, background: 'var(--paper)' }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', color: 'var(--ink-mute)', width: 16, flexShrink: 0 }}>{i + 1}</span>
+                  <span style={{ flex: 1, fontSize: '0.88rem', color: 'var(--ink)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{c.name}</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '0.85rem', color: 'var(--accent)', flexShrink: 0 }}>{c.count}×</span>
+                </div>
+              ))}
+              {mostLoggedCategories.length === 0 && <EmptyMsg>No data yet</EmptyMsg>}
             </div>
           </Card>
         </SectionErrorBoundary>
@@ -420,7 +481,7 @@ export default function AnalyticsPage() {
             }
           `}</style>
           <div className="analytics-chip-grid">
-            {starredPicks.map(({ entry, rating }) => (
+            {pagedStarredPicks.map(({ entry, rating }) => (
               <div
                 key={entry.id}
                 onClick={() => navigate(`/entries/${entry.id}`, { state: { background: location } })}
@@ -442,6 +503,17 @@ export default function AnalyticsPage() {
             ))}
             {starredPicks.length === 0 && <EmptyMsg>No starred entries yet</EmptyMsg>}
           </div>
+          {starredPicks.length > STARRED_PAGE_SIZE && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '1rem' }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', color: 'var(--ink-mute)' }}>
+                Showing {starredShowStart}–{starredShowEnd} of {starredPicks.length}
+              </span>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button onClick={() => setStarredPage(p => p - 1)} disabled={starredPage === 0} style={smallSecondaryBtnStyle}>Prev</button>
+                <button onClick={() => setStarredPage(p => p + 1)} disabled={starredShowEnd >= starredPicks.length} style={smallSecondaryBtnStyle}>Next</button>
+              </div>
+            </div>
+          )}
         </Card>
       </SectionErrorBoundary>
 
