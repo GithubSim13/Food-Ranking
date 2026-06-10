@@ -818,14 +818,15 @@ export default function AnalyticsPage() {
             )}
           </div>
           {availableYears.length > 0 ? (
-            <div style={{ overflowX: 'auto' }}>
-              <div style={{ display: 'inline-block', minWidth: 'max-content' }}>
-                {/* Month labels */}
-                <div style={{ position: 'relative', height: 18, marginLeft: 36, marginBottom: 4 }}>
+            <div>
+              {/* Month labels — spacer matches day-labels column so percentages align with grid */}
+              <div style={{ display: 'flex', gap: 4, marginBottom: 4 }}>
+                <div style={{ width: 28, flexShrink: 0 }} />
+                <div style={{ flex: 1, position: 'relative', height: 18 }}>
                   {heatmapGrid.monthLabels.map(({ label, col }) => (
                     <span key={label} style={{
                       position: 'absolute',
-                      left: col * 13,
+                      left: `${(col / 53) * 100}%`,
                       fontFamily: 'var(--font-mono)',
                       fontSize: '0.7rem',
                       color: 'var(--ink-mute)',
@@ -835,45 +836,47 @@ export default function AnalyticsPage() {
                     </span>
                   ))}
                 </div>
-                {/* Day labels + grid */}
-                <div style={{ display: 'flex', gap: 4, alignItems: 'flex-start' }}>
-                  {/* Day-of-week labels */}
-                  <div style={{ display: 'grid', gridTemplateRows: 'repeat(7, 11px)', gap: 2, width: 28, flexShrink: 0 }}>
-                    {[0, 1, 2, 3, 4, 5, 6].map(i => (
-                      <span key={i} style={{
-                        fontFamily: 'var(--font-mono)',
-                        fontSize: '0.65rem',
-                        color: 'var(--ink-mute)',
-                        lineHeight: '11px',
-                        textAlign: 'right' as const,
-                        visibility: ([1, 3, 5].includes(i) ? 'visible' : 'hidden') as React.CSSProperties['visibility'],
-                        userSelect: 'none' as const,
-                      }}>
-                        {i === 1 ? 'Mon' : i === 3 ? 'Wed' : i === 5 ? 'Fri' : ''}
-                      </span>
-                    ))}
-                  </div>
-                  {/* Heatmap grid */}
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateRows: 'repeat(7, 11px)',
-                    gridAutoFlow: 'column',
-                    gap: 2,
-                  }}>
-                    {heatmapGrid.cells.map((cell, k) => (
-                      cell.dateStr ? (
-                        <div
-                          key={k}
-                          style={{ width: 11, height: 11, borderRadius: 2, cursor: 'default', boxSizing: 'border-box', ...cellColor(cell.count) }}
-                          onMouseEnter={(e) => setHeatmapTooltip({ x: e.clientX, y: e.clientY, dateStr: cell.dateStr!, count: cell.count })}
-                          onMouseLeave={() => setHeatmapTooltip(null)}
-                          onMouseMove={(e) => setHeatmapTooltip(t => t ? { ...t, x: e.clientX, y: e.clientY } : null)}
-                        />
-                      ) : (
-                        <div key={k} style={{ width: 11, height: 11 }} />
-                      )
-                    ))}
-                  </div>
+              </div>
+              {/* Day labels + grid */}
+              <div style={{ display: 'flex', gap: 4, alignItems: 'flex-start' }}>
+                {/* Day-of-week labels */}
+                <div style={{ display: 'grid', gridTemplateRows: 'repeat(7, 11px)', gap: 2, width: 28, flexShrink: 0 }}>
+                  {[0, 1, 2, 3, 4, 5, 6].map(i => (
+                    <span key={i} style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '0.65rem',
+                      color: 'var(--ink-mute)',
+                      lineHeight: '11px',
+                      textAlign: 'right' as const,
+                      visibility: ([1, 3, 5].includes(i) ? 'visible' : 'hidden') as React.CSSProperties['visibility'],
+                      userSelect: 'none' as const,
+                    }}>
+                      {i === 1 ? 'Mon' : i === 3 ? 'Wed' : i === 5 ? 'Fri' : ''}
+                    </span>
+                  ))}
+                </div>
+                {/* Heatmap grid — 1fr per week so it fills the card width */}
+                <div style={{
+                  flex: 1,
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(53, 1fr)',
+                  gridTemplateRows: 'repeat(7, 11px)',
+                  gridAutoFlow: 'column',
+                  gap: 2,
+                }}>
+                  {heatmapGrid.cells.map((cell, k) => (
+                    cell.dateStr ? (
+                      <div
+                        key={k}
+                        style={{ borderRadius: 2, cursor: 'default', boxSizing: 'border-box', ...cellColor(cell.count) }}
+                        onMouseEnter={(e) => setHeatmapTooltip({ x: e.clientX, y: e.clientY, dateStr: cell.dateStr!, count: cell.count })}
+                        onMouseLeave={() => setHeatmapTooltip(null)}
+                        onMouseMove={(e) => setHeatmapTooltip(t => t ? { ...t, x: e.clientX, y: e.clientY } : null)}
+                      />
+                    ) : (
+                      <div key={k} />
+                    )
+                  ))}
                 </div>
               </div>
             </div>
