@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useRef } from 'react'
+import { useMemo, useState, useEffect, useRef, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { getEntries } from '../../api/entries'
@@ -18,6 +18,43 @@ const COLOR_BAD = '#c0392b'
 
 function pct(n: number, total: number): number {
   return total > 0 ? (n / total) * 100 : 0
+}
+
+// Fires once when the element scrolls into view; callback ref so late-mounted
+// elements (rendered after the entries query resolves) still get observed.
+function useInViewOnce<T extends HTMLElement>(threshold = 0.3) {
+  const [inView, setInView] = useState(false)
+  const observerRef = useRef<IntersectionObserver | null>(null)
+  const ref = useCallback((el: T | null) => {
+    observerRef.current?.disconnect()
+    if (!el) return
+    observerRef.current = new IntersectionObserver(es => {
+      if (es.some(e => e.isIntersecting)) {
+        setInView(true)
+        observerRef.current?.disconnect()
+      }
+    }, { threshold })
+    observerRef.current.observe(el)
+  }, [threshold])
+  return { ref, inView }
+}
+
+function useCountUp(target: number | null, start: boolean, duration = 800): number {
+  const [value, setValue] = useState(0)
+  useEffect(() => {
+    if (!start || target === null) return
+    let raf = 0
+    const t0 = performance.now()
+    const tick = (now: number) => {
+      const p = Math.min((now - t0) / duration, 1)
+      const eased = 1 - Math.pow(1 - p, 3)
+      setValue(target * eased)
+      if (p < 1) raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [start, target, duration])
+  return value
 }
 
 function Donut({ segments, size = 110, centerTop, centerTopColor = 'var(--accent)', centerBottom }: {
@@ -136,6 +173,13 @@ export default function AnalyticsPage() {
   const pillRefsMap = useRef<Map<string, HTMLButtonElement>>(new Map())
   const [catPillScroll, setCatPillScroll] = useState({ left: false, right: true })
 
+  // <main> in AppShell is the scroll container and persists across navigation,
+  // so it retains the previous page's scroll position. Reset it on mount.
+  const rootRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const main = rootRef.current?.closest('main') as HTMLElement | null
+    if (main) main.scrollTop = 0
+  }, [])
   useEffect(() => { setStarredPage(0); setGemsPage(0); setLtnsPage(0) }, [entries])
 
   useEffect(() => {
@@ -186,6 +230,16 @@ export default function AnalyticsPage() {
 
   const avgRating = ratedList.length ? ratedList.reduce((s, x) => s + x.rating, 0) / ratedList.length : null
   const starredCount = entries.filter(e => e.starred).length
+
+  // ── scroll-triggered animations ────────────────────────────────────────────
+  const ratingDonutView = useInViewOnce<HTMLDivElement>(0.5)
+  const starredDonutView = useInViewOnce<HTMLDivElement>(0.5)
+  const topCatsView = useInViewOnce<HTMLDivElement>(0.3)
+  const countryView = useInViewOnce<HTMLTableElement>(0.15)
+  const gemsView = useInViewOnce<HTMLDivElement>(0.15)
+  const heatmapView = useInViewOnce<HTMLDivElement>(0.3)
+  const animatedAvg = useCountUp(avgRating, ratingDonutView.inView)
+  const animatedStarred = useCountUp(starredCount, starredDonutView.inView)
 
   // ── rating distribution ────────────────────────────────────────────────────
   const distribution = useMemo(() => {
@@ -398,10 +452,22 @@ export default function AnalyticsPage() {
     : null
   const effectiveCategory = activeCategory ?? defaultBreakdownCat
 
-  // Must be placed after effectiveCategory is defined
+  // Must be placed after effectiveCategory is defined.
+  // Scroll the active pill into view *horizontally within the pill strip only* —
+  // scrollIntoView would also scroll the nearest vertical ancestor (<main>),
+  // yanking the whole page down to the pill on mount.
   useEffect(() => {
     if (!effectiveCategory) return
-    pillRefsMap.current.get(effectiveCategory)?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' })
+    const container = pillScrollRef.current
+    const pill = pillRefsMap.current.get(effectiveCategory)
+    if (!container || !pill) return
+    const cRect = container.getBoundingClientRect()
+    const pRect = pill.getBoundingClientRect()
+    if (pRect.left < cRect.left) {
+      container.scrollBy({ left: pRect.left - cRect.left - 8, behavior: 'smooth' })
+    } else if (pRect.right > cRect.right) {
+      container.scrollBy({ left: pRect.right - cRect.right + 8, behavior: 'smooth' })
+    }
   }, [effectiveCategory])
 
   const bestSpotList = useMemo(() => {
@@ -535,12 +601,12 @@ export default function AnalyticsPage() {
   const ltnsShowEnd = Math.min((ltnsPage + 1) * LTNS_PAGE_SIZE, longTimeNoSee.length)
 
   return (
-    <div style={{ width: '100%' }}>
+    <div ref={rootRef} style={{ width: '100%' }}>
       <p style={kickerStyle}>By the numbers</p>
       <div style={{ marginBottom: '1.5rem' }}>
         <h1 style={{ ...pageTitleStyle, marginBottom: '0.35rem' }}>Analytics</h1>
         <p style={{ fontFamily: 'Hanken Grotesk, sans-serif', fontSize: 13, color: 'var(--ink-mute)' }}>
-          Patterns and stats across {totalEntries} entries
+          {totalEntries} foods logged. Here's what they say about you.
         </p>
       </div>
 
@@ -549,14 +615,14 @@ export default function AnalyticsPage() {
         <SectionErrorBoundary title="Rating Distribution">
           <Card style={{ minWidth: 0 }}>
             <SectionLabel>Rating Distribution</SectionLabel>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+            <div ref={ratingDonutView.ref} style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
               <Donut
                 segments={[
                   { color: COLOR_GOOD, pct: pct(distribution.good, distribution.total) },
                   { color: COLOR_MID, pct: pct(distribution.mid, distribution.total) },
                   { color: COLOR_BAD, pct: pct(distribution.bad, distribution.total) },
                 ]}
-                centerTop={avgRating != null ? avgRating.toFixed(2) : '—'}
+                centerTop={avgRating != null ? animatedAvg.toFixed(2) : '—'}
                 centerTopColor="var(--accent)"
                 centerBottom="avg rating"
               />
@@ -572,13 +638,13 @@ export default function AnalyticsPage() {
         <SectionErrorBoundary title="Starred Ratio">
           <Card style={{ minWidth: 0 }}>
             <SectionLabel>Starred Ratio</SectionLabel>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+            <div ref={starredDonutView.ref} style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
               <Donut
                 segments={[
                   { color: 'var(--gold)', pct: pct(starredRatio.starred, starredRatio.total) },
                   { color: COLOR_MID, pct: pct(starredRatio.unstarred, starredRatio.total) },
                 ]}
-                centerTop={String(starredCount)}
+                centerTop={String(Math.round(animatedStarred))}
                 centerTopColor="var(--gold)"
                 centerBottom="starred"
               />
@@ -596,8 +662,8 @@ export default function AnalyticsPage() {
         <SectionErrorBoundary title="Top Categories">
           <Card style={{ minWidth: 0 }}>
             <SectionLabel>Top Categories by Avg Rating</SectionLabel>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-              {topCategories.map(c => (
+            <div ref={topCatsView.ref} style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+              {topCategories.map((c, i) => (
                 <div key={c.name} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                   <div style={{ width: 130, flexShrink: 0, overflow: 'hidden' }}>
                     <div style={{ fontSize: '0.85rem', color: 'var(--ink)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{c.name}</div>
@@ -605,11 +671,13 @@ export default function AnalyticsPage() {
                   </div>
                   <div style={{ flex: 1, height: 8, background: 'var(--paper)', borderRadius: 4, overflow: 'hidden' }}>
                     <div style={{
-                      width: `${(c.avg / 10) * 100}%`,
+                      width: topCatsView.inView ? `${(c.avg / 10) * 100}%` : '0%',
                       height: '100%',
                       background: 'linear-gradient(to right, #e74c3c, #f39c12, #2ecc71)',
                       backgroundSize: c.avg > 0 ? `${1000 / c.avg}% 100%` : '100% 100%',
                       borderRadius: 4,
+                      transition: 'width 500ms ease-out',
+                      transitionDelay: `${i * 60}ms`,
                     }} />
                   </div>
                   <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '0.85rem', color: scoreColor(c.avg), width: 36, textAlign: 'right' as const, flexShrink: 0 }}>{c.avg.toFixed(1)}</span>
@@ -728,7 +796,7 @@ export default function AnalyticsPage() {
               <hr style={{ border: 'none', borderTop: '1px solid var(--line)', margin: '0 0 1.25rem' }} />
               <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1rem', color: 'var(--ink)', margin: '0 0 0.25rem' }}>Score Breakdown by Category</p>
               <p style={{ fontFamily: 'Hanken Grotesk, sans-serif', fontSize: '0.8rem', color: 'var(--ink-mute)', margin: '0 0 1rem' }}>
-                Average Taste, Value, and Consistency across all rated entries per category
+                How it actually tastes, costs, and holds up.
               </p>
               {breakdownData ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -775,9 +843,10 @@ export default function AnalyticsPage() {
       {/* G. Rating trajectory */}
       <SectionErrorBoundary title="Rating Trajectory">
         <Card style={{ marginBottom: '1.5rem' }}>
-          <SectionLabel>Rating Trajectory</SectionLabel>
-          <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--ink-mute)', marginTop: '-0.5rem', marginBottom: '1rem' }}>
-            Entries with 2+ reviews — first rating vs latest
+          <p style={kickerStyle}>MOMENTUM</p>
+          <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.1rem', color: 'var(--ink)', margin: '0 0 0.25rem' }}>Rating Trajectory</p>
+          <p style={{ fontFamily: 'Hanken Grotesk, sans-serif', fontSize: '0.8rem', color: 'var(--ink-mute)', margin: '0 0 1rem' }}>
+            Foods that have gotten better or worse over repeat visits.
           </p>
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
             <button className="pill" onClick={() => selectMoverFilter('improved')} style={pillStyle(moverFilter === 'improved')}>Most improved</button>
@@ -814,8 +883,8 @@ export default function AnalyticsPage() {
       {/* I. Logging Activity */}
       <SectionErrorBoundary title="Logging Activity">
         <Card style={{ marginBottom: '1.5rem' }}>
-          <p style={kickerStyle}>ACTIVITY</p>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <p style={kickerStyle}>CONSISTENCY</p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
             <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.1rem', color: 'var(--ink)', margin: 0 }}>Logging Activity</p>
             {availableYears.length > 0 && (
               <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
@@ -825,6 +894,9 @@ export default function AnalyticsPage() {
               </div>
             )}
           </div>
+          <p style={{ fontFamily: 'Hanken Grotesk, sans-serif', fontSize: '0.8rem', color: 'var(--ink-mute)', margin: '0 0 1rem' }}>
+            Every cell is a day you ate something worth logging.
+          </p>
           {availableYears.length > 0 ? (
             <div>
               {/* Month labels — spacer matches day-labels column so percentages align with grid */}
@@ -864,7 +936,14 @@ export default function AnalyticsPage() {
                   ))}
                 </div>
                 {/* Heatmap grid — 1fr per week so it fills the card width */}
-                <div style={{
+                <style>{`
+                  @keyframes cellPulse {
+                    0% { transform: scale(1); }
+                    50% { transform: scale(1.15); }
+                    100% { transform: scale(1); }
+                  }
+                `}</style>
+                <div ref={heatmapView.ref} style={{
                   flex: 1,
                   display: 'grid',
                   gridTemplateColumns: 'repeat(53, 1fr)',
@@ -876,7 +955,16 @@ export default function AnalyticsPage() {
                     cell.dateStr ? (
                       <div
                         key={k}
-                        style={{ borderRadius: 2, cursor: 'default', boxSizing: 'border-box', ...cellColor(cell.count) }}
+                        style={{
+                          borderRadius: 2,
+                          cursor: 'default',
+                          boxSizing: 'border-box',
+                          ...cellColor(cell.count),
+                          ...(heatmapView.inView && cell.count > 0 ? {
+                            animation: 'cellPulse 400ms ease-out',
+                            animationDelay: `${Math.floor(k / 7) * 20}ms`,
+                          } : {}),
+                        }}
                         onMouseEnter={(e) => setHeatmapTooltip({ x: e.clientX, y: e.clientY, dateStr: cell.dateStr!, count: cell.count })}
                         onMouseLeave={() => setHeatmapTooltip(null)}
                         onMouseMove={(e) => setHeatmapTooltip(t => t ? { ...t, x: e.clientX, y: e.clientY } : null)}
@@ -1134,7 +1222,7 @@ export default function AnalyticsPage() {
           <p style={kickerStyle}>OVERDUE</p>
           <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.1rem', color: 'var(--ink)', margin: '0 0 0.25rem' }}>Long Time No See</p>
           <p style={{ fontFamily: 'Hanken Grotesk, sans-serif', fontSize: '0.8rem', color: 'var(--ink-mute)', margin: '0 0 1.25rem' }}>
-            Entries you've only visited once and haven't been back to
+            One visit. Never went back. You had one job.
           </p>
           {longTimeNoSee.length > 0 ? (
             <>
@@ -1209,7 +1297,7 @@ export default function AnalyticsPage() {
             How your ratings compare across countries — local entries grouped as Home 🏠
           </p>
           {sortedCountryData.length > 0 ? (
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+            <table ref={countryView.ref} style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid var(--line)' }}>
                   <th style={{ ...countryThStyle, width: 44, textAlign: 'center' }}>#</th>
@@ -1252,11 +1340,13 @@ export default function AnalyticsPage() {
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.5rem' }}>
                           <div style={{ width: 80, height: 5, borderRadius: 3, background: 'var(--line)', flexShrink: 0, overflow: 'hidden' }}>
                             <div style={{
-                              width: `${(row.avg / 10) * 100}%`,
+                              width: countryView.inView ? `${(row.avg / 10) * 100}%` : '0%',
                               height: '100%',
                               borderRadius: 3,
                               background: 'linear-gradient(to right, #e74c3c, #f39c12, #2ecc71)',
                               backgroundSize: row.avg > 0 ? `${1000 / row.avg}% 100%` : '100% 100%',
+                              transition: 'width 500ms ease-out',
+                              transitionDelay: `${i * 60}ms`,
                             }} />
                           </div>
                           <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '0.88rem', color: scoreColor(row.avg), minWidth: 38, textAlign: 'right' as const }}>
@@ -1295,7 +1385,7 @@ export default function AnalyticsPage() {
           <p style={kickerStyle}>HIDDEN</p>
           <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.1rem', color: 'var(--ink)', margin: '0 0 0.25rem' }}>Underrated Gems</p>
           <p style={{ fontFamily: 'Hanken Grotesk, sans-serif', fontSize: '0.8rem', color: 'var(--ink-mute)', margin: '0 0 1.25rem' }}>
-            Highly rated but only visited once — worth going back to
+            High scores, one visit. You're sleeping on these.
           </p>
           <style>{`
             .analytics-gems-grid {
@@ -1325,14 +1415,19 @@ export default function AnalyticsPage() {
               transition: border-color 150ms;
             }
             .gem-card:hover { border-color: var(--accent); }
+            @keyframes gemIn {
+              from { opacity: 0; transform: translateY(16px); }
+              to { opacity: 1; transform: translateY(0); }
+            }
           `}</style>
           {underratedGems.length > 0 ? (
             <>
-            <div className="analytics-gems-grid">
-              {pagedGems.map(({ entry, rating }) => (
+            <div ref={gemsView.ref} className="analytics-gems-grid">
+              {pagedGems.map(({ entry, rating }, i) => (
                 <div
                   key={entry.id}
                   className="gem-card"
+                  style={gemsView.inView ? { animation: 'gemIn 400ms ease-out both', animationDelay: `${i * 80}ms` } : undefined}
                   onClick={() => navigate(`/entries/${entry.id}`, { state: { background: location } })}
                 >
                   <div style={{ flex: 1 }}>
@@ -1360,6 +1455,7 @@ export default function AnalyticsPage() {
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.5rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--ink-mute)' }}>1 visit</span>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--ink-mute)', opacity: 0.6 }}>↗ revisit?</span>
                       {entry.tryAgain && <EntryFlagBadges tryAgain={true} neverAgain={false} uncertainRating={false} />}
                     </div>
                     <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: '2rem', color: 'var(--accent)', lineHeight: 1 }}>
