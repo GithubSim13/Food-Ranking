@@ -36,12 +36,12 @@ function Donut({ segments, size = 110, centerTop, centerTopColor = 'var(--accent
     stops.push(`${s.color} ${start}% ${acc}%`)
   })
   const gradient = stops.length ? `conic-gradient(${stops.join(', ')})` : 'var(--line)'
-  const hole = size * 0.6
+  const hole = size * 0.78
   const inset = (size - hole) / 2
   return (
     <div style={{ position: 'relative', width: size, height: size, borderRadius: '50%', background: gradient, flexShrink: 0 }}>
       <div style={{ position: 'absolute', top: inset, left: inset, width: hole, height: hole, borderRadius: '50%', background: 'var(--surface)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-        {centerTop && <span style={{ fontFamily: 'var(--font-mono)', fontSize: '1.1rem', fontWeight: 800, color: centerTopColor, lineHeight: 1 }}>{centerTop}</span>}
+        {centerTop && <span style={{ fontFamily: 'var(--font-mono)', fontSize: '1.8rem', fontWeight: 800, color: centerTopColor, lineHeight: 1, whiteSpace: 'nowrap' as const }}>{centerTop}</span>}
         {centerBottom && <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', color: 'var(--ink-mute)', lineHeight: 1 }}>{centerBottom}</span>}
       </div>
     </div>
@@ -604,7 +604,13 @@ export default function AnalyticsPage() {
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.62rem', color: 'var(--ink-mute)' }}>{c.count} entries</div>
                   </div>
                   <div style={{ flex: 1, height: 8, background: 'var(--paper)', borderRadius: 4, overflow: 'hidden' }}>
-                    <div style={{ width: `${(c.avg / 10) * 100}%`, height: '100%', background: 'var(--accent)', borderRadius: 4 }} />
+                    <div style={{
+                      width: `${(c.avg / 10) * 100}%`,
+                      height: '100%',
+                      background: 'linear-gradient(to right, #e74c3c, #f39c12, #2ecc71)',
+                      backgroundSize: c.avg > 0 ? `${1000 / c.avg}% 100%` : '100% 100%',
+                      borderRadius: 4,
+                    }} />
                   </div>
                   <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '0.85rem', color: scoreColor(c.avg), width: 36, textAlign: 'right' as const, flexShrink: 0 }}>{c.avg.toFixed(1)}</span>
                 </div>
@@ -741,11 +747,12 @@ export default function AnalyticsPage() {
                           borderRadius: 6,
                           width: d.avg !== null ? `${(d.avg / 10) * 100}%` : '0%',
                           background: 'linear-gradient(to right, #e74c3c, #f39c12, #2ecc71)',
-                          transition: 'width 400ms ease',
+                          backgroundSize: d.avg !== null && d.avg > 0 ? `${1000 / d.avg}% 100%` : '100% 100%',
+                          transition: 'width 400ms ease, background-size 400ms ease',
                         }} />
                       </div>
                       <div style={{ width: 56, flexShrink: 0, textAlign: 'right' as const }}>
-                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', color: 'var(--ink)', lineHeight: 1.2 }}>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '0.85rem', color: d.avg !== null ? scoreColor(d.avg) : 'var(--ink-mute)', lineHeight: 1.2 }}>
                           {d.avg !== null ? d.avg.toFixed(2) : '—'}
                         </div>
                         <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--ink-mute)', lineHeight: 1.2 }}>
@@ -1244,7 +1251,13 @@ export default function AnalyticsPage() {
                       {row.avg !== null ? (
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.5rem' }}>
                           <div style={{ width: 80, height: 5, borderRadius: 3, background: 'var(--line)', flexShrink: 0, overflow: 'hidden' }}>
-                            <div style={{ width: `${(row.avg / 10) * 100}%`, height: '100%', borderRadius: 3, background: scoreColor(row.avg) }} />
+                            <div style={{
+                              width: `${(row.avg / 10) * 100}%`,
+                              height: '100%',
+                              borderRadius: 3,
+                              background: 'linear-gradient(to right, #e74c3c, #f39c12, #2ecc71)',
+                              backgroundSize: row.avg > 0 ? `${1000 / row.avg}% 100%` : '100% 100%',
+                            }} />
                           </div>
                           <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '0.88rem', color: scoreColor(row.avg), minWidth: 38, textAlign: 'right' as const }}>
                             {row.avg.toFixed(2)}
@@ -1349,7 +1362,7 @@ export default function AnalyticsPage() {
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--ink-mute)' }}>1 visit</span>
                       {entry.tryAgain && <EntryFlagBadges tryAgain={true} neverAgain={false} uncertainRating={false} />}
                     </div>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: '1.1rem', color: 'var(--accent)' }}>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: '2rem', color: 'var(--accent)', lineHeight: 1 }}>
                       {rating.toFixed(2)}
                     </span>
                   </div>
