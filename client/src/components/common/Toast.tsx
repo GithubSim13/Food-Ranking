@@ -10,9 +10,9 @@ export function Toast({ message, variant, onDismiss }: ToastProps) {
     <div style={{
       padding: '0.75rem 1rem',
       borderRadius: 8,
-      background: isSuccess ? '#dcfce7' : '#fee2e2',
-      border: `1px solid ${isSuccess ? '#86efac' : '#fca5a5'}`,
-      color: isSuccess ? '#166534' : '#991b1b',
+      background: isSuccess ? 'var(--toast-success-bg)' : 'var(--toast-error-bg)',
+      border: `1px solid ${isSuccess ? 'var(--toast-success-border)' : 'var(--toast-error-border)'}`,
+      color: isSuccess ? 'var(--toast-success-ink)' : 'var(--toast-error-ink)',
       fontSize: '0.875rem',
       fontWeight: 500,
       display: 'flex',

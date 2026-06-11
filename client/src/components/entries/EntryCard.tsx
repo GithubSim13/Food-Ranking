@@ -28,7 +28,7 @@ export default function EntryCard({ entry }: { entry: Entry }) {
       }}
     >
       {/* Flag + name */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontWeight: 700, fontSize: '1rem', color: entry.starred ? 'var(--gold)' : 'var(--ink)', minWidth: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700, fontSize: '1rem', color: entry.starred ? 'var(--gold)' : 'var(--ink)', minWidth: 0 }}>
         <FlagImage code={entry.flag} />
         {entry.starred && <span style={{ fontSize: '0.75rem', color: 'var(--gold)', flexShrink: 0 }}>★</span>}
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.foodName}</span>

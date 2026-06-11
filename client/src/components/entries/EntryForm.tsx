@@ -315,13 +315,13 @@ export default function EntryForm() {
                 </div>
 
                 <div>
-                  <label style={reviewLabelStyle}>Notes <span style={{ color: 'var(--ink-mute)', fontWeight: 400 }}>(optional)</span></label>
+                  <label style={labelStyle}>Notes <span style={{ color: 'var(--ink-mute)', fontWeight: 400 }}>(optional)</span></label>
                   <textarea
                     ref={notesRef}
                     value={notes}
                     onChange={e => { setNotes(e.target.value); autoResize(e.target) }}
                     rows={3}
-                    style={{ ...reviewInputStyle, resize: 'none', overflow: 'hidden' }}
+                    style={{ ...inputStyle, resize: 'none', overflow: 'hidden' }}
                   />
                 </div>
               </div>
@@ -342,27 +342,11 @@ export default function EntryForm() {
 const labelStyle: React.CSSProperties = {
   display: 'block',
   fontWeight: 500,
-  fontSize: '0.9rem',
-  marginBottom: '0.3rem',
-  color: 'var(--ink)',
-}
-const reviewLabelStyle: React.CSSProperties = {
-  display: 'block',
-  fontWeight: 500,
   fontSize: '0.85rem',
   marginBottom: '0.25rem',
   color: 'var(--ink)',
 }
 const inputStyle: React.CSSProperties = {
-  width: '100%',
-  padding: '0.5rem 0.75rem',
-  background: 'var(--paper)',
-  color: 'var(--ink)',
-  border: '1px solid var(--line)',
-  borderRadius: 6,
-  boxSizing: 'border-box',
-}
-const reviewInputStyle: React.CSSProperties = {
   width: '100%',
   padding: '0.45rem 0.65rem',
   background: 'var(--paper)',
@@ -398,15 +382,16 @@ const btnStyle: React.CSSProperties = {
   background: 'var(--accent)',
   color: '#fff',
   border: 'none',
-  padding: '0.6rem 1rem',
+  padding: '0.5rem 1rem',
   borderRadius: 6,
   cursor: 'pointer',
   fontWeight: 500,
   alignSelf: 'flex-start',
+  transition: 'all 150ms ease',
 }
 const errorStyle: React.CSSProperties = {
   margin: '0.3rem 0 0',
   fontSize: '0.82rem',
-  color: '#f87171',
+  color: 'var(--danger)',
   fontFamily: 'var(--font-body)',
 }

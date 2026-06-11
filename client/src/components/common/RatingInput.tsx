@@ -79,7 +79,7 @@ const labelStyle: React.CSSProperties = {
 const numberInputStyle: React.CSSProperties = {
   width: 70,
   flexShrink: 0,
-  padding: '0.4rem 0.5rem',
+  padding: '0.45rem 0.65rem',
   background: 'var(--paper)',
   color: 'var(--ink)',
   border: '1px solid var(--line)',

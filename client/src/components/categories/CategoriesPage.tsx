@@ -232,6 +232,7 @@ export default function CategoriesPage() {
                         <button
                           onClick={() => { setRenameValue(cat.name); setRenameError(''); setEditingCategory(cat.name) }}
                           title="Rename"
+                          className="icon-btn"
                           style={iconBtnStyle}
                         >
                           <PencilIcon />
@@ -239,7 +240,8 @@ export default function CategoriesPage() {
                         <button
                           onClick={() => setDeletingCategory(cat.name)}
                           title="Delete"
-                          style={{ ...iconBtnStyle, color: '#f87171' }}
+                          className="icon-btn-danger"
+                          style={{ ...iconBtnStyle, color: 'var(--danger)' }}
                         >
                           <TrashIcon />
                         </button>
@@ -308,7 +310,7 @@ const tdStyle: React.CSSProperties = {
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
-  padding: '0.3rem 0.6rem',
+  padding: '0.45rem 0.65rem',
   border: '1px solid var(--line)',
   borderRadius: 6,
   fontSize: '0.88rem',
@@ -321,6 +323,6 @@ const inputStyle: React.CSSProperties = {
 const renameErrorStyle: React.CSSProperties = {
   margin: '0.25rem 0 0',
   fontSize: '0.8rem',
-  color: '#f87171',
+  color: 'var(--danger)',
   fontFamily: 'var(--font-body)',
 }

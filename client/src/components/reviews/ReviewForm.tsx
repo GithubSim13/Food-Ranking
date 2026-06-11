@@ -131,9 +131,10 @@ const btnStyle: React.CSSProperties = {
   background: 'var(--accent)',
   color: '#fff',
   border: 'none',
-  padding: '0.55rem 1rem',
+  padding: '0.5rem 1rem',
   borderRadius: 6,
   cursor: 'pointer',
   fontWeight: 500,
   alignSelf: 'flex-start',
+  transition: 'all 150ms ease',
 }

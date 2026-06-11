@@ -12,7 +12,7 @@ type FlagComponents = Record<string, ((props: React.SVGProps<SVGSVGElement>) => 
 function FlagSvg({ code }: { code: string }) {
   const Flag = (Flags as FlagComponents)[code]
   if (!Flag) return null
-  return <Flag style={{ width: '1.4em', height: 'auto', borderRadius: 2, flexShrink: 0 }} />
+  return <Flag style={{ width: '1.25em', height: 'auto', borderRadius: 2, flexShrink: 0 }} />
 }
 
 function getCountryName(code: string | null): string {
@@ -182,7 +182,7 @@ export default function FlagPicker({ value, onChange }: Props) {
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem',
+              gap: '0.4rem',
               padding: '0.45rem 0.75rem',
               cursor: 'pointer',
               fontSize: '0.875rem',
@@ -193,7 +193,7 @@ export default function FlagPicker({ value, onChange }: Props) {
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--paper-2)' }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = value === null ? 'var(--accent-wash)' : 'transparent' }}
           >
-            <span style={{ width: '1.4em', textAlign: 'center', fontSize: '0.75rem' }}>✕</span>
+            <span style={{ width: '1.25em', textAlign: 'center', fontSize: '0.75rem' }}>✕</span>
             No flag (local)
           </li>
 
@@ -211,7 +211,7 @@ export default function FlagPicker({ value, onChange }: Props) {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.6rem',
+                  gap: '0.4rem',
                   padding: '0.45rem 0.75rem',
                   cursor: 'pointer',
                   fontSize: '0.875rem',

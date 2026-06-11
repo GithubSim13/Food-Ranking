@@ -99,7 +99,7 @@ export default function EntryList() {
         rightSlot={
           <div style={{ display: 'flex', gap: '0.375rem', opacity: q.length > 0 ? 0.4 : 1, pointerEvents: q.length > 0 ? 'none' : 'auto' }}>
             {sortPills.map(p => (
-              <button key={p.key} onClick={() => setSort(p.key)} style={pillStyle(sort === p.key)}>
+              <button key={p.key} className="pill" onClick={() => setSort(p.key)} style={pillStyle(sort === p.key)}>
                 {p.label}
               </button>
             ))}
@@ -150,4 +150,5 @@ const primaryBtnStyle: React.CSSProperties = {
   cursor: 'pointer',
   fontWeight: 600,
   fontSize: '0.875rem',
+  transition: 'all 150ms ease',
 }

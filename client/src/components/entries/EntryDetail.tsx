@@ -201,7 +201,7 @@ function ReviewCard({ review: r, onUpdated, onEditStart, onEditEnd }: ReviewCard
             </span>
           )}
           {r.uncertainRating && (
-            <span style={{ fontSize: '0.7rem', fontFamily: 'var(--font-mono)', color: 'var(--ink-mute)', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+            <span style={{ fontSize: '0.7rem', fontFamily: 'var(--font-mono)', color: 'var(--ink-mute)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
               &#x1F559; ratings added later
             </span>
           )}
@@ -212,8 +212,8 @@ function ReviewCard({ review: r, onUpdated, onEditStart, onEditEnd }: ReviewCard
         </div>
       </div>
       {confirmDelete && (
-        <div style={{ marginBottom: '0.625rem', padding: '0.5rem 0.75rem', background: 'rgba(220,38,38,0.12)', border: '1px solid rgba(220,38,38,0.3)', borderRadius: 6, display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.85rem' }}>
-          <span style={{ flex: 1, color: '#f87171' }}>Delete this review?</span>
+        <div style={{ marginBottom: '0.625rem', padding: '0.5rem 0.75rem', background: 'var(--danger-wash)', border: '1px solid var(--danger-border)', borderRadius: 6, display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.85rem' }}>
+          <span style={{ flex: 1, color: 'var(--danger)' }}>Delete this review?</span>
           <button
             onClick={() => doDeleteReview()}
             disabled={isDeletingReview}
@@ -508,7 +508,7 @@ export default function EntryDetail({ onPanelChange }: EntryDetailProps = {}) {
           <>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.25rem' }}>
               <h2 style={{ fontSize: '1.5rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <FlagImage code={entry.flag} style={{ width: '1.1em' }} />
+                <FlagImage code={entry.flag} />
                 {entry.foodName}
               </h2>
               <button
@@ -523,11 +523,11 @@ export default function EntryDetail({ onPanelChange }: EntryDetailProps = {}) {
                   fontSize: '1rem',
                   fontWeight: 700,
                   color: entry.starred ? 'var(--gold)' : 'var(--ink-mute)',
-                  opacity: isTogglingStar ? 0.5 : 1,
+                  opacity: isTogglingStar ? 0.6 : 1,
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.35rem',
-                  transition: 'all 0.15s',
+                  gap: '0.4rem',
+                  transition: 'all 150ms ease',
                   boxShadow: 'none',
                 }}
               >
@@ -548,13 +548,13 @@ export default function EntryDetail({ onPanelChange }: EntryDetailProps = {}) {
                   fontSize: '0.875rem',
                   fontWeight: 600,
                   color: entry.tryAgain ? 'var(--badge-try-again)' : 'var(--ink-mute)',
-                  opacity: isPatchingFlag ? 0.5 : 1,
-                  transition: 'all 0.15s',
+                  opacity: isPatchingFlag ? 0.6 : 1,
+                  transition: 'all 150ms ease',
                   display: 'flex',
                   alignItems: 'center',
                 }}
               >
-                <span style={{ width: 8, height: 8, borderRadius: '50%', display: 'inline-block', background: 'var(--badge-try-again)', marginRight: 6, flexShrink: 0 }} />
+                <span style={{ width: 8, height: 8, borderRadius: '50%', display: 'inline-block', background: 'var(--badge-try-again)', marginRight: '0.4rem', flexShrink: 0 }} />
                 Try Again
               </button>
               <button
@@ -572,18 +572,18 @@ export default function EntryDetail({ onPanelChange }: EntryDetailProps = {}) {
                   fontSize: '0.875rem',
                   fontWeight: 600,
                   color: entry.neverAgain ? 'var(--badge-never-again)' : 'var(--ink-mute)',
-                  opacity: isPatchingFlag ? 0.5 : 1,
-                  transition: 'all 0.15s',
+                  opacity: isPatchingFlag ? 0.6 : 1,
+                  transition: 'all 150ms ease',
                   display: 'flex',
                   alignItems: 'center',
                 }}
               >
-                <span style={{ width: 8, height: 8, borderRadius: '50%', display: 'inline-block', background: 'var(--badge-never-again)', marginRight: 6, flexShrink: 0 }} />
+                <span style={{ width: 8, height: 8, borderRadius: '50%', display: 'inline-block', background: 'var(--badge-never-again)', marginRight: '0.4rem', flexShrink: 0 }} />
                 Never Again
               </button>
               {sortReviewsByDateDesc(entry.reviews)[0]?.uncertainRating === true && (
                 <div style={{ display: 'flex', alignItems: 'center', padding: '0.4rem 0.875rem', fontSize: '0.875rem', fontWeight: 600, color: 'var(--ink-mute)' }}>
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', display: 'inline-block', background: 'var(--badge-uncertain)', marginRight: 6, flexShrink: 0 }} />
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', display: 'inline-block', background: 'var(--badge-uncertain)', marginRight: '0.4rem', flexShrink: 0 }} />
                   Uncertain Rating
                 </div>
               )}
@@ -596,8 +596,8 @@ export default function EntryDetail({ onPanelChange }: EntryDetailProps = {}) {
               <button onClick={() => setConfirmDeleteEntry(true)} style={editBtnStyle}>Delete</button>
             </div>
             {confirmDeleteEntry && (
-              <div style={{ marginTop: '0.75rem', padding: '0.625rem 0.875rem', background: 'rgba(220,38,38,0.12)', border: '1px solid rgba(220,38,38,0.3)', borderRadius: 8, display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.875rem' }}>
-                <span style={{ flex: 1, color: '#f87171' }}>Are you sure? This will delete all reviews too.</span>
+              <div style={{ marginTop: '0.75rem', padding: '0.625rem 0.875rem', background: 'var(--danger-wash)', border: '1px solid var(--danger-border)', borderRadius: 8, display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.875rem' }}>
+                <span style={{ flex: 1, color: 'var(--danger)' }}>Are you sure? This will delete all reviews too.</span>
                 <button
                   onClick={() => doDeleteEntry()}
                   disabled={isDeletingEntry}
@@ -703,6 +703,7 @@ const saveBtnStyle: React.CSSProperties = {
   cursor: 'pointer',
   fontWeight: 500,
   fontSize: '0.875rem',
+  transition: 'all 150ms ease',
 }
 const cancelBtnStyle: React.CSSProperties = {
   background: 'transparent',
@@ -713,6 +714,7 @@ const cancelBtnStyle: React.CSSProperties = {
   cursor: 'pointer',
   fontWeight: 500,
   fontSize: '0.875rem',
+  transition: 'all 150ms ease',
 }
 const editBtnStyle: React.CSSProperties = {
   background: 'transparent',
@@ -722,6 +724,7 @@ const editBtnStyle: React.CSSProperties = {
   borderRadius: 4,
   cursor: 'pointer',
   fontSize: '0.75rem',
+  transition: 'all 150ms ease',
 }
 const deleteBtnStyle: React.CSSProperties = {
   background: '#dc2626',
@@ -733,6 +736,7 @@ const deleteBtnStyle: React.CSSProperties = {
   fontSize: '0.8rem',
   fontWeight: 500,
   flexShrink: 0,
+  transition: 'all 150ms ease',
 }
 const errorStateStyle: React.CSSProperties = {
   padding: '3rem 1.5rem',
@@ -776,6 +780,6 @@ const errorRetryBtnStyle: React.CSSProperties = {
 const editErrorStyle: React.CSSProperties = {
   margin: '0.3rem 0 0',
   fontSize: '0.82rem',
-  color: '#f87171',
+  color: 'var(--danger)',
   fontFamily: 'var(--font-body)',
 }

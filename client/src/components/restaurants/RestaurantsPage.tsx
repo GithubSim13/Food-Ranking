@@ -296,6 +296,7 @@ export default function RestaurantsPage() {
                         <button
                           onClick={() => { setRenameValue(rest.name); setRenameError(''); setEditingId(rest.id) }}
                           title="Edit restaurant name"
+                          className="icon-btn"
                           style={iconBtnStyle}
                         >
                           <PencilIcon />
@@ -303,7 +304,8 @@ export default function RestaurantsPage() {
                         <button
                           onClick={() => setDeletingRestaurant(rest.id)}
                           title="Delete restaurant"
-                          style={{ ...iconBtnStyle, color: '#f87171' }}
+                          className="icon-btn-danger"
+                          style={{ ...iconBtnStyle, color: 'var(--danger)' }}
                         >
                           <TrashIcon />
                         </button>
@@ -329,7 +331,7 @@ export default function RestaurantsPage() {
                                 onMouseLeave={ev => { (ev.currentTarget as HTMLTableRowElement).style.background = e.starred ? 'var(--gold-wash)' : 'transparent' }}
                               >
                                 <td style={{ padding: '5px 8px', width: 24 }}>
-                                  {e.flag && <FlagImage code={e.flag} size={16} />}
+                                  {e.flag && <FlagImage code={e.flag} />}
                                 </td>
                                 <td style={{ padding: '5px 8px', fontSize: 13, color: e.starred ? 'var(--gold)' : 'var(--ink)' }}>
                                   {e.starred && <span style={{ marginRight: '0.25rem', fontSize: '0.75rem' }}>⭐</span>}
@@ -421,7 +423,7 @@ const tdStyle: React.CSSProperties = {
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
-  padding: '0.3rem 0.6rem',
+  padding: '0.45rem 0.65rem',
   border: '1px solid var(--line)',
   borderRadius: 6,
   fontSize: '0.88rem',
@@ -434,6 +436,6 @@ const inputStyle: React.CSSProperties = {
 const renameErrorStyle: React.CSSProperties = {
   margin: '0.25rem 0 0',
   fontSize: '0.8rem',
-  color: '#f87171',
+  color: 'var(--danger)',
   fontFamily: 'var(--font-body)',
 }

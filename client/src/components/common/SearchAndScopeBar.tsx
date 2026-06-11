@@ -12,6 +12,7 @@ export function pillStyle(active: boolean): React.CSSProperties {
     cursor: 'pointer',
     fontSize: '0.8rem',
     fontWeight: active ? 600 : 400,
+    transition: 'all 150ms ease',
   }
 }
 
@@ -100,12 +101,12 @@ export function SearchAndScopeBar({
         {middleContent !== undefined ? middleContent : (
           <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap' }}>
             {SCOPE_PILLS.map(p => (
-              <button key={p.key} onClick={() => onScopeChange(p.key)} style={pillStyle(scope === p.key)}>
+              <button key={p.key} className="pill" onClick={() => onScopeChange(p.key)} style={pillStyle(scope === p.key)}>
                 {p.label}
               </button>
             ))}
             {extraScopePills?.map(p => (
-              <button key={p.key} onClick={() => onScopeChange(p.key)} style={pillStyle(scope === p.key)}>
+              <button key={p.key} className="pill" onClick={() => onScopeChange(p.key)} style={pillStyle(scope === p.key)}>
                 {p.label}
               </button>
             ))}

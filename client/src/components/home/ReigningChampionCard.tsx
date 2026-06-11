@@ -61,7 +61,7 @@ export default function ReigningChampionCard({ champEntry, champScore, champRevi
       <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.45)' }}>
         tried {champReviewCount} {champReviewCount === 1 ? 'time' : 'times'}
       </div>
-      <div style={{ fontSize: '0.82rem', color: '#d4c0f8', fontStyle: 'italic' }}>
+      <div style={{ fontSize: '0.82rem', color: 'var(--accent-light)', fontStyle: 'italic' }}>
         {champNote ? `"${champNote}"` : ''}
       </div>
       {/* Rating breakdown */}
@@ -73,7 +73,7 @@ export default function ReigningChampionCard({ champEntry, champScore, champRevi
             { label: 'Consistency', value: champConsistency },
           ].map(({ label, value }) => (
             <div key={label}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: '#c4abff', marginBottom: 2 }}>{label}</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: 'var(--accent-soft)', marginBottom: 2 }}>{label}</div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.9rem', fontWeight: 700, color: '#ffffff' }}>
                 {value != null ? value.toFixed(1) : '—'}
               </div>

@@ -59,7 +59,7 @@ export default function PodiumSection({ top5, shameList }: { top5: Top5Entry[]; 
 
       {/* All Rankings link — top right, out of the way */}
       <div style={{ textAlign: 'right', marginBottom: '0.25rem' }}>
-        <span onClick={() => navigate('/rankings')} style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: '#6c47d4', cursor: 'pointer' }}>All Rankings →</span>
+        <span onClick={() => navigate('/rankings')} style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: 'var(--accent)', cursor: 'pointer' }}>All Rankings →</span>
       </div>
 
       {/* ── Hall of Fame — collapses when shame expands ── */}

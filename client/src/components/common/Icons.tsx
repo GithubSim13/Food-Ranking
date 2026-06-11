@@ -30,6 +30,8 @@ export function ChevronIcon({ open }: { open: boolean }) {
   )
 }
 
+// Hover background highlight comes from the .icon-btn / .icon-btn-danger
+// classes in index.css — apply one of them alongside this style.
 export const iconBtnStyle: React.CSSProperties = {
   background: 'none',
   border: 'none',
@@ -41,4 +43,5 @@ export const iconBtnStyle: React.CSSProperties = {
   alignItems: 'center',
   justifyContent: 'center',
   lineHeight: 1,
+  transition: 'all 150ms ease',
 }

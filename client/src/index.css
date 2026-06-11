@@ -23,6 +23,20 @@
   --badge-never-again: #ef4444;
   --badge-uncertain: #eab308;
 
+  --danger: #f87171;
+  --danger-wash: rgba(220, 38, 38, 0.12);
+  --danger-border: rgba(220, 38, 38, 0.3);
+
+  --accent-light: #d4c0f8;
+  --accent-soft: #c4abff;
+
+  --toast-success-bg: #dcfce7;
+  --toast-success-border: #86efac;
+  --toast-success-ink: #166534;
+  --toast-error-bg: #fee2e2;
+  --toast-error-border: #fca5a5;
+  --toast-error-ink: #991b1b;
+
   --font-display: 'Bricolage Grotesque', sans-serif;
   --font-body: 'Hanken Grotesk', sans-serif;
   --font-mono: 'Space Mono', monospace;
@@ -95,7 +109,7 @@ input[type="range"].rating-slider::-webkit-slider-thumb {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #ffffff;
+  background: var(--ink);
   cursor: pointer;
   border: none;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.55);
@@ -112,16 +126,32 @@ input[type="range"].rating-slider::-moz-range-thumb {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #ffffff;
+  background: var(--ink);
   cursor: pointer;
   border: none;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.55);
 }
 
-/* ─── restaurants page icon button hover states ───────────────────────────── */
-.rest-icon-btn-edit:hover {
+/* ─── interactive element focus ───────────────────────────────────────────── */
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 2px;
+}
+
+/* ─── icon button hover states ────────────────────────────────────────────── */
+.icon-btn:hover {
   background: var(--surface) !important;
 }
-.rest-icon-btn-delete:hover {
+.icon-btn-danger:hover {
   background: rgba(239, 68, 68, 0.15) !important;
+}
+
+/* ─── scope / sort pill hover states ──────────────────────────────────────── */
+.pill:hover:not(:disabled) {
+  border-color: var(--accent) !important;
+  color: var(--ink) !important;
 }

@@ -96,7 +96,7 @@ export default function AppShell() {
         <NavLink to="/categories" style={navLinkStyle}>Categories</NavLink>
         <NavLink to="/restaurants" style={navLinkStyle}>Restaurants</NavLink>
         <NavLink to="/analytics" style={navLinkStyle}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
             <ChartBarIcon />
             Analytics
           </span>

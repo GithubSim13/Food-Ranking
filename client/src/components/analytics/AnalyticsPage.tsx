@@ -693,6 +693,7 @@ export default function AnalyticsPage() {
                       key={c.name}
                       ref={el => { if (el) pillRefsMap.current.set(c.name, el); else pillRefsMap.current.delete(c.name) }}
                       onClick={() => setActiveCategory(c.name)}
+                      className="pill"
                       style={{ ...pillStyle(c.name === effectiveCategory), flexShrink: 0 }}
                     >
                       {c.name}
@@ -772,9 +773,9 @@ export default function AnalyticsPage() {
             Entries with 2+ reviews — first rating vs latest
           </p>
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-            <button onClick={() => selectMoverFilter('improved')} style={pillStyle(moverFilter === 'improved')}>Most improved</button>
-            <button onClick={() => selectMoverFilter('declined')} style={pillStyle(moverFilter === 'declined')}>Most declined</button>
-            <button onClick={() => selectMoverFilter('all')} style={pillStyle(moverFilter === 'all')}>All movers</button>
+            <button className="pill" onClick={() => selectMoverFilter('improved')} style={pillStyle(moverFilter === 'improved')}>Most improved</button>
+            <button className="pill" onClick={() => selectMoverFilter('declined')} style={pillStyle(moverFilter === 'declined')}>Most declined</button>
+            <button className="pill" onClick={() => selectMoverFilter('all')} style={pillStyle(moverFilter === 'all')}>All movers</button>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
             {displayedMovers.map(m => (
@@ -812,7 +813,7 @@ export default function AnalyticsPage() {
             {availableYears.length > 0 && (
               <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                 {availableYears.map(y => (
-                  <button key={y} onClick={() => setSelectedYearOverride(y)} style={pillStyle(y === selectedYear)}>{y}</button>
+                  <button key={y} className="pill" onClick={() => setSelectedYearOverride(y)} style={pillStyle(y === selectedYear)}>{y}</button>
                 ))}
               </div>
             )}
@@ -1161,7 +1162,7 @@ export default function AnalyticsPage() {
                           style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}
                           onClick={() => navigate(`/entries/${entry.id}`, { state: { background: location } })}
                         >
-                          {entry.flag && <FlagImage code={entry.flag} style={{ width: 16, height: 'auto', flexShrink: 0 }} />}
+                          {entry.flag && <FlagImage code={entry.flag} />}
                           <span style={{ color: 'var(--accent)', fontWeight: 500, fontSize: '0.88rem' }}>{entry.foodName}</span>
                         </div>
                       </td>
@@ -1229,8 +1230,8 @@ export default function AnalyticsPage() {
                   >
                     <td style={{ ...countryTdStyle, textAlign: 'center', color: 'var(--ink-mute)', fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}>{i + 1}</td>
                     <td style={countryTdStyle}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        {row.flag && <FlagImage code={row.flag} style={{ width: 20, height: 'auto' }} />}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        {row.flag && <FlagImage code={row.flag} />}
                         <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600, color: 'var(--ink)' }}>
                           {row.flag ? row.countryName : '🏠 Home'}
                         </span>
@@ -1322,8 +1323,8 @@ export default function AnalyticsPage() {
                   onClick={() => navigate(`/entries/${entry.id}`, { state: { background: location } })}
                 >
                   <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '0.2rem' }}>
-                      {entry.flag && <FlagImage code={entry.flag} style={{ width: 16, height: 'auto', flexShrink: 0 }} />}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.2rem' }}>
+                      {entry.flag && <FlagImage code={entry.flag} />}
                       <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
                         {entry.foodName}
                       </span>

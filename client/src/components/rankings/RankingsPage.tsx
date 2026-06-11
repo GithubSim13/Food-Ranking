@@ -106,7 +106,7 @@ function RatedEntryRow({
       </span>
 
       <div style={{ flex: 1 }}>
-        <div style={{ fontWeight: 600, color: entry.starred ? 'var(--gold)' : 'var(--ink)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+        <div style={{ fontWeight: 600, color: entry.starred ? 'var(--gold)' : 'var(--ink)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
           <FlagImage code={entry.flag} />
           {entry.foodName}
         </div>
@@ -212,7 +212,7 @@ function SortableEntryRow({
       </span>
 
       <div style={{ flex: 1 }}>
-        <div style={{ fontWeight: 600, color: entry.starred ? 'var(--gold)' : 'var(--ink)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+        <div style={{ fontWeight: 600, color: entry.starred ? 'var(--gold)' : 'var(--ink)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
           <FlagImage code={entry.flag} />
           {entry.foodName}
         </div>
@@ -575,7 +575,7 @@ export default function RankingsPage() {
         style={{
           flex: 1,
           minWidth: 0,
-          padding: '0.3rem 0.6rem',
+          padding: '0.45rem 0.65rem',
           border: '1px solid var(--line)',
           borderRadius: 6,
           background: 'var(--surface)',
@@ -589,7 +589,7 @@ export default function RankingsPage() {
         disabled={!canConfirmMove}
         style={{
           ...smallPrimaryBtnStyle,
-          opacity: canConfirmMove ? 1 : 0.4,
+          opacity: canConfirmMove ? 1 : 0.6,
           cursor: canConfirmMove ? 'pointer' : 'default',
           whiteSpace: 'nowrap',
         }}
@@ -726,11 +726,12 @@ const primaryBtnStyle: React.CSSProperties = {
   background: 'var(--accent)',
   color: 'var(--accent-ink)',
   border: 'none',
-  padding: '0.45rem 0.875rem',
+  padding: '0.5rem 1rem',
   borderRadius: 8,
   cursor: 'pointer',
   fontWeight: 600,
   fontSize: '0.875rem',
+  transition: 'all 150ms ease',
 }
 
 const secondaryBtnStyle: React.CSSProperties = {
@@ -742,4 +743,5 @@ const secondaryBtnStyle: React.CSSProperties = {
   cursor: 'pointer',
   fontWeight: 500,
   fontSize: '0.875rem',
+  transition: 'all 150ms ease',
 }

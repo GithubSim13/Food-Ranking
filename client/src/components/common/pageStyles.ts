@@ -1,6 +1,6 @@
 export const kickerStyle: React.CSSProperties = {
   fontFamily: 'var(--font-mono)',
-  fontSize: 11,
+  fontSize: '0.7rem',
   textTransform: 'uppercase',
   letterSpacing: '0.08em',
   color: 'var(--ink-mute)',
@@ -25,17 +25,19 @@ export const smallPrimaryBtnStyle: React.CSSProperties = {
   fontSize: '0.78rem',
   fontWeight: 600,
   flexShrink: 0,
+  transition: 'all 150ms ease',
 }
 
 export const smallSecondaryBtnStyle: React.CSSProperties = {
   background: 'var(--surface)',
   color: 'var(--ink-mute)',
   border: '1px solid var(--line)',
-  padding: '0.2rem 0.6rem',
+  padding: '0.3rem 0.6rem',
   borderRadius: 6,
   cursor: 'pointer',
-  fontSize: '0.75rem',
+  fontSize: '0.78rem',
   flexShrink: 0,
+  transition: 'all 150ms ease',
 }
 
 export const smallDeleteBtnStyle: React.CSSProperties = {
@@ -48,4 +50,5 @@ export const smallDeleteBtnStyle: React.CSSProperties = {
   fontSize: '0.78rem',
   fontWeight: 600,
   flexShrink: 0,
+  transition: 'all 150ms ease',
 }
