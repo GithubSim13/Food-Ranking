@@ -141,8 +141,8 @@ export default function AnalyticsPage() {
   useEffect(() => {
     const el = scatterContainerRef.current
     if (!el) return
-    const ro = new ResizeObserver(entries => {
-      if (entries[0]) setScatterWidth(entries[0].contentRect.width)
+    const ro = new ResizeObserver(resizeEntries => {
+      if (resizeEntries[0]) setScatterWidth(resizeEntries[0].contentRect.width)
     })
     ro.observe(el)
     return () => ro.disconnect()
@@ -151,8 +151,8 @@ export default function AnalyticsPage() {
   useEffect(() => {
     const el = priceContainerRef.current
     if (!el) return
-    const ro = new ResizeObserver(entries => {
-      if (entries[0]) setPriceWidth(entries[0].contentRect.width)
+    const ro = new ResizeObserver(resizeEntries => {
+      if (resizeEntries[0]) setPriceWidth(resizeEntries[0].contentRect.width)
     })
     ro.observe(el)
     return () => ro.disconnect()

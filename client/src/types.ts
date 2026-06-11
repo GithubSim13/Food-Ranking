@@ -58,3 +58,9 @@ export interface RestaurantSummary {
   name: string;
   entryCount: number;
 }
+
+export const RATING_FIELDS = [
+  { label: 'Taste', key: 'rating1' },
+  { label: 'Value', key: 'rating2' },
+  { label: 'Consistency', key: 'rating3' },
+] as const

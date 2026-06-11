@@ -38,6 +38,11 @@ export default function EntryList() {
     return matchesScope(e, scope)
   })
 
+  const latestDateMap = new Map(scoped.map(e => {
+    const dated = sortReviewsByDateDesc(e.reviews).find(r => r.date)
+    return [e.id, dated ? new Date(dated.date!).getTime() : -Infinity]
+  }))
+
   const sorted = q.length === 0
     ? [...scoped].sort((a, b) => {
         if (sort === 'az') return a.foodName.localeCompare(b.foodName)
@@ -47,15 +52,11 @@ export default function EntryList() {
           return rb - ra
         }
         // sort by most recent non-null review.date; fall back to createdAt
-        const latestDate = (e: typeof scoped[0]) => {
-          const dated = sortReviewsByDateDesc(e.reviews).find(r => r.date != null)
-          return dated ? new Date(dated.date!).getTime() : null
-        }
-        const da = latestDate(a)
-        const db = latestDate(b)
-        if (da !== null && db !== null) return db - da
-        if (da !== null) return -1
-        if (db !== null) return 1
+        const da = latestDateMap.get(a.id) ?? -Infinity
+        const db = latestDateMap.get(b.id) ?? -Infinity
+        if (da !== -Infinity && db !== -Infinity) return db - da
+        if (da !== -Infinity) return -1
+        if (db !== -Infinity) return 1
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       })
     : (() => {

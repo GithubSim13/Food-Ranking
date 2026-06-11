@@ -3,22 +3,17 @@ import { useMutation } from '@tanstack/react-query'
 import { createReview } from '../../api/reviews'
 import { useToast } from '../../context/ToastContext'
 import RatingInput from '../common/RatingInput'
+import { RATING_FIELDS } from '../../types'
+import { getLocalDateString } from '../../utils'
 
 interface Props {
   entryId: number
   onSuccess: () => void
 }
 
-const RATING_FIELDS = [
-  { label: 'Taste', key: 'rating1' },
-  { label: 'Value', key: 'rating2' },
-  { label: 'Consistency', key: 'rating3' },
-] as const
-
 export default function ReviewForm({ entryId, onSuccess }: Props) {
   const { showToast } = useToast()
-  const now = new Date()
-  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+  const today = getLocalDateString()
   const [date, setDate] = useState(today)
   const [ratings, setRatings] = useState<{ rating1: number | null; rating2: number | null; rating3: number | null }>(
     { rating1: null, rating2: null, rating3: null }

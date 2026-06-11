@@ -21,7 +21,7 @@ export default function ReigningChampionCard({ champEntry, champScore, champRevi
     <SectionErrorBoundary title="Reigning Champion">
     <div onClick={() => champEntry && navigate(`/entries/${champEntry.id}`, { state: { background: location } })} style={{
       position: 'relative',
-      background: '#6c47d4',
+      background: 'var(--accent)',
       backgroundImage: 'repeating-linear-gradient(135deg, rgba(255,255,255,0.04) 0px, rgba(255,255,255,0.04) 2px, transparent 2px, transparent 14px)',
       borderRadius: 14,
       padding: '1.5rem',
@@ -37,8 +37,8 @@ export default function ReigningChampionCard({ champEntry, champScore, champRevi
         position: 'absolute',
         top: '1.5rem',
         right: '1.5rem',
-        background: '#e6a817',
-        color: '#0f0d17',
+        background: 'var(--gold)',
+        color: 'var(--paper)',
         fontFamily: 'var(--font-mono)',
         fontSize: '1.5rem',
         fontWeight: 700,

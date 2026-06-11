@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { getEntries } from '../../api/entries'
@@ -18,40 +19,39 @@ export default function HomePage() {
   const greetingWord = hour < 12 ? 'Morning' : hour < 18 ? 'Afternoon' : 'Evening'
 
   // ── basic stats ────────────────────────────────────────────────────────────
-  const totalFoods = entries.length
-  const totalCategories = new Set(entries.map(e => e.category)).size
-  const starredCount = entries.filter(e => e.starred).length
-  const distinctRestCount = new Set(entries.map(e => e.restaurantId)).size
-  const ratedEntryLatest = entries.map(e => latestRating(e.reviews)).filter((v): v is number => v !== null)
-  const avgRating = ratedEntryLatest.length ? ratedEntryLatest.reduce((a, b) => a + b, 0) / ratedEntryLatest.length : null
-
+  const { totalFoods, totalCategories, starredCount, distinctRestCount } = useMemo(() => ({
+    totalFoods: entries.length,
+    totalCategories: new Set(entries.map(e => e.category)).size,
+    starredCount: entries.filter(e => e.starred).length,
+    distinctRestCount: new Set(entries.map(e => e.restaurantId)).size,
+  }), [entries])
   // ── top 5 ──────────────────────────────────────────────────────────────────
-  const top5: Top5Entry[] = [...entries]
+  const top5 = useMemo<Top5Entry[]>(() => [...entries]
     .map(e => {
       const score = latestRating(e.reviews)
-      const quote = sortReviewsByDateDesc(e.reviews)[0]?.notes?.split('\n')[0]?.trim() ?? ''
+      const quote = firstNoteLine(sortReviewsByDateDesc(e.reviews)[0]?.notes)
       return { id: e.id, name: e.foodName, flag: e.flag, score, starred: e.starred, category: e.category, restaurant: e.restaurant.name, reviewCount: e.reviews.length, quote }
     })
     .filter((e): e is Top5Entry => e.score !== null)
     .sort((a, b) => b.score - a.score)
-    .slice(0, 5)
+    .slice(0, 5), [entries])
 
   // ── hall of shame ──────────────────────────────────────────────────────────
-  const shameList: Top5Entry[] = [...entries]
+  const shameList = useMemo<Top5Entry[]>(() => [...entries]
     .map(e => {
       const score = latestRating(e.reviews)
-      const quote = sortReviewsByDateDesc(e.reviews)[0]?.notes?.split('\n')[0]?.trim() ?? ''
+      const quote = firstNoteLine(sortReviewsByDateDesc(e.reviews)[0]?.notes)
       return { id: e.id, name: e.foodName, flag: e.flag, score, starred: e.starred, category: e.category, restaurant: e.restaurant.name, reviewCount: e.reviews.length, quote }
     })
     .filter((e): e is Top5Entry => e.score !== null)
     .sort((a, b) => a.score - b.score)
-    .slice(0, 5)
+    .slice(0, 5), [entries])
 
   // ── champion (most-reviewed entry, tiebreak by overallRating desc) ─────────
-  const champData = [...entries]
+  const champData = useMemo(() => [...entries]
     .filter(e => e.starred && e.reviews.length > 0)
     .map(e => ({ entry: e, reviewCount: e.reviews.length, avg: latestRating(e.reviews) }))
-    .sort((a, b) => b.reviewCount - a.reviewCount || (b.avg ?? 0) - (a.avg ?? 0))[0] ?? null
+    .sort((a, b) => b.reviewCount - a.reviewCount || (b.avg ?? 0) - (a.avg ?? 0))[0] ?? null, [entries])
   const champEntry = champData?.entry ?? null
   const champScore = champData?.avg ?? null
   const champReviewCount = champData?.reviewCount ?? 0
@@ -64,7 +64,7 @@ export default function HomePage() {
     : ''
 
   // ── fresh off the fork ─────────────────────────────────────────────────────
-  const freshEntries = [...entries]
+  const freshEntries = useMemo(() => [...entries]
     .map(e => {
       const dates = e.reviews.map(r => r.date).filter((d): d is string => d !== null)
       const earliest = dates.sort()[0] ?? null
@@ -72,7 +72,7 @@ export default function HomePage() {
     })
     .filter(e => e.reviewDate !== null)
     .sort((a, b) => new Date(b.reviewDate!).getTime() - new Date(a.reviewDate!).getTime())
-    .slice(0, 5)
+    .slice(0, 5), [entries])
 
   return (
     <div style={{ width: '100%' }}>

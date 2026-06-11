@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { Outlet, NavLink } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { getEntries } from '../../api/entries'
@@ -31,27 +32,11 @@ export default function AppShell() {
     queryFn: getEntries,
   })
 
-  const entryCount = entries.length
-  const restaurantCount = new Set(entries.map(e => e.restaurantId)).size
-  const starredCount = entries.filter(e => e.starred).length
-  const perEntryLatest = entries
-    .map(e => {
-      const sorted = [...e.reviews].map((r, i) => ({ r, i }))
-        .sort((a, b) => {
-          if (a.r.date && b.r.date) {
-            const diff = new Date(b.r.date).getTime() - new Date(a.r.date).getTime()
-            return diff !== 0 ? diff : b.i - a.i
-          }
-          if (a.r.date) return -1
-          if (b.r.date) return 1
-          return b.i - a.i
-        })
-      return sorted.find(({ r }) => r.overallRating !== null)?.r.overallRating ?? null
-    })
-    .filter((v): v is number => v !== null)
-  const avgRating = perEntryLatest.length
-    ? (perEntryLatest.reduce((a, b) => a + b, 0) / perEntryLatest.length).toFixed(1)
-    : null
+  const { entryCount, restaurantCount, starredCount } = useMemo(() => ({
+    entryCount: entries.length,
+    restaurantCount: new Set(entries.map(e => e.restaurantId)).size,
+    starredCount: entries.filter(e => e.starred).length,
+  }), [entries])
 
   return (
     <div style={{ display: 'flex', height: '100vh' }}>
@@ -131,9 +116,7 @@ export default function AppShell() {
               <span style={{ display: 'block' }}>{entryCount} lamons logged</span>
               <span style={{ display: 'block' }}>{restaurantCount} spots visited</span>
               <span style={{ display: 'block' }}>{starredCount} stand-out stars</span>
-              {avgRating && (
-                <span style={{ display: 'block' }}>est. 2025</span>
-              )}
+              <span style={{ display: 'block' }}>est. 2025</span>
             </p>
           </div>
         )}

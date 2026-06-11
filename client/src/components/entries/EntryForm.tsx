@@ -10,6 +10,8 @@ import RatingInput from '../common/RatingInput'
 import CategoryComparisonPanel from '../common/CategoryComparisonPanel'
 import { useToast } from '../../context/ToastContext'
 import { smallSecondaryBtnStyle } from '../common/pageStyles'
+import { RATING_FIELDS } from '../../types'
+import { autoResize, getLocalDateString } from '../../utils'
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value)
@@ -136,12 +138,6 @@ function RestaurantCombo({ value, onChange }: RestaurantComboProps) {
 
 // ─── main form ────────────────────────────────────────────────────────────────
 
-const RATING_FIELDS = [
-  { label: 'Taste', key: 'rating1' },
-  { label: 'Value', key: 'rating2' },
-  { label: 'Consistency', key: 'rating3' },
-] as const
-
 export default function EntryForm() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -171,11 +167,6 @@ export default function EntryForm() {
     enabled: debouncedName.length > 2,
   })
 
-  const autoResize = (el: HTMLTextAreaElement) => {
-    el.style.height = 'auto'
-    el.style.height = el.scrollHeight + 'px'
-  }
-
   const clearReview = () => {
     setRatings({ rating1: null, rating2: null, rating3: null })
     setNotes('')
@@ -195,7 +186,7 @@ export default function EntryForm() {
       if (showReview) {
         const reviewPayload: Parameters<typeof createReview>[0] = {
           entryId: entry.id,
-          date: (() => { const now = new Date(); return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`; })(),
+          date: getLocalDateString(),
         }
         if (ratings.rating1 != null) reviewPayload.rating1 = ratings.rating1
         if (ratings.rating2 != null) reviewPayload.rating2 = ratings.rating2

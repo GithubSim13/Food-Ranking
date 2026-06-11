@@ -12,15 +12,10 @@ import { updateReview, deleteReview } from '../../api/reviews'
 import ReviewForm from '../reviews/ReviewForm'
 import type { EntryDetail as EntryDetailType, Review } from '../../types'
 import { useToast } from '../../context/ToastContext'
-import { sortReviewsByDateDesc, formatReviewDate } from '../../utils'
+import { sortReviewsByDateDesc, formatReviewDate, autoResize } from '../../utils'
+import { RATING_FIELDS } from '../../types'
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
-
-const EDIT_RATING_FIELDS = [
-  { label: 'Taste', key: 'rating1' },
-  { label: 'Value', key: 'rating2' },
-  { label: 'Consistency', key: 'rating3' },
-] as const
 
 // ─── review card ──────────────────────────────────────────────────────────────
 
@@ -35,11 +30,6 @@ function ReviewCard({ review: r, onUpdated, onEditStart, onEditEnd }: ReviewCard
   const { showToast } = useToast()
   const [isEditing, setIsEditing] = useState(false)
   const notesRef = useRef<HTMLTextAreaElement>(null)
-
-  const autoResize = (el: HTMLTextAreaElement) => {
-    el.style.height = 'auto'
-    el.style.height = el.scrollHeight + 'px'
-  }
 
   useEffect(() => {
     if (isEditing && notesRef.current) autoResize(notesRef.current)
@@ -135,7 +125,7 @@ function ReviewCard({ review: r, onUpdated, onEditStart, onEditEnd }: ReviewCard
             />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            {EDIT_RATING_FIELDS.map(({ label, key }) => (
+            {RATING_FIELDS.map(({ label, key }) => (
               <RatingInput
                 key={key}
                 label={label}
