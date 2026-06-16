@@ -47,21 +47,44 @@ export default function HomePage() {
     .sort((a, b) => a.score - b.score)
     .slice(0, 5), [entries])
 
-  // ── champion (most-reviewed entry, tiebreak by overallRating desc) ─────────
-  const champData = useMemo(() => [...entries]
-    .filter(e => e.starred && e.reviews.length > 0)
-    .map(e => ({ entry: e, reviewCount: e.reviews.length, avg: latestRating(e.reviews) }))
-    .sort((a, b) => b.reviewCount - a.reviewCount || (b.avg ?? 0) - (a.avg ?? 0))[0] ?? null, [entries])
+  // ── best of the month ─────────────────────────────────────────────────────
+  const currentMonthName = new Date().toLocaleString('en-US', { month: 'long' })
+  const champData = useMemo(() => {
+    const now = new Date()
+    const thisYear = now.getFullYear()
+    const thisMonth = now.getMonth() + 1 // 1-based
+
+    const withRating = [...entries]
+      .filter(e => e.reviews.length > 0)
+      .map(e => {
+        const rating = latestRating(e.reviews)
+        // Find latest non-null review.date
+        const latestDate = e.reviews
+          .map(r => r.date)
+          .filter((d): d is string => d !== null)
+          .sort()
+          .at(-1) ?? null
+        return { entry: e, rating, reviewCount: e.reviews.length, latestDate }
+      })
+      .filter(e => e.rating !== null)
+
+    // Try current month first
+    const thisMonthEntries = withRating.filter(e => {
+      if (!e.latestDate) return false
+      const parts = e.latestDate.split('-')
+      return parseInt(parts[0]) === thisYear && parseInt(parts[1]) === thisMonth
+    })
+
+    const pool = thisMonthEntries.length > 0 ? thisMonthEntries : withRating
+    return pool.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0) || b.reviewCount - a.reviewCount)[0] ?? null
+  }, [entries])
   const champEntry = champData?.entry ?? null
-  const champScore = champData?.avg ?? null
-  const champReviewCount = champData?.reviewCount ?? 0
+  const champScore = champData?.rating ?? null
   const champLatestReview = champEntry ? latestRatedReview(champEntry.reviews) : null
   const champTaste = champLatestReview?.rating1 ?? null
   const champValue = champLatestReview?.rating2 ?? null
   const champConsistency = champLatestReview?.rating3 ?? null
-  const champNote = champEntry
-    ? firstNoteLine(champEntry.reviews.find(r => r.notes && r.notes.trim() !== '')?.notes)
-    : ''
+  const champNote = champEntry ? firstNoteLine(champEntry.reviews.find(r => r.notes && r.notes.trim() !== '')?.notes) : ''
 
   // ── fresh off the fork ─────────────────────────────────────────────────────
   const freshEntries = useMemo(() => [...entries]
@@ -119,11 +142,11 @@ export default function HomePage() {
         <ReigningChampionCard
           champEntry={champEntry}
           champScore={champScore}
-          champReviewCount={champReviewCount}
           champNote={champNote}
           champTaste={champTaste}
           champValue={champValue}
           champConsistency={champConsistency}
+          monthName={currentMonthName}
         />
 
         {/* Fresh off the Fork */}

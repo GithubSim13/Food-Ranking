@@ -6,19 +6,19 @@ import type { EntryDetail } from '../../types'
 type Props = {
   champEntry: EntryDetail | null
   champScore: number | null
-  champReviewCount: number
   champNote: string
   champTaste: number | null
   champValue: number | null
   champConsistency: number | null
+  monthName: string
 }
 
-export default function ReigningChampionCard({ champEntry, champScore, champReviewCount, champNote, champTaste, champValue, champConsistency }: Props) {
+export default function ReigningChampionCard({ champEntry, champScore, champNote, champTaste, champValue, champConsistency, monthName }: Props) {
   const navigate = useNavigate()
   const location = useLocation()
 
   return (
-    <SectionErrorBoundary title="Reigning Champion">
+    <SectionErrorBoundary title="Best of the Month">
     <div onClick={() => champEntry && navigate(`/entries/${champEntry.id}`, { state: { background: location } })} style={{
       position: 'relative',
       background: 'var(--accent)',
@@ -32,7 +32,7 @@ export default function ReigningChampionCard({ champEntry, champScore, champRevi
       gap: 4,
       cursor: champEntry ? 'pointer' : undefined,
     }}>
-      {/* Gold score badge — top-right */}
+      {/* Score badge — top-right */}
       <div style={{
         position: 'absolute',
         top: '1.5rem',
@@ -49,7 +49,7 @@ export default function ReigningChampionCard({ champEntry, champScore, champRevi
         {champScore != null ? champScore.toFixed(2) : '—'}
       </div>
       <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.7)' }}>
-        ★ Reigning Champion
+        Best of the Month
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.75rem', letterSpacing: '-0.03em', color: '#ffffff', flexWrap: 'wrap' as const }}>
         <FlagImage code={champEntry?.flag ?? null} />
@@ -58,8 +58,8 @@ export default function ReigningChampionCard({ champEntry, champScore, champRevi
       <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.55)' }}>
         {champEntry?.restaurant.name ?? '—'} · {champEntry?.category ?? '—'}
       </div>
-      <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.45)' }}>
-        tried {champReviewCount} {champReviewCount === 1 ? 'time' : 'times'}
+      <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.45)', fontFamily: 'var(--font-mono)' }}>
+        Best of {monthName}
       </div>
       <div style={{ fontSize: '0.82rem', color: 'var(--accent-light)', fontStyle: 'italic' }}>
         {champNote ? `"${champNote}"` : ''}
