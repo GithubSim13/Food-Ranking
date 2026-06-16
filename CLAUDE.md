@@ -102,7 +102,7 @@ server/
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/` | Health check — `{ status: "ok" }` |
-| GET | `/api/entries` | All entries, newest first; includes `reviews: [{ overallRating, date, rating1, rating2, rating3, notes, uncertainRating }]` |
+| GET | `/api/entries` | All entries, newest first; includes `reviews: [{ id, overallRating, date, rating1, rating2, rating3, notes, uncertainRating }]` |
 | GET | `/api/entries/:id` | Single entry with full restaurant + reviews, ordered by `createdAt` asc |
 | POST | `/api/entries` | Create entry — body: `{ foodName, category, restaurantName, starred?, flag? }`. Find-or-creates restaurant. |
 | PATCH | `/api/entries/:id` | Partial update — body: `{ starred?, foodName?, category?, flag?, tryAgain?, neverAgain? }`. Only provided fields are written. |
@@ -140,7 +140,7 @@ client/src/
     categories.ts       # getCategories, renameCategory, deleteCategory
   components/
     layout/
-      AppShell.tsx      # sidebar nav: Home, Entries, Rankings, then EXPLORE: Categories, Restaurants, Analytics (with ChartBarIcon); footer shows entry count ("N lamons logged"), restaurant count ("N spots visited"), starred count ("N stand-out stars"), "est. 2025"
+      AppShell.tsx      # sidebar nav: Home, Entries, Rankings, Rate (with BoltIcon from Icons.tsx + unrated count badge when > 0), then EXPLORE: Categories, Restaurants, Analytics (with ChartBarIcon); footer shows entry count ("N lamons logged"), restaurant count ("N spots visited"), starred count ("N stand-out stars"), "est. 2025"; unrated count badge: var(--accent) bg, var(--accent-ink) text, 0.65rem mono, border-radius 999px, padding 1px 6px; computed from ['entries'] query (entries with ≥1 review where latest review has all three sub-ratings null)
     common/
       Modal.tsx         # reusable modal overlay: dark themed, ESC/backdrop to close
       Toast.tsx         # single toast notification, auto-dismisses after 3s, success/error variants coloured via --toast-* CSS variables
@@ -148,7 +148,7 @@ client/src/
       FlagImage.tsx     # renders SVG flag from country-flag-icons; null → nothing, unknown code → text fallback
       FlagPicker.tsx    # searchable country dropdown, dark themed; props: { value: string | null, onChange }
       countryList.ts    # static list of 250 { code, name } pairs (auto-generated, do not hand-edit)
-      Icons.tsx         # shared icon components: PencilIcon, TrashIcon, ChevronIcon, iconBtnStyle (pair with className "icon-btn" or "icon-btn-danger" for hover background)
+      Icons.tsx         # shared icon components: PencilIcon, TrashIcon, ChevronIcon, BoltIcon, iconBtnStyle (pair with className "icon-btn" or "icon-btn-danger" for hover background)
       SectionErrorBoundary.tsx  # class-based React error boundary; wraps each Home dashboard section; shows "Could not load [title]" fallback on error
       EntryFlagBadges.tsx  # renders the three 8×8px badge dots (tryAgain, neverAgain, uncertainRating) using --badge-try-again, --badge-never-again, --badge-uncertain CSS variables; used in EntryCard.tsx
       SearchAndScopeBar.tsx  # reusable sticky search bar + scope filter pills; exports SearchAndScopeBar component, pillStyle(), matchesScope(), and Scope type; used by EntryList and RankingsPage; sets --search-bar-height CSS variable via ResizeObserver for sticky category headers
@@ -178,6 +178,8 @@ client/src/
       CategoriesPage.tsx  # /categories — full-width sortable table (columns: #, Category, Entries, Avg rating, Actions); search bar top-right; clicking a row navigates to /rankings?category=<name>; sort by any column asc/desc (default: Category asc); avg rating cell shows color-coded score + inline proportional bar; pencil/trash icon buttons for rename/delete
     restaurants/
       RestaurantsPage.tsx # /restaurants — full-width sortable table matching CategoriesPage structure. Columns: # (1-based index in current sort order), Restaurant (with 36×36px initials avatar — 2-char max, color-cycled by index % 5, border-radius: 8px, font-family: var(--font-mono)), Foods (entry count, right-aligned), Avg Rating (color-coded score + inline proportional bar, — if unrated), Actions (pencil + trash). Sort via column header clicks (Restaurant/Foods/Avg Rating), default Restaurant asc. Search bar top-right (mirrors Categories page placement). Clicking a row (except action buttons) toggles a <tr colSpan={6}> sub-table showing that restaurant's entries: Flag (FlagImage) | Food name | Category | Rating (via scoreColor()). Chevron on each row rotates 90° when expanded.
+    rate/
+      QuickRatePage.tsx  # /rate — queue-based sub-rating page; queue = entries with ≥1 review where latest review has rating1, rating2, rating3 all null, sorted by createdAt asc; layout: display flex gap 1.5rem align-items flex-start (same pattern as EntryDetail) with rating card (max-width 520px) on the left and CategoryComparisonPanel always visible on the right; thin progress bar at card top (var(--accent) fill, 300ms transition) + "{N} remaining" muted mono label; shows entry flag, food name, restaurant·category, latest review notes as <ul><li> bullet list; three RatingInput sliders (Taste/Value/Consistency, all start null); Skip (smallSecondaryBtnStyle) advances queue without saving, Save (smallPrimaryBtnStyle) calls PUT /api/reviews/:id with {rating1, rating2, rating3}; validation error "Rate all three fields to save" shown in var(--danger) only after failed Save attempt; skip state tracked in a local Set<number> (session-scoped, not persisted); initialTotal captured in a ref on first data load for stable progress fraction; "All caught up" empty state with link to /entries; derived from ['entries'] query (no new API calls for queue logic); invalidates ['entries'] and ['rankings'] on save
   context/
     ToastContext.tsx    # ToastProvider + useToast() hook; showToast(message, variant?)
   types.ts              # Entry, EntryDetail, Review (includes uncertainRating), RankedEntry (includes tryAgain, neverAgain), Rankings, CategorySummary, RestaurantSummary; RATING_FIELDS constant (Taste/Value/Consistency, shared across forms)
@@ -238,7 +240,8 @@ Sections (top to bottom) and how to compute each:
 Note: Top Tables, Regulars, Logging Pace, and Best Value Spot sections were removed from the home dashboard. Similar insights are now in AnalyticsPage.
 
 - **Scroll-driven podium reveal**: Hall of Fame and Hall of Shame share one `<Card>` wrapped in `<div ref={podiumCardRef}>`. `shameExpanded` boolean state (starts `false`) drives all transitions. A `scroll` event listener on `podiumCardRef.current.closest('main')` fires on each scroll event; when the card's vertical midpoint is above the container's midpoint `setShameExpanded(true)`, scrolling back reverses it. Each podium container uses CSS grid `0fr → 1fr` (`gridTemplateRows`) for layout-aware height collapse with no dead space. Individual bars animate via `transform: scaleY(0↔1)` — Fame uses `transformOrigin: 'bottom'` (bars grow upward from divider), Shame uses `transformOrigin: 'top'` (bars grow downward); bars stagger 80ms apart left-to-right on expand, right-to-left on collapse (800ms spring `cubic-bezier(0.34, 1.2, 0.64, 1)`). Bar content (rank, category, restaurant, count, quote) fades in with `translateY` slide 200ms after its bar starts (600ms duration on appear, 300ms on collapse). Watermark titles split into per-character `<span>`s: letters animate `opacity + translateY` with 60ms stagger and 150ms initial offset on appear (500ms/letter, `cubic-bezier(0.34, 1.1, 0.64, 1)`), reverse stagger on disappear.
-- **Sidebar**: primary nav (Home, Entries, Rankings) + EXPLORE section (Categories, Restaurants, Analytics). Footer shows entry count, restaurant count, starred count, and "est. 2025".
+- **Partial sub-ratings**: some of `rating1`/`rating2`/`rating3` being null is valid — the weighted `overallRating` formula redistributes weights across non-null fields. `QuickRatePage` requires all three before saving, enforced client-side only — no server enforcement.
+- **Sidebar**: primary nav (Home, Entries, Rankings, Rate) + EXPLORE section (Categories, Restaurants, Analytics). Footer shows entry count, restaurant count, starred count, and "est. 2025".
 - **Scope filters on Entries**: Everything / ★ Starred / Abroad / Home / Try Again / Never Again / Uncertain. Sort pills: Most recent / Top rated / A–Z. All seven pills share one active state; Uncertain checks latest review's `uncertainRating` only.
 
 ### Environment

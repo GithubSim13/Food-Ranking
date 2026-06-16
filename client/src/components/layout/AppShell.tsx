@@ -2,6 +2,8 @@ import { useMemo } from 'react'
 import { Outlet, NavLink } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { getEntries } from '../../api/entries'
+import { BoltIcon } from '../common/Icons'
+import { sortReviewsByDateDesc } from '../../utils'
 
 function ChartBarIcon() {
   return (
@@ -32,10 +34,15 @@ export default function AppShell() {
     queryFn: getEntries,
   })
 
-  const { entryCount, restaurantCount, starredCount } = useMemo(() => ({
+  const { entryCount, restaurantCount, starredCount, unratedCount } = useMemo(() => ({
     entryCount: entries.length,
     restaurantCount: new Set(entries.map(e => e.restaurantId)).size,
     starredCount: entries.filter(e => e.starred).length,
+    unratedCount: entries.filter(e => {
+      if (e.reviews.length === 0) return false
+      const latest = sortReviewsByDateDesc(e.reviews)[0]
+      return latest.rating1 === null && latest.rating2 === null && latest.rating3 === null
+    }).length,
   }), [entries])
 
   return (
@@ -77,6 +84,27 @@ export default function AppShell() {
         <NavLink to="/" end style={navLinkStyle}>Home</NavLink>
         <NavLink to="/entries" style={navLinkStyle}>Entries</NavLink>
         <NavLink to="/rankings" style={navLinkStyle}>Rankings</NavLink>
+        <NavLink to="/rate" style={navLinkStyle}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <BoltIcon />
+            Rate
+            {unratedCount > 0 && (
+              <span style={{
+                background: 'var(--accent)',
+                color: 'var(--accent-ink)',
+                fontSize: '0.65rem',
+                borderRadius: 999,
+                padding: '1px 6px',
+                fontFamily: 'var(--font-mono)',
+                fontWeight: 600,
+                flexShrink: 0,
+                lineHeight: 1.4,
+              }}>
+                {unratedCount}
+              </span>
+            )}
+          </span>
+        </NavLink>
 
         {/* Explore section */}
         <p style={{
