@@ -419,6 +419,7 @@ export default function AnalyticsPage() {
 
     return { cells, monthLabels }
   }, [selectedYear, heatmapCounts])
+  const heatmapInView = heatmapView.inView
 
   // ── long time no see ──────────────────────────────────────────────────────
   const longTimeNoSee = useMemo(() => {
@@ -960,7 +961,7 @@ export default function AnalyticsPage() {
                           cursor: 'default',
                           boxSizing: 'border-box',
                           ...cellColor(cell.count),
-                          ...(heatmapView.inView && cell.count > 0 ? {
+                          ...(heatmapInView && cell.count > 0 ? {
                             animation: 'cellPulse 400ms ease-out',
                             animationDelay: `${Math.floor(k / 7) * 20}ms`,
                           } : {}),
