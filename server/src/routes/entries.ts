@@ -151,7 +151,7 @@ router.post('/', async (req, res) => {
   }
 
   try {
-    let restaurant = await prisma.restaurant.findFirst({ where: { name: String(restaurantName) } });
+    let restaurant = await prisma.restaurant.findFirst({ where: { name: { equals: String(restaurantName), mode: 'insensitive' } } });
     if (!restaurant) {
       restaurant = await prisma.restaurant.create({ data: { name: String(restaurantName) } });
     }
