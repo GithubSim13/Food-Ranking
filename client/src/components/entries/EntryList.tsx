@@ -38,9 +38,12 @@ export default function EntryList() {
     return matchesScope(e, scope)
   })
 
-  const latestDateMap = new Map(scoped.map(e => {
-    const dated = sortReviewsByDateDesc(e.reviews).find(r => r.date)
-    return [e.id, dated ? new Date(dated.date!).getTime() : -Infinity]
+  const latestCreatedAtMap = new Map(scoped.map(e => {
+    if (e.reviews.length === 0) return [e.id, -Infinity as number]
+    const latest = e.reviews.reduce((best, r) =>
+      new Date(r.createdAt).getTime() > new Date(best.createdAt).getTime() ? r : best
+    )
+    return [e.id, new Date(latest.createdAt).getTime()]
   }))
 
   const sorted = q.length === 0
@@ -51,13 +54,10 @@ export default function EntryList() {
           const rb = latestRating(b.reviews) ?? -1
           return rb - ra
         }
-        // sort by most recent non-null review.date; fall back to createdAt
-        const da = latestDateMap.get(a.id) ?? -Infinity
-        const db = latestDateMap.get(b.id) ?? -Infinity
-        if (da !== -Infinity && db !== -Infinity) return db - da
-        if (da !== -Infinity) return -1
-        if (db !== -Infinity) return 1
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        // sort by review.createdAt (DB insertion time) so backdated reviews don't jump the queue
+        const da = latestCreatedAtMap.get(a.id) ?? -Infinity
+        const db = latestCreatedAtMap.get(b.id) ?? -Infinity
+        return db - da
       })
     : (() => {
         const isP1 = (e: typeof scoped[0]) =>

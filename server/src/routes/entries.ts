@@ -30,7 +30,7 @@ router.get('/', async (_req, res) => {
     const entries = await prisma.entry.findMany({
       include: {
         restaurant: restaurantNameSelect,
-        reviews: { select: { id: true, overallRating: true, date: true, rating1: true, rating2: true, rating3: true, notes: true, uncertainRating: true, price: true } },
+        reviews: { select: { id: true, overallRating: true, date: true, createdAt: true, rating1: true, rating2: true, rating3: true, notes: true, uncertainRating: true, price: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -137,12 +137,14 @@ router.delete('/:id', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-  const { foodName, category, restaurantName, starred, flag } = req.body as {
+  const { foodName, category, restaurantName, starred, flag, tryAgain, neverAgain } = req.body as {
     foodName?: unknown;
     category?: unknown;
     restaurantName?: unknown;
     starred?: unknown;
     flag?: unknown;
+    tryAgain?: unknown;
+    neverAgain?: unknown;
   };
 
   if (!foodName || !category || !restaurantName) {
@@ -163,6 +165,8 @@ router.post('/', async (req, res) => {
         restaurantId: restaurant.id,
         starred: Boolean(starred ?? false),
         flag: flag != null ? String(flag) : null,
+        tryAgain: Boolean(tryAgain ?? false),
+        neverAgain: Boolean(neverAgain ?? false),
       },
       include: { restaurant: restaurantNameSelect },
     });

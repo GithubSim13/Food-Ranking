@@ -567,11 +567,13 @@ export default function RankingsPage() {
         ← {moveSourceCategory}
       </span>
       <input
+        list="rankings-categories"
         autoFocus
         value={newCategoryName}
         onChange={e => setNewCategoryName(e.target.value)}
         onKeyDown={e => { if (e.key === 'Enter' && canConfirmMove) confirmMove() }}
         placeholder="New category name…"
+        autoComplete="off"
         style={{
           flex: 1,
           minWidth: 0,
@@ -584,6 +586,9 @@ export default function RankingsPage() {
           outline: 'none',
         }}
       />
+      <datalist id="rankings-categories">
+        {Object.keys(rankings ?? {}).map(name => <option key={name} value={name} />)}
+      </datalist>
       <button
         onClick={confirmMove}
         disabled={!canConfirmMove}

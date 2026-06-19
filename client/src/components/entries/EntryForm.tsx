@@ -148,11 +148,14 @@ export default function EntryForm() {
   const [restaurantName, setRestaurantName] = useState('')
   const [starred, setStarred] = useState(false)
   const [flag, setFlag] = useState<string | null>(null)
+  const [tryAgain, setTryAgain] = useState(false)
+  const [neverAgain, setNeverAgain] = useState(false)
 
   const [showReview, setShowReview] = useState(false)
   const [ratings, setRatings] = useState<{ rating1: number | null; rating2: number | null; rating3: number | null }>(
     { rating1: null, rating2: null, rating3: null }
   )
+  const [price, setPrice] = useState<number | null>(null)
   const [notes, setNotes] = useState('')
   const notesRef = useRef<HTMLTextAreaElement>(null)
 
@@ -167,8 +170,13 @@ export default function EntryForm() {
     enabled: debouncedName.length > 2,
   })
 
+  useEffect(() => {
+    if (notesRef.current) autoResize(notesRef.current)
+  }, [notes])
+
   const clearReview = () => {
     setRatings({ rating1: null, rating2: null, rating3: null })
+    setPrice(null)
     setNotes('')
   }
 
@@ -181,7 +189,7 @@ export default function EntryForm() {
     if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return }
     setIsPending(true)
     try {
-      const entry = await createEntry({ foodName, category, restaurantName, starred, flag })
+      const entry = await createEntry({ foodName, category, restaurantName, starred, flag, tryAgain, neverAgain })
 
       if (showReview) {
         const reviewPayload: Parameters<typeof createReview>[0] = {
@@ -191,6 +199,7 @@ export default function EntryForm() {
         if (ratings.rating1 != null) reviewPayload.rating1 = ratings.rating1
         if (ratings.rating2 != null) reviewPayload.rating2 = ratings.rating2
         if (ratings.rating3 != null) reviewPayload.rating3 = ratings.rating3
+        if (price != null) reviewPayload.price = price
         if (notes.trim()) reviewPayload.notes = notes.trim()
 
         try {
@@ -274,6 +283,51 @@ export default function EntryForm() {
             <FlagPicker value={flag} onChange={setFlag} />
           </div>
 
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button
+              type="button"
+              onClick={() => { setTryAgain(v => !v); if (!tryAgain) setNeverAgain(false) }}
+              style={{
+                background: tryAgain ? 'rgba(59,130,246,0.15)' : 'var(--surface)',
+                border: tryAgain ? '2px solid var(--badge-try-again)' : '1px solid var(--line)',
+                color: tryAgain ? 'var(--badge-try-again)' : 'var(--ink-mute)',
+                padding: '0.35rem 0.75rem',
+                borderRadius: 6,
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: '0.85rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                transition: 'all 150ms ease',
+              }}
+            >
+              <span style={{ width: 8, height: 8, borderRadius: '50%', display: 'inline-block', background: 'var(--badge-try-again)', flexShrink: 0 }} />
+              Try Again
+            </button>
+            <button
+              type="button"
+              onClick={() => { setNeverAgain(v => !v); if (!neverAgain) setTryAgain(false) }}
+              style={{
+                background: neverAgain ? 'rgba(239,68,68,0.15)' : 'var(--surface)',
+                border: neverAgain ? '2px solid var(--badge-never-again)' : '1px solid var(--line)',
+                color: neverAgain ? 'var(--badge-never-again)' : 'var(--ink-mute)',
+                padding: '0.35rem 0.75rem',
+                borderRadius: 6,
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: '0.85rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                transition: 'all 150ms ease',
+              }}
+            >
+              <span style={{ width: 8, height: 8, borderRadius: '50%', display: 'inline-block', background: 'var(--badge-never-again)', flexShrink: 0 }} />
+              Never Again
+            </button>
+          </div>
+
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.95rem' }}>
             <input type="checkbox" checked={starred} onChange={e => setStarred(e.target.checked)} />
             ⭐ Worth trying once in a lifetime
@@ -315,11 +369,28 @@ export default function EntryForm() {
                 </div>
 
                 <div>
+                  <label style={labelStyle}>Price (₱) <span style={{ color: 'var(--ink-mute)', fontWeight: 400 }}>(optional)</span></label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={price ?? ''}
+                    onChange={e => {
+                      const v = parseFloat(e.target.value)
+                      setPrice(isNaN(v) ? null : Math.max(0, v))
+                    }}
+                    style={inputStyle}
+                    placeholder="Optional"
+                  />
+                </div>
+
+                <div>
                   <label style={labelStyle}>Notes <span style={{ color: 'var(--ink-mute)', fontWeight: 400 }}>(optional)</span></label>
                   <textarea
                     ref={notesRef}
                     value={notes}
                     onChange={e => { setNotes(e.target.value); autoResize(e.target) }}
+                    onPaste={() => { if (notesRef.current) setTimeout(() => autoResize(notesRef.current!), 0) }}
                     rows={3}
                     style={{ ...inputStyle, resize: 'none', overflow: 'hidden' }}
                   />

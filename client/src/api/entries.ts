@@ -27,4 +27,6 @@ export const createEntry = (data: {
   restaurantName: string;
   starred: boolean;
   flag?: string | null;
+  tryAgain?: boolean;
+  neverAgain?: boolean;
 }) => axios.post<EntryDetail>('/api/entries', data).then(r => r.data);

@@ -129,3 +129,4 @@ Ideas documented for later, not currently prioritised:
 - [x] 404 page — NotFoundPage, Minecraft achievement style; SectionErrorBoundary on Home dashboard sections
 - [x] Code audits — extracted shared utils, Icons, pageStyles, SearchAndScopeBar, CategoryComparisonPanel, EntryFlagBadges; removed dead code; CSS variable consistency
 - [x] Performance + UI consistency pass — staleTime 5min, useMemo on derived values; standardized form/button/label sizes; transitions; focus-visible outline
+- [x] QOL pass — tryAgain/neverAgain + price on EntryForm, consistent category/restaurant auto-suggest (combo boxes on EntryForm, datalist on EntryDetail + RankingsPage), textarea auto-resize on paste/load, Most Recent sort by review.createdAt

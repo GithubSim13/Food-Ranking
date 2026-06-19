@@ -1,10 +1,10 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { createReview } from '../../api/reviews'
 import { useToast } from '../../context/ToastContext'
 import RatingInput from '../common/RatingInput'
 import { RATING_FIELDS } from '../../types'
-import { getLocalDateString } from '../../utils'
+import { getLocalDateString, autoResize } from '../../utils'
 
 interface Props {
   entryId: number
@@ -21,6 +21,11 @@ export default function ReviewForm({ entryId, onSuccess }: Props) {
   const [notes, setNotes] = useState('')
   const [uncertainRating, setUncertainRating] = useState(false)
   const [price, setPrice] = useState<number | null>(null)
+  const notesRef = useRef<HTMLTextAreaElement>(null)
+
+  useEffect(() => {
+    if (notesRef.current) autoResize(notesRef.current)
+  }, [notes])
 
   const { mutate, isPending } = useMutation({
     mutationFn: createReview,
@@ -88,10 +93,12 @@ export default function ReviewForm({ entryId, onSuccess }: Props) {
       <div>
         <label style={labelStyle}>Notes</label>
         <textarea
+          ref={notesRef}
           value={notes}
-          onChange={e => setNotes(e.target.value)}
+          onChange={e => { setNotes(e.target.value); autoResize(e.target) }}
+          onPaste={() => { if (notesRef.current) setTimeout(() => autoResize(notesRef.current!), 0) }}
           rows={3}
-          style={{ ...inputStyle, resize: 'vertical' }}
+          style={{ ...inputStyle, resize: 'none', overflow: 'hidden' }}
         />
       </div>
 

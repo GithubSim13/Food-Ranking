@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
 import { getEntry, patchEntry, deleteEntry } from '../../api/entries'
-import { patchRestaurant } from '../../api/restaurants'
+import { getRestaurants, patchRestaurant } from '../../api/restaurants'
+import { getCategories } from '../../api/categories'
 import FlagImage from '../common/FlagImage'
 import FlagPicker from '../common/FlagPicker'
 import RatingInput from '../common/RatingInput'
@@ -289,6 +290,9 @@ export default function EntryDetail({ onPanelChange }: EntryDetailProps = {}) {
     onPanelChange?.(panelOpen)
   }, [panelOpen, onPanelChange])
 
+  const { data: categories = [] } = useQuery({ queryKey: ['categories'], queryFn: getCategories })
+  const { data: restaurants = [] } = useQuery({ queryKey: ['restaurants'], queryFn: getRestaurants })
+
   const { data: entry, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['entries', entryId],
     queryFn: () => getEntry(entryId),
@@ -465,19 +469,29 @@ export default function EntryDetail({ onPanelChange }: EntryDetailProps = {}) {
             <div>
               <label style={labelStyle}>Category</label>
               <input
+                list="edit-categories"
                 value={editForm.category}
                 onChange={e => { setEditForm(f => ({ ...f, category: e.target.value })); setEditErrors(err => ({ ...err, category: '' })) }}
                 style={inputStyle}
+                autoComplete="off"
               />
+              <datalist id="edit-categories">
+                {categories.map(c => <option key={c.name} value={c.name} />)}
+              </datalist>
               {editErrors.category && <p style={editErrorStyle}>{editErrors.category}</p>}
             </div>
             <div>
               <label style={labelStyle}>Restaurant</label>
               <input
+                list="edit-restaurants"
                 value={editForm.restaurantName}
                 onChange={e => { setEditForm(f => ({ ...f, restaurantName: e.target.value })); setEditErrors(err => ({ ...err, restaurantName: '' })) }}
                 style={inputStyle}
+                autoComplete="off"
               />
+              <datalist id="edit-restaurants">
+                {restaurants.map(r => <option key={r.id} value={r.name} />)}
+              </datalist>
               {editErrors.restaurantName && <p style={editErrorStyle}>{editErrors.restaurantName}</p>}
             </div>
             <div style={{ display: 'flex', gap: '0.5rem' }}>

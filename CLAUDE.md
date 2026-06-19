@@ -151,9 +151,9 @@ client/src/
     analytics/
       AnalyticsPage.tsx # /analytics — all computed from ['entries'] query; scroll-triggered animations; local date parsing uses split('-') not new Date()
     entries/
-      EntryList.tsx     # /entries — card grid with search, scope filters, and sort pills
+      EntryList.tsx     # /entries — card grid with search, scope filters, and sort pills; "Most Recent" sorts by review.createdAt (DB insertion time), not review.date
       EntryCard.tsx     # entry card; gold when starred; shows flag, rating, badge dots
-      EntryForm.tsx     # /entries/new — dupe detection, FlagPicker, combo boxes, optional inline review, CategoryComparisonPanel
+      EntryForm.tsx     # /entries/new — dupe detection, FlagPicker, combo boxes, tryAgain/neverAgain toggles, optional inline review (with price field), CategoryComparisonPanel
       EntryDetail.tsx   # /entries/:id — entry info, inline editing, toggles, reviews list, ReviewForm, delete
       EntryModal.tsx    # modal wrapper around EntryDetail
     reviews/
@@ -170,7 +170,7 @@ client/src/
   context/
     ToastContext.tsx    # ToastProvider + useToast() hook
   types.ts              # Entry, EntryDetail, Review, RankedEntry, Rankings, CategorySummary, RestaurantSummary; RATING_FIELDS
-  utils.ts              # sortReviewsByDateDesc, latestRating, latestRatedReview, latestPrice, scoreColor, formatReviewDate, getLocalDateString(), autoResize()
+  utils.ts              # sortReviewsByDateDesc, latestRating, latestRatedReview, latestPrice, scoreColor, formatReviewDate, getLocalDateString(), autoResize() — applied on load (useEffect with value dep), onChange, and onPaste (setTimeout 0) across all notes textareas
   App.tsx               # routes + background-location modal pattern for /entries/:id
   main.tsx              # QueryClientProvider + BrowserRouter + ToastProvider; staleTime: 5min globally
 ```
@@ -184,7 +184,7 @@ client/src/
 - **Toast + query invalidation**: all mutations show toast via `useToast()`; invalidate `['entries']`, `['entries', id]`, `['rankings']`, `['restaurants']`, `['categories']` as appropriate.
 - **Uncertain rating**: `Review.uncertainRating` — checkbox in forms; badge on review cards; yellow dot on entry detail from latest review.
 - **Review price**: optional Float (₱); shown as `₱{price} · {date}` on review cards.
-- **Entry flags (tryAgain/neverAgain)**: mutually exclusive XOR; badge dots on cards; filter pills on Entries page.
+- **Entry flags (tryAgain/neverAgain)**: mutually exclusive XOR; badge dots on cards; filter pills on Entries page; also settable at new entry creation via toggle buttons on EntryForm.
 - **Entry detail modal**: card click opens EntryDetail in Modal; URL updates to `/entries/:id`; ESC/backdrop closes; direct nav renders full page.
 - **Error handling**: all async route handlers wrapped in try/catch; 500 on DB failure, 400 on bad ID, 404 on missing record.
 - **Rankings DnD**: only unrated entries; gated behind Edit Rankings; Cancel restores snapshot; rated entries always sort by `overallRating` desc.
