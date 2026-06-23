@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect, useRef, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { getEntries } from '../../api/entries'
 import SectionErrorBoundary from '../common/SectionErrorBoundary'
 import { Card, SectionLabel, RankRow } from '../home/HomeShared'
@@ -101,6 +102,7 @@ function EmptyMsg({ children }: { children: React.ReactNode }) {
 
 function DeltaBadge({ delta }: { delta: number }) {
   const positive = delta > 0
+  const negative = delta < 0
   return (
     <span style={{
       fontFamily: 'var(--font-mono)',
@@ -108,11 +110,11 @@ function DeltaBadge({ delta }: { delta: number }) {
       fontWeight: 700,
       padding: '2px 6px',
       borderRadius: 4,
-      background: positive ? 'rgba(46, 204, 113, 0.15)' : 'rgba(231, 76, 60, 0.15)',
-      color: positive ? '#2ecc71' : '#e74c3c',
+      background: positive ? 'rgba(46, 204, 113, 0.15)' : negative ? 'rgba(231, 76, 60, 0.15)' : 'var(--paper)',
+      color: positive ? '#2ecc71' : negative ? '#e74c3c' : 'var(--ink-mute)',
       flexShrink: 0,
     }}>
-      {positive ? '+' : '−'}{Math.abs(delta).toFixed(1)}
+      {positive ? '+' : negative ? '−' : '±'}{Math.abs(delta).toFixed(1)}
     </span>
   )
 }
@@ -145,7 +147,7 @@ export default function AnalyticsPage() {
 
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
   const [moverFilter, setMoverFilter] = useState<MoverFilter>('improved')
-  const [showAllMovers, setShowAllMovers] = useState(false)
+  const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null)
   const [starredPage, setStarredPage] = useState(0)
   const [selectedYearOverride, setSelectedYearOverride] = useState<number | null>(null)
   const [heatmapTooltip, setHeatmapTooltip] = useState<{ x: number; y: number; dateStr: string; count: number } | null>(null)
@@ -232,7 +234,7 @@ export default function AnalyticsPage() {
 
   function selectMoverFilter(f: MoverFilter) {
     setMoverFilter(f)
-    setShowAllMovers(false)
+    setSelectedEntryId(null)
   }
 
   const totalEntries = entries.length
@@ -361,14 +363,28 @@ export default function AnalyticsPage() {
 
   const displayedMovers = useMemo(() => {
     if (moverFilter === 'improved') {
-      return [...movers].filter(m => m.delta > 0).sort((a, b) => b.delta - a.delta).slice(0, 10)
+      return [...movers].filter(m => m.delta > 0).sort((a, b) => b.delta - a.delta)
     }
     if (moverFilter === 'declined') {
-      return [...movers].filter(m => m.delta < 0).sort((a, b) => a.delta - b.delta).slice(0, 10)
+      return [...movers].filter(m => m.delta < 0).sort((a, b) => a.delta - b.delta)
     }
-    const sorted = [...movers].sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
-    return showAllMovers ? sorted : sorted.slice(0, 20)
-  }, [movers, moverFilter, showAllMovers])
+    return [...movers].sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
+  }, [movers, moverFilter])
+
+  const selectedMover = useMemo(
+    () => displayedMovers.find(m => String(m.entry.id) === selectedEntryId) ?? null,
+    [displayedMovers, selectedEntryId]
+  )
+
+  const selectedTrajectoryData = useMemo(() => {
+    if (!selectedMover) return []
+    const chronological = [...sortReviewsByDateDesc(selectedMover.entry.reviews)].reverse().filter(r => r.overallRating !== null)
+    return chronological.map((r, i) => ({ visit: i + 1, rating: r.overallRating as number }))
+  }, [selectedMover])
+
+  function toggleSelectedEntry(id: number) {
+    setSelectedEntryId(prev => prev === String(id) ? null : String(id))
+  }
 
   // ── starred picks ──────────────────────────────────────────────────────────
   const starredPicks = useMemo(() => entries
@@ -925,29 +941,69 @@ export default function AnalyticsPage() {
             <button className="pill" onClick={() => selectMoverFilter('declined')} style={pillStyle(moverFilter === 'declined')}>Most declined</button>
             <button className="pill" onClick={() => selectMoverFilter('all')} style={pillStyle(moverFilter === 'all')}>All movers</button>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-            {displayedMovers.map(m => (
-              <div
-                key={m.entry.id}
-                onClick={() => navigate(`/entries/${m.entry.id}`, { state: { background: location } })}
-                style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.45rem 0.6rem', borderRadius: 6, background: 'var(--paper)', cursor: 'pointer' }}
-              >
-                <span style={{ flex: 1, minWidth: 0, fontSize: '0.85rem', color: 'var(--ink)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{m.entry.foodName}</span>
-                <span style={{ fontSize: '0.74rem', color: 'var(--ink-mute)', flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, maxWidth: 110 }}>{m.entry.category}</span>
-                <span style={{ fontSize: '0.74rem', color: 'var(--ink-mute)', flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, maxWidth: 130 }}>{m.entry.restaurant.name}</span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8rem', color: 'var(--ink-mute)', flexShrink: 0 }}>{m.first.toFixed(1)} → {m.latest.toFixed(1)}</span>
-                <DeltaBadge delta={m.delta} />
+          {displayedMovers.length === 0 ? (
+            <EmptyMsg>Not enough data</EmptyMsg>
+          ) : (
+            <>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                {displayedMovers.map(m => {
+                  const isSelected = selectedEntryId === String(m.entry.id)
+                  return (
+                    <div
+                      key={m.entry.id}
+                      onClick={() => toggleSelectedEntry(m.entry.id)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.6rem',
+                        padding: '0.45rem 0.6rem',
+                        borderRadius: 6,
+                        background: isSelected ? 'var(--accent-wash)' : 'var(--paper)',
+                        borderLeft: isSelected ? '2px solid var(--accent)' : '2px solid transparent',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <span style={{ flex: 1, minWidth: 0, fontSize: '0.85rem', color: 'var(--ink)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{m.entry.foodName}</span>
+                      <span style={{ fontSize: '0.74rem', color: 'var(--ink-mute)', flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, maxWidth: 130 }}>{m.entry.restaurant.name}</span>
+                      <span style={{ fontSize: '0.74rem', color: 'var(--ink-mute)', flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, maxWidth: 110 }}>{m.entry.category}</span>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8rem', color: 'var(--ink-mute)', flexShrink: 0 }}>{m.first.toFixed(1)} → {m.latest.toFixed(1)}</span>
+                      <DeltaBadge delta={m.delta} />
+                    </div>
+                  )
+                })}
               </div>
-            ))}
-            {displayedMovers.length === 0 && <EmptyMsg>Not enough data</EmptyMsg>}
-          </div>
-          {moverFilter === 'all' && !showAllMovers && movers.length > 20 && (
-            <span
-              onClick={() => setShowAllMovers(true)}
-              style={{ display: 'inline-block', marginTop: '0.75rem', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--accent)' }}
-            >
-              Show all {movers.length} entries
-            </span>
+              <div
+                style={{
+                  marginTop: selectedMover ? '1rem' : 0,
+                  height: selectedMover ? 200 : 0,
+                  opacity: selectedMover ? 1 : 0,
+                  overflow: 'hidden',
+                  transition: 'opacity 0.2s, height 0.2s, margin-top 0.2s',
+                }}
+              >
+                {selectedMover && (
+                  <ResponsiveContainer width="100%" height={200}>
+                    <LineChart data={selectedTrajectoryData} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+                      <CartesianGrid stroke="var(--line)" strokeOpacity={0.4} strokeDasharray="4 3" />
+                      <XAxis
+                        dataKey="visit"
+                        stroke="var(--ink-mute)"
+                        fontSize={11}
+                        fontFamily="var(--font-mono)"
+                        label={{ value: 'Visit #', position: 'insideBottom', offset: -4, fill: 'var(--ink-mute)', fontSize: 11 }}
+                      />
+                      <YAxis domain={[0, 10]} tickCount={6} stroke="var(--ink-mute)" fontSize={11} fontFamily="var(--font-mono)" />
+                      <Tooltip
+                        contentStyle={{ background: 'var(--paper-2)', border: '1px solid var(--line)', borderRadius: 8, fontFamily: 'Hanken Grotesk, sans-serif', fontSize: '0.78rem' }}
+                        formatter={(value: number) => [value.toFixed(1), 'Rating']}
+                        labelFormatter={v => `Visit ${v}`}
+                      />
+                      <Line type="monotone" dataKey="rating" stroke="#6c47d4" dot />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </>
           )}
         </Card>
       </SectionErrorBoundary>
