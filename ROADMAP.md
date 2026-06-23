@@ -122,6 +122,7 @@ Ideas documented for later, not currently prioritised:
 - [x] Search extended to review notes — whole-word regex for notes, substring for other fields; priority-sorted results
 - [x] SearchAndScopeBar — extracted reusable component; sticky; sets --search-bar-height via ResizeObserver for sticky category headers
 - [x] Analytics page — /analytics; all sections from ['entries'] query; scroll-triggered animations (useInViewOnce + useCountUp); donut charts, top categories, best restaurants, most visited/logged, category insights, rating trajectory, logging activity calendar, scatter plots, long time no see, rating by country, underrated gems, starred picks; all paginated sections with prev/next + "Showing X–Y of Z"
+- [x] Category Insights selector — replaced horizontal scroll pills with a compact combobox: search input + current category pill side by side; dropdown list appears on typing or pill click, collapses on selection or outside click
 - [x] Quick Rate page — /rate; queue-based sub-rating; progress bar; CategoryComparisonPanel on right; unrated badge on nav link
 - [x] Review price field — optional Float (₱) on Review; shown on cards and in CategoryComparisonPanel popup
 - [x] Best of the Month — replaced Reigning Champion; current-month filter + all-time fallback; gold if starred

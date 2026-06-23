@@ -170,8 +170,12 @@ export default function AnalyticsPage() {
   } | null>(null)
   const priceContainerRef = useRef<HTMLDivElement>(null)
   const pillScrollRef = useRef<HTMLDivElement>(null)
-  const pillRefsMap = useRef<Map<string, HTMLButtonElement>>(new Map())
+  const pillRefsMap = useRef<Map<string, HTMLDivElement>>(new Map())
   const [catPillScroll, setCatPillScroll] = useState({ left: false, right: true })
+  const [categorySearch, setCategorySearch] = useState('')
+  const [hoveredCategoryRow, setHoveredCategoryRow] = useState<string | null>(null)
+  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false)
+  const categoryComboRef = useRef<HTMLDivElement>(null)
 
   // <main> in AppShell is the scroll container and persists across navigation,
   // so it retains the previous page's scroll position. Reset it on mount.
@@ -214,6 +218,16 @@ export default function AnalyticsPage() {
     ro.observe(el)
     update()
     return () => { el.removeEventListener('scroll', update); ro.disconnect() }
+  }, [])
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (categoryComboRef.current && !categoryComboRef.current.contains(e.target as Node)) {
+        setCategoryDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
   function selectMoverFilter(f: MoverFilter) {
@@ -447,6 +461,12 @@ export default function AnalyticsPage() {
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([name, count]) => ({ name, count }))
   }, [entries])
+
+  const filteredBreakdownCategories = useMemo(() => {
+    const q = categorySearch.trim().toLowerCase()
+    if (!q) return breakdownCategories
+    return breakdownCategories.filter(c => c.name.toLowerCase().includes(q))
+  }, [breakdownCategories, categorySearch])
 
   const defaultBreakdownCat = breakdownCategories.length
     ? breakdownCategories.reduce((best, c) => c.count > best.count ? c : best).name
@@ -743,38 +763,89 @@ export default function AnalyticsPage() {
           <p style={kickerStyle}>CATEGORY INSIGHTS</p>
           {breakdownCategories.length > 0 ? (
             <>
-              <div style={{ position: 'relative', marginBottom: '1.25rem' }}>
-                <div style={{
-                  position: 'absolute', top: 0, left: 0, width: 32, height: '100%',
-                  background: 'linear-gradient(to right, var(--paper-2), transparent)',
-                  pointerEvents: 'none', zIndex: 1,
-                  opacity: catPillScroll.left ? 1 : 0,
-                  transition: 'opacity 150ms',
-                }} />
-                <div style={{
-                  position: 'absolute', top: 0, right: 0, width: 32, height: '100%',
-                  background: 'linear-gradient(to left, var(--paper-2), transparent)',
-                  pointerEvents: 'none', zIndex: 1,
-                  opacity: catPillScroll.right ? 1 : 0,
-                  transition: 'opacity 150ms',
-                }} />
-                <div
-                  ref={pillScrollRef}
-                  className="hide-scrollbar"
-                  style={{ display: 'flex', overflowX: 'auto', flexWrap: 'nowrap', gap: '6px', padding: '2px 0' }}
-                >
-                  {breakdownCategories.map(c => (
-                    <button
-                      key={c.name}
-                      ref={el => { if (el) pillRefsMap.current.set(c.name, el); else pillRefsMap.current.delete(c.name) }}
-                      onClick={() => setActiveCategory(c.name)}
-                      className="pill"
-                      style={{ ...pillStyle(c.name === effectiveCategory), flexShrink: 0 }}
-                    >
-                      {c.name}
-                    </button>
-                  ))}
+              <div ref={categoryComboRef} style={{ marginBottom: '1.25rem' }}>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <input
+                    type="text"
+                    value={categorySearch}
+                    onChange={e => { setCategorySearch(e.target.value); setCategoryDropdownOpen(true) }}
+                    placeholder="Search categories…"
+                    style={{
+                      flex: 1,
+                      background: 'var(--paper)',
+                      border: '1px solid var(--line)',
+                      borderRadius: 8,
+                      padding: '0.45rem 0.65rem',
+                      color: 'var(--ink)',
+                      fontFamily: 'var(--font-body)',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setCategoryDropdownOpen(v => !v)}
+                    style={{
+                      background: 'var(--accent-wash)',
+                      color: 'var(--accent)',
+                      border: '1px solid var(--accent)',
+                      borderRadius: 8,
+                      padding: '0.45rem 0.75rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {effectiveCategory ?? 'All'}
+                  </button>
                 </div>
+
+                {categoryDropdownOpen && (
+                  <div
+                    ref={pillScrollRef}
+                    style={{
+                      position: 'relative',
+                      zIndex: 10,
+                      maxHeight: 220,
+                      overflowY: 'auto',
+                      width: '100%',
+                      background: 'var(--paper-2)',
+                      border: '1px solid var(--line)',
+                      borderRadius: 8,
+                      marginTop: '0.5rem',
+                      boxSizing: 'border-box',
+                    }}
+                  >
+                    {filteredBreakdownCategories.length > 0 ? (
+                      filteredBreakdownCategories.map(c => (
+                        <div
+                          key={c.name}
+                          ref={el => { if (el) pillRefsMap.current.set(c.name, el); else pillRefsMap.current.delete(c.name) }}
+                          onClick={() => { setActiveCategory(c.name); setCategoryDropdownOpen(false); setCategorySearch('') }}
+                          onMouseEnter={() => setHoveredCategoryRow(c.name)}
+                          onMouseLeave={() => setHoveredCategoryRow(null)}
+                          style={{
+                            padding: '0.4rem 0.75rem',
+                            fontSize: '0.9rem',
+                            cursor: 'pointer',
+                            background: c.name === effectiveCategory
+                              ? 'var(--accent-wash)'
+                              : hoveredCategoryRow === c.name
+                                ? 'var(--surface)'
+                                : 'transparent',
+                            color: c.name === effectiveCategory ? 'var(--accent)' : 'var(--ink)',
+                            fontWeight: c.name === effectiveCategory ? 600 : 400,
+                          }}
+                        >
+                          {c.name}
+                        </div>
+                      ))
+                    ) : (
+                      <div style={{ padding: '0.4rem 0.75rem', fontSize: '0.9rem', color: 'var(--ink-mute)' }}>
+                        No categories found
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1rem', color: 'var(--ink)', margin: '0 0 0.35rem' }}>Best Spot per Category</p>
               <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--ink-mute)', margin: '0 0 0.75rem' }}>

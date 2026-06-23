@@ -149,7 +149,7 @@ client/src/
       PodiumSection.tsx    # Hall of Fame + Hall of Shame podium with scroll animations
       ReigningChampionCard.tsx  # Best of the Month card; falls back to all-time; gold if starred
     analytics/
-      AnalyticsPage.tsx # /analytics — all computed from ['entries'] query; scroll-triggered animations; local date parsing uses split('-') not new Date()
+      AnalyticsPage.tsx # /analytics — all computed from ['entries'] query; scroll-triggered animations; local date parsing uses split('-') not new Date(); Category Insights uses a combobox-style selector (search input + selected category pill, dropdown list on demand) instead of pills
     entries/
       EntryList.tsx     # /entries — card grid with search, scope filters, and sort pills; "Most Recent" sorts by review.createdAt (DB insertion time), not review.date
       EntryCard.tsx     # entry card; gold when starred; shows flag, rating, badge dots
