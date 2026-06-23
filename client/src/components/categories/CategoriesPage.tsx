@@ -159,6 +159,7 @@ export default function CategoriesPage() {
             return (
               <Fragment key={cat.name}>
                 <tr
+                  className={`anim-fade-slide-up anim-delay-${Math.min(i + 1, 8)}`}
                   onClick={interactive ? () => navigate(`/rankings?category=${encodeURIComponent(cat.name)}`) : undefined}
                   style={{ borderBottom: '1px solid var(--line)', cursor: interactive ? 'pointer' : 'default' }}
                   onMouseEnter={e => { if (interactive) (e.currentTarget as HTMLTableRowElement).style.background = 'var(--paper-2)' }}

@@ -39,7 +39,9 @@
   line-height: 1;
 }
 
-.toast {
+/* `.wrapper .toast` raises specificity so this bespoke entrance always wins
+   over the global `.anim-scale-in` utility class also applied to the card. */
+.wrapper .toast {
   display: flex;
   align-items: center;
   gap: 1rem;

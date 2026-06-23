@@ -155,3 +155,78 @@ a:focus-visible {
   border-color: var(--accent) !important;
   color: var(--ink) !important;
 }
+
+/* ─── entrance / micro-interaction animations ─────────────────────────────── */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.94); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* Always-on entrance animations (run on mount). */
+.anim-fade-slide-up {
+  animation: fadeSlideUp 500ms cubic-bezier(0.34, 1.1, 0.64, 1) both;
+}
+.anim-fade-in {
+  animation: fadeIn 450ms ease both;
+}
+.anim-scale-in {
+  animation: scaleIn 400ms cubic-bezier(0.34, 1.2, 0.64, 1) both;
+}
+
+/* Scroll-triggered variant: paired with useInViewOnce — start hidden,
+   add .is-visible to play fadeSlideUp once the element enters the viewport. */
+.anim-on-view {
+  opacity: 0;
+}
+.anim-on-view.is-visible {
+  animation: fadeSlideUp 500ms cubic-bezier(0.34, 1.1, 0.64, 1) both;
+}
+
+/* Stagger helpers — apply alongside an entrance animation class. */
+.anim-delay-1 { animation-delay: 40ms; }
+.anim-delay-2 { animation-delay: 80ms; }
+.anim-delay-3 { animation-delay: 120ms; }
+.anim-delay-4 { animation-delay: 160ms; }
+.anim-delay-5 { animation-delay: 200ms; }
+.anim-delay-6 { animation-delay: 240ms; }
+.anim-delay-7 { animation-delay: 280ms; }
+.anim-delay-8 { animation-delay: 320ms; }
+
+/* Hover utilities. */
+.hover-lift {
+  transition: transform 180ms cubic-bezier(0.34, 1.1, 0.64, 1), box-shadow 180ms ease, border-color 180ms ease;
+}
+.hover-lift:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.28);
+}
+.hover-scale {
+  transition: transform 160ms cubic-bezier(0.34, 1.1, 0.64, 1);
+}
+.hover-scale:hover {
+  transform: scale(1.03);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-fade-slide-up,
+  .anim-fade-in,
+  .anim-scale-in,
+  .anim-on-view,
+  .anim-on-view.is-visible {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .hover-lift:hover,
+  .hover-scale:hover {
+    transform: none !important;
+  }
+}

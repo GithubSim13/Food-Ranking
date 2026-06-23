@@ -114,7 +114,7 @@ export default function QuickRatePage() {
   return (
     <div style={{ display: 'flex', justifyContent: 'center', minHeight: '60vh', alignItems: 'flex-start' }}>
       <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
-        <div style={cardStyle}>
+        <div key={current.id} className="anim-scale-in" style={cardStyle}>
           {/* Progress bar */}
           <div style={{ height: 3, background: 'var(--line)', borderRadius: '2px 2px 0 0', overflow: 'hidden' }}>
             <div style={{

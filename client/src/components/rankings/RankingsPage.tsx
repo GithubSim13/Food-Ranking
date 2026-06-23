@@ -23,6 +23,7 @@ import { useToast } from '../../context/ToastContext'
 import { SearchAndScopeBar, matchesScope } from '../common/SearchAndScopeBar'
 import type { Scope } from '../common/SearchAndScopeBar'
 import type { RankedEntry } from '../../types'
+import { useInViewOnce } from '../../utils'
 import { kickerStyle, pageTitleStyle, smallPrimaryBtnStyle, smallSecondaryBtnStyle } from '../common/pageStyles'
 
 // ─── sort helpers ─────────────────────────────────────────────────────────────
@@ -266,6 +267,11 @@ function CategorySection({
 
   const isSourceCategory = category === moveSourceCategory
 
+  // Scroll-triggered fade for the section header (opacity-only so it doesn't
+  // create a containing block that would break the sticky positioning).
+  const headerRef = useRef<HTMLHeadingElement>(null)
+  const headerInView = useInViewOnce(headerRef)
+
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event
     if (!over || active.id === over.id) return
@@ -277,6 +283,7 @@ function CategorySection({
   return (
     <section>
       <h3
+        ref={headerRef}
         data-category={category}
         style={{
           fontFamily: 'var(--font-mono)',
@@ -286,13 +293,13 @@ function CategorySection({
           letterSpacing: '0.1em',
           color: isMoveMode && isSourceCategory ? 'var(--accent)' : 'var(--ink-mute)',
           marginBottom: '0.625rem',
-          opacity: 0.8,
+          opacity: headerInView ? 0.8 : 0,
           position: 'sticky',
           top: 'calc(var(--search-bar-height, 80px) - 2rem)',
           zIndex: 9,
           background: 'var(--paper)',
           paddingTop: '0.25rem',
-          transition: 'color 0.2s',
+          transition: 'color 0.2s, opacity 0.5s ease',
         }}
       >
         {category}

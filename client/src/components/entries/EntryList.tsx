@@ -131,7 +131,7 @@ export default function EntryList() {
         <p style={{ color: 'var(--ink-mute)' }}>Loading…</p>
       ) : (
         <div className="entry-grid">
-          {sorted.map(entry => <EntryCard key={entry.id} entry={entry} />)}
+          {sorted.map((entry, i) => <EntryCard key={entry.id} entry={entry} index={i} />)}
           {sorted.length === 0 && (
             <p style={{ color: 'var(--ink-mute)', gridColumn: '1 / -1' }}>No entries found.</p>
           )}

@@ -1,4 +1,30 @@
+import { useEffect, useState, type RefObject } from 'react'
 import type { Entry } from './types'
+
+/**
+ * Fires once when `ref`'s element scrolls into the viewport. Returns a boolean
+ * that flips to true on first intersection and never reverts. Pair with the
+ * `.anim-on-view` / `.is-visible` CSS classes for scroll-triggered entrances.
+ */
+export function useInViewOnce(ref: RefObject<HTMLElement | null>): boolean {
+  const [inView, setInView] = useState(false)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries.some(e => e.isIntersecting)) {
+          setInView(true)
+          observer.disconnect()
+        }
+      },
+      { threshold: 0.12, root: null },
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [ref])
+  return inView
+}
 
 export function sortReviewsByDateDesc<T extends { date: string | null }>(reviews: T[]): T[] {
   return [...reviews].map((r, i) => ({ r, i }))

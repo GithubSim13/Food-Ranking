@@ -445,7 +445,7 @@ export default function EntryDetail({ onPanelChange }: EntryDetailProps = {}) {
   }
 
   return (
-    <div>
+    <div className="anim-fade-in">
       {/* ── Entry header (always max 600) ── */}
       <div style={{ maxWidth: 600, marginBottom: '2rem' }}>
         {isEditingDetails ? (

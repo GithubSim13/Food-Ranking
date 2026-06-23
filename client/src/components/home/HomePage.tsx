@@ -1,9 +1,20 @@
-import { useMemo } from 'react'
+import { useMemo, useRef, type ReactNode } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { getEntries } from '../../api/entries'
 import FlagImage from '../common/FlagImage'
-import { sortReviewsByDateDesc, latestRating, latestRatedReview, formatReviewDate } from '../../utils'
+import { sortReviewsByDateDesc, latestRating, latestRatedReview, formatReviewDate, useInViewOnce } from '../../utils'
+
+/** Wrap a section so it fades + slides up once it scrolls into view. */
+function Reveal({ children, style }: { children: ReactNode; style?: React.CSSProperties }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const inView = useInViewOnce(ref)
+  return (
+    <div ref={ref} className={`anim-on-view${inView ? ' is-visible' : ''}`} style={style}>
+      {children}
+    </div>
+  )
+}
 import SectionErrorBoundary from '../common/SectionErrorBoundary'
 import { Card, firstNoteLine, type Top5Entry } from './HomeShared'
 import PodiumSection from './PodiumSection'
@@ -101,7 +112,7 @@ export default function HomePage() {
     <div style={{ width: '100%' }}>
 
       {/* 1. Greeting */}
-      <div style={{ marginBottom: '2rem' }}>
+      <div className="anim-fade-slide-up" style={{ marginBottom: '2rem' }}>
         <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 48, fontWeight: 800, lineHeight: 1.1, color: 'var(--ink)', marginBottom: '0.5rem' }}>
           {greetingWord}, <span style={{ color: 'var(--accent)' }}>Sim.</span>
         </h1>
@@ -138,7 +149,7 @@ export default function HomePage() {
       <PodiumSection top5={top5} shameList={shameList} />
 
       {/* 4. Reigning Champion / Fresh off the Fork */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+      <Reveal style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
         <ReigningChampionCard
           champEntry={champEntry}
           champScore={champScore}
@@ -167,9 +178,10 @@ export default function HomePage() {
           </div>
         </Card>
         </SectionErrorBoundary>
-      </div>
+      </Reveal>
 
       {/* 5. About */}
+      <Reveal>
       <SectionErrorBoundary title="About">
         <Card style={{ position: 'relative', overflow: 'hidden', marginBottom: '1.5rem' }}>
           {/* Watermark */}
@@ -199,6 +211,7 @@ export default function HomePage() {
           </div>
         </Card>
       </SectionErrorBoundary>
+      </Reveal>
 
     </div>
   )

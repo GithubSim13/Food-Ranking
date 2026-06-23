@@ -4,7 +4,7 @@ import FlagImage from '../common/FlagImage'
 import EntryFlagBadges from '../common/EntryFlagBadges'
 import { latestRating, sortReviewsByDateDesc, scoreColor } from '../../utils'
 
-export default function EntryCard({ entry }: { entry: Entry }) {
+export default function EntryCard({ entry, index = 0 }: { entry: Entry; index?: number }) {
   const navigate = useNavigate()
   const location = useLocation()
   const avg = latestRating(entry.reviews)
@@ -15,6 +15,7 @@ export default function EntryCard({ entry }: { entry: Entry }) {
 
   return (
     <div
+      className={`hover-lift anim-fade-slide-up anim-delay-${Math.min(index + 1, 8)}`}
       onClick={() => navigate(`/entries/${entry.id}`, { state: { background: location } })}
       style={{
         background: entry.starred ? 'var(--gold-wash)' : 'var(--surface)',

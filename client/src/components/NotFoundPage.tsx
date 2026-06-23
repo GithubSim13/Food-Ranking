@@ -8,7 +8,7 @@ export default function NotFoundPage() {
     <div className={styles.wrapper}>
       <span className={styles.backdrop404}>404</span>
 
-      <div className={styles.toast}>
+      <div className={`${styles.toast} anim-scale-in`}>
         <span className={styles.toastIcon}>🍽️</span>
         <div className={styles.toastText}>
           <span className={styles.toastLabel}>Achievement Unlocked</span>
@@ -16,7 +16,7 @@ export default function NotFoundPage() {
         </div>
       </div>
 
-      <div className={styles.copy}>
+      <div className={`${styles.copy} anim-scale-in anim-delay-4`}>
         <p className={styles.copyText}>This page has no rating. We've checked.</p>
         <button
           style={{ ...smallPrimaryBtnStyle, ...{ padding: '0.55rem 1.4rem', fontSize: '0.88rem' } }}

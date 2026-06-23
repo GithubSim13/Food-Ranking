@@ -164,13 +164,13 @@ client/src/
     categories/
       CategoriesPage.tsx  # /categories — sortable table; row click → /rankings?category=<name>; rename/delete
     restaurants/
-      RestaurantsPage.tsx # /restaurants — masonry card grid (CSS columns, 3/2/1 cols); avatar + avg rating bar + notes block; expandable entry rows per card (click-through to entry detail); inline in-place edit mode (name + autoResize notes textarea); edit/delete icons top-right; full-width search + sort pills (name/foods/avg). RestaurantSummary type carries nullable notes field
+      RestaurantsPage.tsx # /restaurants — masonry card grid (CSS columns, 3/2/1 cols); data-rich cards with a 3px top accent stripe (purple default, gold if restaurant has a starred entry); avatar + food count with starred count + avg rating bar + top-dish mini-pill (highest-rated entry) + notes block; stripe/starred count/top dish all computed client-side from the ['entries'] query (no new API calls); expandable entry rows per card (click-through to entry detail); inline in-place edit mode (name + autoResize notes textarea); edit/delete icons top-right; full-width search + sort pills (name/foods/avg). RestaurantSummary type carries nullable notes field
     rate/
       QuickRatePage.tsx  # /rate — queue of unrated entries; one-at-a-time card with sliders; Skip/Save; progress bar
   context/
     ToastContext.tsx    # ToastProvider + useToast() hook
   types.ts              # Entry, EntryDetail, Review, RankedEntry, Rankings, CategorySummary, RestaurantSummary; RATING_FIELDS
-  utils.ts              # sortReviewsByDateDesc, latestRating, latestRatedReview, latestPrice, scoreColor, formatReviewDate, getLocalDateString(), autoResize() — applied on load (useEffect with value dep), onChange, and onPaste (setTimeout 0) across all notes textareas
+  utils.ts              # sortReviewsByDateDesc, latestRating, latestRatedReview, latestPrice, scoreColor, formatReviewDate, getLocalDateString(), autoResize() — applied on load (useEffect with value dep), onChange, and onPaste (setTimeout 0) across all notes textareas; useInViewOnce(ref) — IntersectionObserver hook (threshold 0.12, viewport root, fires once) for scroll-triggered entrances
   App.tsx               # routes + background-location modal pattern for /entries/:id
   main.tsx              # QueryClientProvider + BrowserRouter + ToastProvider; staleTime: 5min globally
 ```
@@ -193,6 +193,7 @@ client/src/
 - **Form validation**: React-side only — no native `required` anywhere; inline error messages clear on input change.
 - **Partial sub-ratings**: null sub-ratings valid; `overallRating` redistributes weights; QuickRatePage requires all three (client-side only).
 - **Home dashboard**: all sections computed from cached `['entries']` query — do not add new API calls; date comparisons use `split('-')` not `new Date()` to avoid UTC offset issues.
+- **Animations**: shared keyframes + utility classes live at the bottom of `index.css` — `@keyframes fadeSlideUp / fadeIn / scaleIn`; always-on entrance classes `.anim-fade-slide-up`, `.anim-fade-in`, `.anim-scale-in` (run on mount); scroll-triggered variant `.anim-on-view` (starts hidden) + `.is-visible` (plays once in view, paired with `useInViewOnce`); stagger helpers `.anim-delay-1`…`.anim-delay-8`; hover utilities `.hover-lift` (translateY + shadow) and `.hover-scale`. All respect `prefers-reduced-motion: reduce`. CSS variables only — no hardcoded colors. Applied as: staggered card/row entrances (EntryCard/EntryList, CategoriesPage rows, RestaurantsPage cards), scroll-triggered reveals (HomePage non-podium sections via a local `Reveal` wrapper, RankingsPage sticky category headers via opacity-only to preserve sticky positioning), `.anim-scale-in` keyed on entry id (QuickRatePage card), on the NotFoundPage achievement card (the module's `.toast` keeps its bespoke `toastDrop`/`idleBob` via a `.wrapper .toast` specificity bump so the global utility never clobbers it) and its copy block, `.anim-fade-in` on EntryDetail mount, `.hover-lift` on EntryCard + restaurant cards. The bespoke animations in PodiumSection, AnalyticsPage (`useInViewOnce`/`useCountUp` are local to that file), Modal, and Toast are independent and untouched.
 
 ### Home dashboard sections
 
