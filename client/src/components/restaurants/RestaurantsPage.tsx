@@ -196,23 +196,21 @@ export default function RestaurantsPage() {
 
       <style>{`
         .restaurant-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 1rem;
+          column-count: 3;
+          column-gap: 1rem;
           width: 100%;
           min-width: 0;
           box-sizing: border-box;
-          align-items: start;
         }
         .restaurant-grid > * {
           min-width: 0;
           box-sizing: border-box;
         }
         @media (max-width: 1100px) {
-          .restaurant-grid { grid-template-columns: repeat(2, 1fr); }
+          .restaurant-grid { column-count: 2; }
         }
         @media (max-width: 580px) {
-          .restaurant-grid { grid-template-columns: 1fr; }
+          .restaurant-grid { column-count: 1; }
         }
         .restaurant-entry-row:hover {
           background: var(--surface);
@@ -422,6 +420,8 @@ const cardStyle: React.CSSProperties = {
   padding: '1.25rem',
   display: 'flex',
   flexDirection: 'column',
+  breakInside: 'avoid',
+  marginBottom: '1rem',
 }
 
 const fieldLabelStyle: React.CSSProperties = {
