@@ -56,7 +56,7 @@ Safe to re-run. `--clear` deletes in FK-safe order (Reviews → Entries → Rest
 Restaurant ──< Entry ──< Review
 ```
 
-- **Restaurant** — `id`, `name` (`@unique` — enforced by migration `20260619000000_restaurant_name_unique`; `entries.ts` uses a case-insensitive `findFirst` on name to reuse existing rows instead of creating duplicates)
+- **Restaurant** — `id`, `name` (`@unique` — enforced by migration `20260619000000_restaurant_name_unique`; `entries.ts` uses a case-insensitive `findFirst` on name to reuse existing rows instead of creating duplicates), `notes` (String?, nullable — free-text notes, editable on RestaurantsPage; returned by `GET /api/restaurants`)
 - **Entry** — `id`, `foodName`, `category`, `restaurantId`, `starred` (bool), `flag` (String?, nullable 2-letter ISO code), `manualRank` (Int?, nullable — per-category drag order), `tryAgain` (Boolean, default false), `neverAgain` (Boolean, default false), `createdAt`, `updatedAt`
 - **Review** — `id`, `entryId`, `date?` (DateTime, nullable), `notes?`, `rating1?` (Taste), `rating2?` (Value), `rating3?` (Consistency), `overallRating?`, `price?` (Float, nullable — cost in ₱ at time of visit), `uncertainRating` (Boolean, default false, renamed from `retroactive`), `createdAt`
 
@@ -111,7 +111,7 @@ server/
 | PATCH | `/api/categories/:name` | Rename category; bulk-updates all entries |
 | DELETE | `/api/categories/:name` | Delete category — only if no entries assigned |
 | GET | `/api/restaurants` | All restaurants with entry count, alphabetically |
-| PATCH | `/api/restaurants/:id` | Edit restaurant name |
+| PATCH | `/api/restaurants/:id` | Edit restaurant `name` and/or `notes` (nullable) |
 | DELETE | `/api/restaurants/:id` | Delete restaurant — only if no entries |
 
 #### overallRating computation (server-enforced)
@@ -149,7 +149,7 @@ client/src/
       PodiumSection.tsx    # Hall of Fame + Hall of Shame podium with scroll animations
       ReigningChampionCard.tsx  # Best of the Month card; falls back to all-time; gold if starred
     analytics/
-      AnalyticsPage.tsx # /analytics — all computed from ['entries'] query; scroll-triggered animations; local date parsing uses split('-') not new Date(); Category Insights uses a combobox-style selector (search input + selected category pill, dropdown list on demand) instead of pills
+      AnalyticsPage.tsx # /analytics — all computed from ['entries'] query; scroll-triggered animations; local date parsing uses split('-') not new Date(); Category Insights uses a combobox-style selector (search input + selected category pill, dropdown list on demand) instead of pills; Rating Trajectory is a hybrid list + detail chart — list of movers (2+ rated reviews) with delta badges, click a row to expand a single-entry Recharts line chart below it, click again to collapse
     entries/
       EntryList.tsx     # /entries — card grid with search, scope filters, and sort pills; "Most Recent" sorts by review.createdAt (DB insertion time), not review.date
       EntryCard.tsx     # entry card; gold when starred; shows flag, rating, badge dots
@@ -164,7 +164,7 @@ client/src/
     categories/
       CategoriesPage.tsx  # /categories — sortable table; row click → /rankings?category=<name>; rename/delete
     restaurants/
-      RestaurantsPage.tsx # /restaurants — sortable table with expandable entry rows
+      RestaurantsPage.tsx # /restaurants — card grid (3/2/1 cols); avatar + avg rating bar + notes block; inline in-place edit (name + autoResize notes textarea); full-width search + sort pills (name/foods/avg)
     rate/
       QuickRatePage.tsx  # /rate — queue of unrated entries; one-at-a-time card with sliders; Skip/Save; progress bar
   context/

@@ -56,6 +56,7 @@ export interface CategorySummary {
 export interface RestaurantSummary {
   id: number;
   name: string;
+  notes: string | null;
   entryCount: number;
 }
 

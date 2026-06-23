@@ -131,3 +131,5 @@ Ideas documented for later, not currently prioritised:
 - [x] Code audits — extracted shared utils, Icons, pageStyles, SearchAndScopeBar, CategoryComparisonPanel, EntryFlagBadges; removed dead code; CSS variable consistency
 - [x] Performance + UI consistency pass — staleTime 5min, useMemo on derived values; standardized form/button/label sizes; transitions; focus-visible outline
 - [x] QOL pass — tryAgain/neverAgain + price on EntryForm, consistent category/restaurant auto-suggest (combo boxes on EntryForm, datalist on EntryDetail + RankingsPage), textarea auto-resize on paste/load, Most Recent sort by review.createdAt
+- [x] Rating Trajectory — hybrid list + detail chart; list shows all entries with 2+ rated reviews with delta badges; clicking a row reveals a single-entry Recharts line chart below; clicking again collapses it
+- [x] Restaurant notes + card redesign — `Restaurant.notes` (nullable); PATCH accepts name + notes; RestaurantsPage rebuilt as a card grid (avatar, avg rating bar, notes block) with inline in-place edit (autoResize notes textarea) and full-width search + sort pills

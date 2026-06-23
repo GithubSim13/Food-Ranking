@@ -14,6 +14,7 @@ router.get('/', async (_req, res) => {
       restaurants.map(r => ({
         id: r.id,
         name: r.name,
+        notes: r.notes,
         entryCount: r._count.entries,
       }))
     );
@@ -28,15 +29,22 @@ router.patch('/:id', async (req, res) => {
     res.status(400).json({ error: 'Invalid restaurant id' });
     return;
   }
-  const { name } = req.body as { name?: unknown };
+  const { name, notes } = req.body as { name?: unknown; notes?: unknown };
   if (!name || typeof name !== 'string') {
     res.status(400).json({ error: 'name is required' });
+    return;
+  }
+  if (notes !== undefined && notes !== null && typeof notes !== 'string') {
+    res.status(400).json({ error: 'notes must be a string' });
     return;
   }
   try {
     const restaurant = await prisma.restaurant.update({
       where: { id },
-      data: { name },
+      data: {
+        name,
+        ...(notes !== undefined ? { notes: notes === null || notes === '' ? null : notes } : {}),
+      },
     });
     res.json(restaurant);
   } catch {

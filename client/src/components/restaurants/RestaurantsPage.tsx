@@ -1,12 +1,12 @@
-import { useState, useMemo, Fragment } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { getRestaurants, patchRestaurant, deleteRestaurant } from '../../api/restaurants'
 import { getEntries } from '../../api/entries'
-import FlagImage from '../common/FlagImage'
 import { useToast } from '../../context/ToastContext'
-import { latestRating, scoreColor } from '../../utils'
+import { latestRating, scoreColor, autoResize } from '../../utils'
 import { PencilIcon, TrashIcon, ChevronIcon, iconBtnStyle } from '../common/Icons'
+import { pillStyle } from '../common/SearchAndScopeBar'
 import { kickerStyle, pageTitleStyle, smallPrimaryBtnStyle, smallSecondaryBtnStyle, smallDeleteBtnStyle } from '../common/pageStyles'
 
 type SortCol = 'name' | 'foods' | 'avg'
@@ -26,6 +26,12 @@ function getInitials(name: string): string {
   return (words[0].charAt(0) + words[1].charAt(0)).toUpperCase()
 }
 
+const sortPills: { key: SortCol; label: string }[] = [
+  { key: 'name', label: 'Name' },
+  { key: 'foods', label: 'Foods' },
+  { key: 'avg', label: 'Avg rating' },
+]
+
 export default function RestaurantsPage() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -36,23 +42,32 @@ export default function RestaurantsPage() {
   const { data: allEntries = [] } = useQuery({ queryKey: ['entries'], queryFn: getEntries })
 
   const [search, setSearch] = useState('')
-  const [expanded, setExpanded] = useState<number | null>(null)
   const [editingId, setEditingId] = useState<number | null>(null)
-  const [renameValue, setRenameValue] = useState('')
-  const [renameError, setRenameError] = useState('')
+  const [nameValue, setNameValue] = useState('')
+  const [notesValue, setNotesValue] = useState('')
+  const [editError, setEditError] = useState('')
   const [deletingRestaurant, setDeletingRestaurant] = useState<number | null>(null)
+  const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set())
   const [sortCol, setSortCol] = useState<SortCol>('name')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
 
-  const { mutate: doRename, isPending: isRenaming } = useMutation({
-    mutationFn: ({ id, name }: { id: number; name: string }) => patchRestaurant(id, { name }),
+  const notesRef = useRef<HTMLTextAreaElement>(null)
+
+  // Auto-size the notes textarea whenever edit mode opens or its content changes.
+  useEffect(() => {
+    if (notesRef.current) autoResize(notesRef.current)
+  }, [editingId, notesValue])
+
+  const { mutate: doSave, isPending: isSaving } = useMutation({
+    mutationFn: ({ id, name, notes }: { id: number; name: string; notes: string | null }) =>
+      patchRestaurant(id, { name, notes }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['restaurants'] })
       queryClient.invalidateQueries({ queryKey: ['entries'] })
       setEditingId(null)
-      showToast('Restaurant renamed')
+      showToast('Restaurant updated')
     },
-    onError: () => showToast('Failed to rename restaurant', 'error'),
+    onError: () => showToast('Failed to update restaurant', 'error'),
   })
 
   const { mutate: doDelete, isPending: isDeleting } = useMutation({
@@ -83,6 +98,15 @@ export default function RestaurantsPage() {
     return { restAvgMap: avgMap, entriesByRestaurantId: byId }
   }, [allEntries])
 
+  function toggleExpanded(id: number) {
+    setExpandedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
   const q = search.toLowerCase()
   const filtered = restaurants.filter(r => r.name.toLowerCase().includes(q))
 
@@ -111,14 +135,18 @@ export default function RestaurantsPage() {
     }
   }
 
-  function SortArrow({ col }: { col: SortCol }) {
-    if (sortCol !== col)
-      return <span style={{ color: 'var(--ink-mute)', marginLeft: 4, fontSize: '0.65rem', opacity: 0.5 }}>↕</span>
-    return (
-      <span style={{ color: 'var(--accent)', marginLeft: 4, fontSize: '0.65rem' }}>
-        {sortDir === 'asc' ? '▲' : '▼'}
-      </span>
-    )
+  function startEdit(id: number, name: string, notes: string | null) {
+    setDeletingRestaurant(null)
+    setNameValue(name)
+    setNotesValue(notes ?? '')
+    setEditError('')
+    setEditingId(id)
+  }
+
+  function saveEdit(id: number) {
+    if (!nameValue.trim()) { setEditError('Name is required'); return }
+    const trimmedNotes = notesValue.trim()
+    doSave({ id, name: nameValue.trim(), notes: trimmedNotes === '' ? null : trimmedNotes })
   }
 
   if (isLoading) return <p style={{ color: 'var(--ink-mute)' }}>Loading…</p>
@@ -126,299 +154,284 @@ export default function RestaurantsPage() {
   return (
     <div>
       <p style={kickerStyle}>Where you ate</p>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', marginBottom: '1.5rem' }}>
-        <h2 style={{ ...pageTitleStyle, marginBottom: 0 }}>Restaurants</h2>
-        <div style={{ position: 'relative', flexShrink: 0, width: 260 }}>
-          <span style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-mute)', pointerEvents: 'none', display: 'flex' }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-          </span>
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Search restaurants…"
-            style={{
-              width: '100%',
-              padding: '0.55rem 0.75rem 0.55rem 2.25rem',
-              border: '1px solid var(--line)',
-              borderRadius: 8,
-              background: 'var(--surface)',
-              color: 'var(--ink)',
-              outline: 'none',
-              boxSizing: 'border-box',
-              fontSize: '0.9rem',
-            }}
-          />
-        </div>
+      <h2 style={{ ...pageTitleStyle, marginBottom: '1.25rem' }}>Restaurants</h2>
+
+      {/* Full-width search */}
+      <div style={{ position: 'relative', width: '100%', marginBottom: '0.875rem' }}>
+        <span style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-mute)', pointerEvents: 'none', display: 'flex' }}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+        </span>
+        <input
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Search restaurants…"
+          style={{
+            width: '100%',
+            padding: '0.6rem 0.85rem 0.6rem 2.4rem',
+            border: '1px solid var(--line)',
+            borderRadius: 8,
+            background: 'var(--surface)',
+            color: 'var(--ink)',
+            outline: 'none',
+            boxSizing: 'border-box',
+            fontSize: '0.9rem',
+          }}
+        />
       </div>
 
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-        <thead>
-          <tr style={{ borderBottom: '2px solid var(--line)' }}>
-            <th style={{ ...thStyle, width: 28 }} />
-            <th style={{ ...thStyle, width: 44, textAlign: 'center' }}>#</th>
-            <th style={{ ...thStyle, textAlign: 'left', cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('name')}>
-              Restaurant <SortArrow col="name" />
-            </th>
-            <th style={{ ...thStyle, textAlign: 'right', cursor: 'pointer', userSelect: 'none', width: 90 }} onClick={() => handleSort('foods')}>
-              Foods <SortArrow col="foods" />
-            </th>
-            <th style={{ ...thStyle, textAlign: 'right', cursor: 'pointer', userSelect: 'none', width: 180 }} onClick={() => handleSort('avg')}>
-              Avg rating <SortArrow col="avg" />
-            </th>
-            <th style={{ ...thStyle, textAlign: 'right', width: 80 }}>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {sorted.map((rest, i) => {
-            const avg = restAvgMap.get(rest.id) ?? null
-            const isOpen = expanded === rest.id
-            const isEditing = editingId === rest.id
-            const isDelConfirm = deletingRestaurant === rest.id
-            const restEntries = entriesByRestaurantId.get(rest.id) ?? []
-            const interactive = !isEditing && !isDelConfirm
-            const { bg, text } = AVATAR_COLORS[i % 5]
+      {/* Sort pills */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', marginBottom: '1.5rem' }}>
+        <span style={{ fontSize: '0.75rem', color: 'var(--ink-mute)', fontFamily: 'var(--font-mono)', marginRight: '0.25rem' }}>Sort</span>
+        {sortPills.map(p => (
+          <button key={p.key} className="pill" onClick={() => handleSort(p.key)} style={pillStyle(sortCol === p.key)}>
+            {p.label}
+            {sortCol === p.key && (
+              <span style={{ marginLeft: 5, fontSize: '0.65rem' }}>{sortDir === 'asc' ? '▲' : '▼'}</span>
+            )}
+          </button>
+        ))}
+      </div>
 
-            return (
-              <Fragment key={rest.id}>
-                <tr
-                  onClick={interactive ? () => setExpanded(isOpen ? null : rest.id) : undefined}
-                  style={{ borderBottom: '1px solid var(--line)', cursor: interactive ? 'pointer' : 'default' }}
-                  onMouseEnter={e => { if (interactive) (e.currentTarget as HTMLTableRowElement).style.background = 'var(--paper-2)' }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.background = '' }}
-                >
-                  {/* Chevron */}
-                  <td style={{ ...tdStyle, width: 28, paddingRight: 0 }}>
-                    <span style={{
-                      display: 'inline-flex',
-                      color: isOpen ? 'var(--accent)' : 'var(--ink-mute)',
-                      transition: 'transform 0.18s',
-                      transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+      <style>{`
+        .restaurant-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 1rem;
+          width: 100%;
+          min-width: 0;
+          box-sizing: border-box;
+          align-items: start;
+        }
+        .restaurant-grid > * {
+          min-width: 0;
+          box-sizing: border-box;
+        }
+        @media (max-width: 1100px) {
+          .restaurant-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 580px) {
+          .restaurant-grid { grid-template-columns: 1fr; }
+        }
+        .restaurant-entry-row:hover {
+          background: var(--surface);
+        }
+      `}</style>
+
+      <div className="restaurant-grid">
+        {sorted.map((rest, i) => {
+          const avg = restAvgMap.get(rest.id) ?? null
+          const isEditing = editingId === rest.id
+          const isDelConfirm = deletingRestaurant === rest.id
+          const isExpanded = expandedIds.has(rest.id)
+          const restEntries = entriesByRestaurantId.get(rest.id) ?? []
+          const { bg, text } = AVATAR_COLORS[i % 5]
+
+          return (
+            <div key={rest.id} style={cardStyle}>
+              {isEditing ? (
+                <>
+                  <label style={fieldLabelStyle}>Name</label>
+                  <input
+                    value={nameValue}
+                    onChange={e => { setNameValue(e.target.value); setEditError('') }}
+                    autoFocus
+                    style={inputStyle}
+                  />
+                  {editError && <p style={editErrorStyle}>{editError}</p>}
+
+                  <label style={{ ...fieldLabelStyle, marginTop: '0.75rem' }}>Notes</label>
+                  <textarea
+                    ref={notesRef}
+                    value={notesValue}
+                    onChange={e => { setNotesValue(e.target.value); autoResize(e.currentTarget) }}
+                    onPaste={e => { const el = e.currentTarget; setTimeout(() => autoResize(el), 0) }}
+                    placeholder="Notes about this restaurant…"
+                    rows={3}
+                    style={{ ...inputStyle, resize: 'none', overflow: 'hidden', minHeight: 64, lineHeight: 1.5 }}
+                  />
+
+                  <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.875rem' }}>
+                    <button
+                      onClick={() => saveEdit(rest.id)}
+                      disabled={isSaving}
+                      style={{ ...smallPrimaryBtnStyle, opacity: isSaving ? 0.6 : 1 }}
+                    >
+                      {isSaving ? 'Saving…' : 'Save'}
+                    </button>
+                    <button onClick={() => setEditingId(null)} disabled={isSaving} style={smallSecondaryBtnStyle}>
+                      Cancel
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Top row */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                    <div style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 9,
+                      background: bg,
+                      color: text,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 14,
+                      fontWeight: 600,
+                      fontFamily: 'var(--font-mono)',
+                      flexShrink: 0,
+                      userSelect: 'none',
                     }}>
-                      <ChevronIcon open={false} />
-                    </span>
-                  </td>
-
-                  {/* # */}
-                  <td style={{ ...tdStyle, textAlign: 'center', color: 'var(--ink-mute)', fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}>
-                    {i + 1}
-                  </td>
-
-                  {/* Restaurant name */}
-                  <td style={tdStyle}>
-                    {isEditing ? (
-                      <input
-                        value={renameValue}
-                        onChange={e => { setRenameValue(e.target.value); setRenameError('') }}
-                        onKeyDown={e => {
-                          if (e.key === 'Enter') {
-                            if (!renameValue.trim()) { setRenameError('Name is required'); return }
-                            doRename({ id: rest.id, name: renameValue.trim() })
-                          }
-                          if (e.key === 'Escape') { setEditingId(null); setRenameError('') }
-                        }}
-                        autoFocus
-                        style={inputStyle}
-                      />
-                    ) : (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                        <div style={{
-                          width: 36,
-                          height: 36,
-                          borderRadius: 8,
-                          background: bg,
-                          color: text,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: 13,
-                          fontWeight: 600,
-                          fontFamily: 'var(--font-mono)',
-                          flexShrink: 0,
-                          userSelect: 'none',
-                        }}>
-                          {getInitials(rest.name)}
-                        </div>
-                        <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600, color: 'var(--ink)' }}>
-                          {rest.name}
-                        </span>
+                      {getInitials(rest.name)}
+                    </div>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {rest.name}
                       </div>
-                    )}
-                    {renameError && <p style={renameErrorStyle}>{renameError}</p>}
-                  </td>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--ink-mute)', fontFamily: 'var(--font-mono)' }}>
+                        {rest.entryCount} {rest.entryCount === 1 ? 'food' : 'foods'}
+                      </div>
+                    </div>
 
-                  {/* Foods */}
-                  <td style={{ ...tdStyle, textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--ink-mute)', fontSize: '0.82rem' }}>
-                    {rest.entryCount}
-                  </td>
+                    {/* Top-right actions */}
+                    <div style={{ display: 'flex', gap: '0.2rem', marginLeft: 'auto', flexShrink: 0 }}>
+                      {restEntries.length > 0 && (
+                        <button
+                          onClick={() => toggleExpanded(rest.id)}
+                          title={isExpanded ? 'Hide foods' : 'Show foods'}
+                          aria-expanded={isExpanded}
+                          className="icon-btn"
+                          style={{ ...iconBtnStyle, color: isExpanded ? 'var(--accent)' : 'var(--ink-mute)' }}
+                        >
+                          <ChevronIcon open={isExpanded} />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => startEdit(rest.id, rest.name, rest.notes)}
+                        title="Edit restaurant"
+                        className="icon-btn"
+                        style={iconBtnStyle}
+                      >
+                        <PencilIcon />
+                      </button>
+                      <button
+                        onClick={() => { setEditingId(null); setDeletingRestaurant(rest.id) }}
+                        title="Delete restaurant"
+                        className="icon-btn-danger"
+                        style={{ ...iconBtnStyle, color: 'var(--danger)' }}
+                      >
+                        <TrashIcon />
+                      </button>
+                    </div>
+                  </div>
 
-                  {/* Avg rating */}
-                  <td style={{ ...tdStyle, textAlign: 'right' }}>
+                  {/* Avg rating bar */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.875rem' }}>
                     {avg !== null ? (
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                        <div style={{ width: 80, height: 5, borderRadius: 3, background: 'var(--line)', flexShrink: 0, overflow: 'hidden' }}>
+                      <>
+                        <div style={{ flex: 1, height: 6, borderRadius: 3, background: 'var(--line)', overflow: 'hidden' }}>
                           <div style={{ width: `${(avg / 10) * 100}%`, height: '100%', borderRadius: 3, background: scoreColor(avg) }} />
                         </div>
                         <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '0.88rem', color: scoreColor(avg), minWidth: 38, textAlign: 'right' }}>
                           {avg.toFixed(2)}
                         </span>
+                      </>
+                    ) : (
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', color: 'var(--ink-mute)' }}>Unrated</span>
+                    )}
+                  </div>
+
+                  {/* Expandable entry list */}
+                  {isExpanded && restEntries.length > 0 && (
+                    <div style={{ marginTop: '0.875rem', borderTop: '1px solid var(--line)', paddingTop: '0.5rem', display: 'flex', flexDirection: 'column' }}>
+                      {restEntries.map(e => {
+                        const rating = latestRating(e.reviews)
+                        return (
+                          <div
+                            key={e.id}
+                            onClick={() => navigate(`/entries/${e.id}`, { state: { background: location } })}
+                            className="restaurant-entry-row"
+                            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.35rem 0.4rem', borderRadius: 6, cursor: 'pointer' }}
+                          >
+                            <span style={{ fontWeight: 500, fontSize: '0.85rem', color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {e.foodName}
+                            </span>
+                            <span style={{ fontSize: '0.78rem', color: 'var(--ink-mute)', whiteSpace: 'nowrap' }}>
+                              · {e.category}
+                            </span>
+                            <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontWeight: 600, fontSize: '0.82rem', color: rating !== null ? scoreColor(rating) : 'var(--ink-mute)', flexShrink: 0 }}>
+                              {rating !== null ? rating.toFixed(1) : '–'}
+                            </span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+
+                  {/* Notes */}
+                  {rest.notes && (
+                    <pre style={notesBlockStyle}>{rest.notes}</pre>
+                  )}
+
+                  {/* Delete confirmation */}
+                  {isDelConfirm && (
+                    rest.entryCount > 0 ? (
+                      <div style={{ marginTop: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem' }}>
+                        <span style={{ flex: 1, color: 'var(--gold)' }}>
+                          Can't delete: {rest.entryCount} {rest.entryCount === 1 ? 'entry' : 'entries'} assigned.
+                        </span>
+                        <button onClick={() => setDeletingRestaurant(null)} style={smallSecondaryBtnStyle}>Close</button>
                       </div>
                     ) : (
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--ink-mute)' }}>—</span>
-                    )}
-                  </td>
-
-                  {/* Actions */}
-                  <td style={{ ...tdStyle, textAlign: 'right' }} onClick={e => e.stopPropagation()}>
-                    {isEditing ? (
-                      <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'flex-end' }}>
+                      <div style={{ marginTop: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem' }}>
+                        <span style={{ flex: 1, color: 'var(--danger)' }}>Delete this restaurant?</span>
                         <button
-                          onClick={() => {
-                            if (!renameValue.trim()) { setRenameError('Name is required'); return }
-                            doRename({ id: rest.id, name: renameValue.trim() })
-                          }}
-                          disabled={isRenaming}
-                          style={{ ...smallPrimaryBtnStyle, opacity: isRenaming ? 0.6 : 1 }}
+                          onClick={() => doDelete(rest.id)}
+                          disabled={isDeleting}
+                          style={{ ...smallDeleteBtnStyle, opacity: isDeleting ? 0.6 : 1 }}
                         >
-                          Save
+                          {isDeleting ? 'Deleting…' : 'Confirm'}
                         </button>
-                        <button
-                          onClick={() => { setEditingId(null); setRenameError('') }}
-                          disabled={isRenaming}
-                          style={smallSecondaryBtnStyle}
-                        >
+                        <button onClick={() => setDeletingRestaurant(null)} disabled={isDeleting} style={smallSecondaryBtnStyle}>
                           Cancel
                         </button>
                       </div>
-                    ) : (
-                      <div style={{ display: 'flex', gap: '0.2rem', justifyContent: 'flex-end' }}>
-                        <button
-                          onClick={() => { setRenameValue(rest.name); setRenameError(''); setEditingId(rest.id) }}
-                          title="Edit restaurant name"
-                          className="icon-btn"
-                          style={iconBtnStyle}
-                        >
-                          <PencilIcon />
-                        </button>
-                        <button
-                          onClick={() => setDeletingRestaurant(rest.id)}
-                          title="Delete restaurant"
-                          className="icon-btn-danger"
-                          style={{ ...iconBtnStyle, color: 'var(--danger)' }}
-                        >
-                          <TrashIcon />
-                        </button>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-
-                {/* Expanded entries */}
-                {isOpen && restEntries.length > 0 && (
-                  <tr style={{ borderBottom: '1px solid var(--line)' }}>
-                    <td colSpan={6} style={{ padding: '8px 16px 12px 16px' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', borderTop: '1px solid var(--line)' }}>
-                        <tbody>
-                          {restEntries.map(e => {
-                            const rating = latestRating(e.reviews)
-                            return (
-                              <tr
-                                key={e.id}
-                                onClick={() => navigate(`/entries/${e.id}`, { state: { background: location } })}
-                                style={{ cursor: 'pointer', background: e.starred ? 'var(--gold-wash)' : 'transparent' }}
-                                onMouseEnter={ev => { (ev.currentTarget as HTMLTableRowElement).style.background = e.starred ? 'var(--gold-wash)' : 'var(--paper-2)' }}
-                                onMouseLeave={ev => { (ev.currentTarget as HTMLTableRowElement).style.background = e.starred ? 'var(--gold-wash)' : 'transparent' }}
-                              >
-                                <td style={{ padding: '5px 8px', width: 24 }}>
-                                  {e.flag && <FlagImage code={e.flag} />}
-                                </td>
-                                <td style={{ padding: '5px 8px', fontSize: 13, color: e.starred ? 'var(--gold)' : 'var(--ink)' }}>
-                                  {e.starred && <span style={{ marginRight: '0.25rem', fontSize: '0.75rem' }}>⭐</span>}
-                                  {e.foodName}
-                                </td>
-                                <td style={{ padding: '5px 8px' }}>
-                                  <span style={{
-                                    fontSize: 11,
-                                    color: 'var(--ink-mute)',
-                                    background: 'var(--surface)',
-                                    border: '1px solid var(--line)',
-                                    borderRadius: 99,
-                                    padding: '2px 8px',
-                                    whiteSpace: 'nowrap',
-                                  }}>
-                                    {e.category}
-                                  </span>
-                                </td>
-                                <td style={{ padding: '5px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 500, fontSize: 13, color: rating !== null ? scoreColor(rating) : 'var(--ink-mute)', minWidth: 36 }}>
-                                  {rating !== null ? rating.toFixed(1) : '—'}
-                                </td>
-                              </tr>
-                            )
-                          })}
-                        </tbody>
-                      </table>
-                    </td>
-                  </tr>
-                )}
-
-                {/* Delete confirmation */}
-                {isDelConfirm && (
-                  <tr style={{ background: rest.entryCount > 0 ? 'var(--gold-wash)' : '#2a1515', borderBottom: '1px solid var(--line)' }}>
-                    <td colSpan={6} style={{ padding: '0.6rem 0.875rem' }}>
-                      {rest.entryCount > 0 ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem' }}>
-                          <span style={{ flex: 1, color: 'var(--gold)' }}>
-                            Cannot delete: {rest.entryCount} {rest.entryCount === 1 ? 'entry' : 'entries'} assigned. Reassign or delete them first.
-                          </span>
-                          <button onClick={() => setDeletingRestaurant(null)} style={smallSecondaryBtnStyle}>Close</button>
-                        </div>
-                      ) : (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem' }}>
-                          <span style={{ flex: 1, color: '#fca5a5' }}>Delete this restaurant?</span>
-                          <button
-                            onClick={() => doDelete(rest.id)}
-                            disabled={isDeleting}
-                            style={{ ...smallDeleteBtnStyle, opacity: isDeleting ? 0.6 : 1 }}
-                          >
-                            {isDeleting ? 'Deleting…' : 'Confirm'}
-                          </button>
-                          <button onClick={() => setDeletingRestaurant(null)} disabled={isDeleting} style={smallSecondaryBtnStyle}>
-                            Cancel
-                          </button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                )}
-              </Fragment>
-            )
-          })}
-        </tbody>
-      </table>
-
-      {sorted.length === 0 && search && (
-        <p style={{ color: 'var(--ink-mute)', fontSize: '0.9rem', marginTop: '1rem' }}>
-          No restaurants match "{search}".
-        </p>
-      )}
+                    )
+                  )}
+                </>
+              )}
+            </div>
+          )
+        })}
+        {sorted.length === 0 && (
+          <p style={{ color: 'var(--ink-mute)', fontSize: '0.9rem', gridColumn: '1 / -1' }}>
+            {search ? `No restaurants match "${search}".` : 'No restaurants yet.'}
+          </p>
+        )}
+      </div>
     </div>
   )
 }
 
-const thStyle: React.CSSProperties = {
-  padding: '0.55rem 0.875rem',
-  fontFamily: 'var(--font-body)',
-  fontWeight: 600,
-  fontSize: '0.75rem',
-  color: 'var(--ink-mute)',
-  textTransform: 'uppercase',
-  letterSpacing: '0.06em',
+const cardStyle: React.CSSProperties = {
+  background: 'var(--paper-2)',
+  border: '1px solid var(--line)',
+  borderRadius: 12,
+  padding: '1.25rem',
+  display: 'flex',
+  flexDirection: 'column',
 }
 
-const tdStyle: React.CSSProperties = {
-  padding: '0.7rem 0.875rem',
-  verticalAlign: 'middle',
+const fieldLabelStyle: React.CSSProperties = {
+  display: 'block',
+  fontSize: '0.7rem',
+  textTransform: 'uppercase',
+  letterSpacing: '0.06em',
+  color: 'var(--ink-mute)',
+  fontFamily: 'var(--font-mono)',
+  marginBottom: '0.3rem',
 }
 
 const inputStyle: React.CSSProperties = {
@@ -431,10 +444,27 @@ const inputStyle: React.CSSProperties = {
   color: 'var(--ink)',
   outline: 'none',
   boxSizing: 'border-box',
+  fontFamily: 'var(--font-body)',
 }
 
-const renameErrorStyle: React.CSSProperties = {
-  margin: '0.25rem 0 0',
+const notesBlockStyle: React.CSSProperties = {
+  margin: '0.875rem 0 0',
+  padding: '0.6rem 0.7rem',
+  background: 'var(--surface)',
+  border: '1px solid var(--line)',
+  borderRadius: 8,
+  whiteSpace: 'pre-wrap',
+  wordBreak: 'break-word',
+  fontFamily: 'var(--font-body)',
+  fontSize: '0.85rem',
+  color: 'var(--ink-mute)',
+  lineHeight: 1.5,
+  maxHeight: 120,
+  overflowY: 'auto',
+}
+
+const editErrorStyle: React.CSSProperties = {
+  margin: '0.3rem 0 0',
   fontSize: '0.8rem',
   color: 'var(--danger)',
   fontFamily: 'var(--font-body)',
