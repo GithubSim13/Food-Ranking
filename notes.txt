@@ -1,0 +1,60 @@
+
+
+
+
+
+
+git commit -m "feat: ui improvements - updated rating, added bullet points for reviews, updated starred entries"
+
+
+fan out subagents?
+
+
+
+MANUAL FIX:
+- change padding of text above searchbar in Entries page to 0.5 rem
+- increase padding in between rating floats and sliders
+- decrease bottom padding of the top div in the entries modal
+
+FIX:
+
+QOL:
+
+FEATS:
+- makes suggestions on categories that have many similar entries, and proposes making a new category (ex: grabbing a lot of lemonades from the "Juice" category and making a "Lemonade" category)
+- change ranking metrics from the normal to heavily skewed taste or heavily skewed value
+
+ANALYTICS
+- best restaurant
+- top categories
+- category with most entries
+- ratio of starred foods to unstarred
+- ratio of good, mid, and bad foods
+- best "x_category" spot
+- showing how some entries improved or got worse after each review, etc.
+- starred picks
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

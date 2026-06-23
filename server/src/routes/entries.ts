@@ -8,14 +8,7 @@ router.get('/search', async (req, res) => {
   try {
     const q = String(req.query.q ?? '');
     const entries = await prisma.entry.findMany({
-      where: {
-        OR: [
-          { foodName: { contains: q, mode: 'insensitive' } },
-          { category: { contains: q, mode: 'insensitive' } },
-          { restaurant: { name: { contains: q, mode: 'insensitive' } } },
-          { reviews: { some: { notes: { contains: q, mode: 'insensitive' } } } },
-        ],
-      },
+      where: { foodName: { contains: q, mode: 'insensitive' } },
       include: { restaurant: restaurantNameSelect },
       orderBy: { foodName: 'asc' },
     });
