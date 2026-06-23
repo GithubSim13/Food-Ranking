@@ -17,9 +17,9 @@ export function firstNoteLine(notes: string | null | undefined): string {
   return notes.split('\n')[0].trim()
 }
 
-export function Card({ children, style, onClick }: { children: React.ReactNode; style?: React.CSSProperties; onClick?: () => void }) {
+export function Card({ children, style, onClick, className }: { children: React.ReactNode; style?: React.CSSProperties; onClick?: () => void; className?: string }) {
   return (
-    <div onClick={onClick} style={{
+    <div onClick={onClick} className={className} style={{
       background: 'var(--surface)',
       border: '1px solid var(--line)',
       borderRadius: 14,

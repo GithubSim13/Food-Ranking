@@ -239,7 +239,7 @@ export default function RestaurantsPage() {
           const topDish = topDishMap.get(rest.id) ?? null
 
           return (
-            <div key={rest.id} className={`hover-lift anim-fade-slide-up anim-delay-${Math.min(i + 1, 8)}`} style={cardStyle}>
+            <div key={`${rest.id}-${sortCol}-${sortDir}`} className={`hover-lift anim-fade-slide-up${hasStarred ? ' card-gleam' : ''}`} style={cardStyle}>
               <div style={{ ...stripeStyle, background: hasStarred ? 'var(--gold)' : 'var(--accent)' }} />
               {isEditing ? (
                 <>

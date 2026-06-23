@@ -52,8 +52,40 @@ export function latestPrice(reviews: Entry['reviews']): number | null {
   return sortReviewsByDateDesc(reviews).find(r => r.price != null)?.price ?? null
 }
 
+function scoreHue(v: number): number {
+  return 25 + ((v - 3) / 6.5) * 120
+}
+
 export function scoreColor(v: number): string {
-  return `oklch(0.62 0.16 ${25 + ((v - 3) / 6.5) * 120})`
+  return `oklch(0.62 0.16 ${scoreHue(v)})`
+}
+
+/** Same hue as scoreColor but with an alpha channel — for subtle score-based glows. */
+export function scoreColorAlpha(v: number, alpha: number): string {
+  return `oklch(0.62 0.16 ${scoreHue(v)} / ${alpha})`
+}
+
+/**
+ * Eases a number from 0 up to `target` once `start` flips true. Returns the live
+ * value (float) — round at the call site for integer stats. Pair with
+ * useInViewOnce to trigger on scroll into view.
+ */
+export function useCountUp(target: number | null, start: boolean, duration = 900): number {
+  const [value, setValue] = useState(0)
+  useEffect(() => {
+    if (!start || target === null) return
+    let raf = 0
+    const t0 = performance.now()
+    const tick = (now: number) => {
+      const p = Math.min((now - t0) / duration, 1)
+      const eased = 1 - Math.pow(1 - p, 3)
+      setValue(target * eased)
+      if (p < 1) raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [start, target, duration])
+  return value
 }
 
 export function getLocalDateString(): string {

@@ -2,7 +2,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import type { Entry } from '../../types'
 import FlagImage from '../common/FlagImage'
 import EntryFlagBadges from '../common/EntryFlagBadges'
-import { latestRating, sortReviewsByDateDesc, scoreColor } from '../../utils'
+import { latestRating, sortReviewsByDateDesc, scoreColor, scoreColorAlpha } from '../../utils'
 
 export default function EntryCard({ entry, index = 0 }: { entry: Entry; index?: number }) {
   const navigate = useNavigate()
@@ -13,11 +13,17 @@ export default function EntryCard({ entry, index = 0 }: { entry: Entry; index?: 
   const noteReview = sorted.find(r => r.notes && r.notes.trim() !== '')
   const quote = noteReview ? noteReview.notes!.split('\n')[0].trim() : null
 
+  // Subtle score-based glow — distinguishes a high-rated card from a low one at
+  // a glance. Unrated cards get no glow.
+  const scoreGlow = avg !== null ? `0 4px 18px -8px ${scoreColorAlpha(avg, 0.2)}` : undefined
+
   return (
     <div
-      className={`hover-lift anim-fade-slide-up anim-delay-${Math.min(index + 1, 8)}`}
+      className={`hover-lift anim-fade-slide-up anim-delay-${Math.min(index + 1, 8)}${entry.starred ? ' card-gleam' : ''}`}
       onClick={() => navigate(`/entries/${entry.id}`, { state: { background: location } })}
       style={{
+        position: 'relative',
+        overflow: 'hidden',
         background: entry.starred ? 'var(--gold-wash)' : 'var(--surface)',
         border: entry.starred ? '1px solid var(--gold)' : '1px solid var(--line)',
         borderRadius: 14,
@@ -26,6 +32,7 @@ export default function EntryCard({ entry, index = 0 }: { entry: Entry; index?: 
         display: 'flex',
         flexDirection: 'column',
         gap: '0.375rem',
+        boxShadow: scoreGlow,
       }}
     >
       {/* Flag + name */}

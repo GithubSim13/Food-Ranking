@@ -215,6 +215,36 @@ a:focus-visible {
   transform: scale(1.03);
 }
 
+/* ─── starred card gleam ──────────────────────────────────────────────────── */
+/* A semi-transparent gold stripe sweeps across the card once on mount (and again
+   on hover), like light catching a polished surface. Host must be position:
+   relative + overflow: hidden so the sweep is clipped to the card. */
+@keyframes gleamSweep {
+  0%   { transform: translateX(-140%) skewX(-18deg); }
+  100% { transform: translateX(260%)  skewX(-18deg); }
+}
+.card-gleam::after {
+  content: '';
+  position: absolute;
+  top: -10%;
+  bottom: -10%;
+  left: 0;
+  width: 55%;
+  pointer-events: none;
+  z-index: 2;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    color-mix(in srgb, var(--gold) 38%, transparent) 50%,
+    transparent 70%
+  );
+  transform: translateX(-140%) skewX(-18deg);
+  animation: gleamSweep 1.5s cubic-bezier(0.4, 0, 0.2, 1) 0.35s 1;
+}
+.card-gleam:hover::after {
+  animation: gleamSweep 1.1s cubic-bezier(0.4, 0, 0.2, 1) 1;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .anim-fade-slide-up,
   .anim-fade-in,
@@ -229,4 +259,9 @@ a:focus-visible {
   .hover-scale:hover {
     transform: none !important;
   }
+  .card-gleam::after,
+  .card-gleam:hover::after {
+    animation: none !important;
+  }
+  .card-gleam::after { opacity: 0 !important; }
 }

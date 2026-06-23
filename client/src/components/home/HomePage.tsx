@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { getEntries } from '../../api/entries'
 import FlagImage from '../common/FlagImage'
-import { sortReviewsByDateDesc, latestRating, latestRatedReview, formatReviewDate, useInViewOnce } from '../../utils'
+import { sortReviewsByDateDesc, latestRating, latestRatedReview, formatReviewDate, useInViewOnce, useCountUp } from '../../utils'
 
 /** Wrap a section so it fades + slides up once it scrolls into view. */
 function Reveal({ children, style }: { children: ReactNode; style?: React.CSSProperties }) {
@@ -36,6 +36,18 @@ export default function HomePage() {
     starredCount: entries.filter(e => e.starred).length,
     distinctRestCount: new Set(entries.map(e => e.restaurantId)).size,
   }), [entries])
+
+  // ── stat count-up (triggers on scroll into view) ───────────────────────────
+  const statsRef = useRef<HTMLDivElement>(null)
+  const statsInView = useInViewOnce(statsRef)
+  const animCategories = Math.round(useCountUp(totalCategories, statsInView))
+  const animFoods = Math.round(useCountUp(totalFoods, statsInView))
+  const animStarred = Math.round(useCountUp(starredCount, statsInView))
+  const animRest = Math.round(useCountUp(distinctRestCount, statsInView))
+
+  // About section sits at the bottom of the page; run the count-up on mount
+  // rather than gating it on an IntersectionObserver that may never fire.
+  const animAbout = Math.round(useCountUp(entries.length, true))
   // ── top 5 ──────────────────────────────────────────────────────────────────
   const top5 = useMemo<Top5Entry[]>(() => [...entries]
     .map(e => {
@@ -122,25 +134,25 @@ export default function HomePage() {
       </div>
 
       {/* 2. Stat row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
+      <div ref={statsRef} style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
         {/* Categories */}
-        <Card>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '2rem', fontWeight: 700, color: 'var(--ink)', lineHeight: 1 }}>{totalCategories}</div>
+        <Card className="hover-lift">
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '2rem', fontWeight: 700, color: 'var(--ink)', lineHeight: 1 }}>{animCategories}</div>
           <div style={{ marginTop: '0.4rem', fontFamily: 'var(--font-mono)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--ink-mute)' }}>Categories</div>
         </Card>
         {/* Foods Logged */}
-        <Card>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '2rem', fontWeight: 700, color: 'var(--ink)', lineHeight: 1 }}>{totalFoods}</div>
+        <Card className="hover-lift">
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '2rem', fontWeight: 700, color: 'var(--ink)', lineHeight: 1 }}>{animFoods}</div>
           <div style={{ marginTop: '0.4rem', fontFamily: 'var(--font-mono)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--ink-mute)' }}>Foods Logged</div>
         </Card>
         {/* Starred Faves */}
-        <Card>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '2rem', fontWeight: 700, color: 'var(--gold)', lineHeight: 1 }}>{starredCount}</div>
+        <Card className="hover-lift">
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '2rem', fontWeight: 700, color: 'var(--gold)', lineHeight: 1 }}>{animStarred}</div>
           <div style={{ marginTop: '0.4rem', fontFamily: 'var(--font-mono)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--ink-mute)' }}>Starred Faves</div>
         </Card>
         {/* Restaurants Tried */}
-        <Card>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '2rem', fontWeight: 700, color: 'var(--ink)', lineHeight: 1 }}>{distinctRestCount}</div>
+        <Card className="hover-lift">
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '2rem', fontWeight: 700, color: 'var(--ink)', lineHeight: 1 }}>{animRest}</div>
           <div style={{ marginTop: '0.4rem', fontFamily: 'var(--font-mono)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--ink-mute)' }}>Restaurants Tried</div>
         </Card>
       </div>
@@ -203,7 +215,7 @@ export default function HomePage() {
             </div>
             {/* Right column */}
             <div style={{ flex: '0 0 40%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-              <div style={{ fontSize: '3.5rem', fontWeight: 800, fontFamily: 'var(--font-mono)', color: 'var(--accent)', lineHeight: 1 }}>{entries.length}</div>
+              <div style={{ fontSize: '3.5rem', fontWeight: 800, fontFamily: 'var(--font-mono)', color: 'var(--accent)', lineHeight: 1 }}>{animAbout}</div>
               <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--ink-mute)' }}>foods logged</div>
               <hr style={{ width: '40px', border: 'none', borderTop: '1px solid var(--line)', margin: '0.25rem 0' }} />
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', color: 'var(--ink-mute)' }}>est. 2025</div>

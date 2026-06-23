@@ -19,7 +19,7 @@ export default function ReigningChampionCard({ champEntry, champScore, champNote
 
   return (
     <SectionErrorBoundary title="Best of the Month">
-    <div onClick={() => champEntry && navigate(`/entries/${champEntry.id}`, { state: { background: location } })} style={{
+    <div className="card-gleam" onClick={() => champEntry && navigate(`/entries/${champEntry.id}`, { state: { background: location } })} style={{
       position: 'relative',
       background: 'var(--accent)',
       backgroundImage: 'repeating-linear-gradient(135deg, rgba(255,255,255,0.04) 0px, rgba(255,255,255,0.04) 2px, transparent 2px, transparent 14px)',
