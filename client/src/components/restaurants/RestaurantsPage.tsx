@@ -83,7 +83,7 @@ export default function RestaurantsPage() {
     },
   })
 
-  const { restAvgMap, entriesByRestaurantId } = useMemo(() => {
+  const { restAvgMap, entriesByRestaurantId, starredCountMap, topDishMap } = useMemo(() => {
     const byId = new Map<number, typeof allEntries>()
     for (const e of allEntries) {
       const list = byId.get(e.restaurantId) ?? []
@@ -91,11 +91,20 @@ export default function RestaurantsPage() {
       byId.set(e.restaurantId, list)
     }
     const avgMap = new Map<number, number | null>()
+    const starredMap = new Map<number, number>()
+    const dishMap = new Map<number, { foodName: string; rating: number } | null>()
     for (const [id, entries] of byId) {
       const ratings = entries.map(e => latestRating(e.reviews)).filter((r): r is number => r !== null)
       avgMap.set(id, ratings.length ? ratings.reduce((a, b) => a + b, 0) / ratings.length : null)
+      starredMap.set(id, entries.filter(e => e.starred).length)
+      let top: { foodName: string; rating: number } | null = null
+      for (const e of entries) {
+        const r = latestRating(e.reviews)
+        if (r !== null && (top === null || r > top.rating)) top = { foodName: e.foodName, rating: r }
+      }
+      dishMap.set(id, top)
     }
-    return { restAvgMap: avgMap, entriesByRestaurantId: byId }
+    return { restAvgMap: avgMap, entriesByRestaurantId: byId, starredCountMap: starredMap, topDishMap: dishMap }
   }, [allEntries])
 
   function toggleExpanded(id: number) {
@@ -225,9 +234,13 @@ export default function RestaurantsPage() {
           const isExpanded = expandedIds.has(rest.id)
           const restEntries = entriesByRestaurantId.get(rest.id) ?? []
           const { bg, text } = AVATAR_COLORS[i % 5]
+          const starredCount = starredCountMap.get(rest.id) ?? 0
+          const hasStarred = starredCount > 0
+          const topDish = topDishMap.get(rest.id) ?? null
 
           return (
             <div key={rest.id} style={cardStyle}>
+              <div style={{ ...stripeStyle, background: hasStarred ? 'var(--gold)' : 'var(--accent)' }} />
               {isEditing ? (
                 <>
                   <label style={fieldLabelStyle}>Name</label>
@@ -290,6 +303,9 @@ export default function RestaurantsPage() {
                       </div>
                       <div style={{ fontSize: '0.78rem', color: 'var(--ink-mute)', fontFamily: 'var(--font-mono)' }}>
                         {rest.entryCount} {rest.entryCount === 1 ? 'food' : 'foods'}
+                        {starredCount > 0 && (
+                          <> · <span style={{ color: 'var(--gold)' }}>★</span> {starredCount} starred</>
+                        )}
                       </div>
                     </div>
 
@@ -340,6 +356,19 @@ export default function RestaurantsPage() {
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', color: 'var(--ink-mute)' }}>Unrated</span>
                     )}
                   </div>
+
+                  {/* Top dish mini-pill */}
+                  {topDish && (
+                    <div style={topDishPillStyle}>
+                      <span style={{ color: 'var(--gold)', fontSize: 11, fontWeight: 600, flexShrink: 0 }}>★ TOP</span>
+                      <span style={{ color: 'var(--ink)', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {topDish.foodName}
+                      </span>
+                      <span style={{ marginLeft: 'auto', color: scoreColor(topDish.rating), fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
+                        {topDish.rating.toFixed(1)}
+                      </span>
+                    </div>
+                  )}
 
                   {/* Expandable entry list */}
                   {isExpanded && restEntries.length > 0 && (
@@ -414,6 +443,7 @@ export default function RestaurantsPage() {
 }
 
 const cardStyle: React.CSSProperties = {
+  position: 'relative',
   background: 'var(--paper-2)',
   border: '1px solid var(--line)',
   borderRadius: 12,
@@ -422,6 +452,27 @@ const cardStyle: React.CSSProperties = {
   flexDirection: 'column',
   breakInside: 'avoid',
   marginBottom: '1rem',
+  overflow: 'hidden',
+}
+
+const stripeStyle: React.CSSProperties = {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  height: 3,
+  borderRadius: '12px 12px 0 0',
+}
+
+const topDishPillStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.4rem',
+  marginTop: '0.75rem',
+  padding: '7px 10px',
+  background: 'var(--paper)',
+  border: '1px solid var(--line)',
+  borderRadius: 8,
 }
 
 const fieldLabelStyle: React.CSSProperties = {

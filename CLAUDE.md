@@ -164,7 +164,7 @@ client/src/
     categories/
       CategoriesPage.tsx  # /categories — sortable table; row click → /rankings?category=<name>; rename/delete
     restaurants/
-      RestaurantsPage.tsx # /restaurants — card grid (3/2/1 cols); avatar + avg rating bar + notes block; inline in-place edit (name + autoResize notes textarea); full-width search + sort pills (name/foods/avg)
+      RestaurantsPage.tsx # /restaurants — masonry card grid (CSS columns, 3/2/1 cols); avatar + avg rating bar + notes block; expandable entry rows per card (click-through to entry detail); inline in-place edit mode (name + autoResize notes textarea); edit/delete icons top-right; full-width search + sort pills (name/foods/avg). RestaurantSummary type carries nullable notes field
     rate/
       QuickRatePage.tsx  # /rate — queue of unrated entries; one-at-a-time card with sliders; Skip/Save; progress bar
   context/
