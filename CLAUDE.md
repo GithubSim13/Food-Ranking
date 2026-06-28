@@ -42,12 +42,6 @@ npx ts-node src/scripts/import.ts <path-to-entries.md>           # normal import
 npx ts-node src/scripts/import.ts <path-to-entries.md> --clear   # wipe + reimport
 ```
 
-### One-off scripts (`/server`)
-```bash
-npx ts-node src/scripts/setAllRetroactive.ts   # sets uncertainRating = true on all existing reviews (already run)
-```
-Safe to re-run. `--clear` deletes in FK-safe order (Reviews → Entries → Restaurants). Call `dotenv.config()` before importing PrismaClient; run from `/server` directory. Google Docs flag emoji (🇸🇬) exports as garbled CP437 — script detects and converts to 2-letter ISO code in `Entry.flag`.
-
 ## Architecture
 
 ### Data model (`server/prisma/schema.prisma`)
@@ -154,8 +148,8 @@ client/src/
       EntryList.tsx     # /entries — card grid with search, scope filters, and sort pills; "Most Recent" sorts by review.createdAt (DB insertion time), not review.date
       EntryCard.tsx     # entry card; gold when starred; shows flag, rating, badge dots
       EntryForm.tsx     # /entries/new — dupe detection, FlagPicker, combo boxes, tryAgain/neverAgain toggles, optional inline review (with price field), CategoryComparisonPanel
-      EntryDetail.tsx   # /entries/:id — entry info, inline editing, toggles, reviews list, ReviewForm, delete
-      EntryModal.tsx    # modal wrapper around EntryDetail
+      EntryDetail.tsx   # /entries/:id — entry info, inline editing, toggles, reviews list, ReviewForm, delete; max-width 860px
+      EntryModal.tsx    # modal wrapper around EntryDetail; 960px wide (panel closed), 1200px (panel open)
     reviews/
       ReviewForm.tsx    # add/edit review: ratings, date, price, notes, uncertainRating checkbox
       RatingInput.tsx   # slider + number input, 0–10, red→yellow→green gradient
@@ -184,6 +178,7 @@ client/src/
 - **Toast + query invalidation**: all mutations show toast via `useToast()`; invalidate `['entries']`, `['entries', id]`, `['rankings']`, `['restaurants']`, `['categories']` as appropriate.
 - **Uncertain rating**: `Review.uncertainRating` — checkbox in forms; badge on review cards; yellow dot on entry detail from latest review.
 - **Review price**: optional Float (₱); shown as `₱{price} · {date}` on review cards.
+- **QuickRatePage PUT body contains only rating1/rating2/rating3 — the server PUT handler does a partial merge, never a full overwrite of other review fields (notes, date, price, uncertainRating)** (only fields explicitly present in the body are updated).
 - **Entry flags (tryAgain/neverAgain)**: mutually exclusive XOR; badge dots on cards; filter pills on Entries page; also settable at new entry creation via toggle buttons on EntryForm.
 - **Entry detail modal**: card click opens EntryDetail in Modal; URL updates to `/entries/:id`; ESC/backdrop closes; direct nav renders full page.
 - **Error handling**: all async route handlers wrapped in try/catch; 500 on DB failure, 400 on bad ID, 404 on missing record.

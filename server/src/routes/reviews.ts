@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import prisma from '../lib/prisma';
+import { Prisma } from '../generated/prisma/client';
 import { parseId } from '../lib/routeHelpers';
 
 const router = Router();
@@ -61,24 +62,29 @@ router.put('/:id', async (req, res) => {
 
   const { date, notes, rating1, rating2, rating3, uncertainRating, price } = req.body;
 
-  const r1 = rating1 != null ? Number(rating1) : null;
-  const r2 = rating2 != null ? Number(rating2) : null;
-  const r3 = rating3 != null ? Number(rating3) : null;
+  // Partial merge: only update fields explicitly present in the request body, so
+  // callers that send a subset (e.g. QuickRatePage sends only the sub-ratings)
+  // never wipe untouched fields like date/notes/price/uncertainRating.
+  const data: Prisma.ReviewUpdateInput = {};
+
+  if (date !== undefined) data.date = date ? new Date(date) : null;
+  if (notes !== undefined) data.notes = notes ?? null;
+  if (uncertainRating !== undefined) data.uncertainRating = uncertainRating === true;
+  if (price !== undefined) data.price = price != null ? Number(price) : null;
+
+  // Sub-ratings always travel together; recompute overallRating whenever any are sent.
+  if (rating1 !== undefined || rating2 !== undefined || rating3 !== undefined) {
+    const r1 = rating1 != null ? Number(rating1) : null;
+    const r2 = rating2 != null ? Number(rating2) : null;
+    const r3 = rating3 != null ? Number(rating3) : null;
+    data.rating1 = r1;
+    data.rating2 = r2;
+    data.rating3 = r3;
+    data.overallRating = computeOverallRating(r1, r2, r3);
+  }
 
   try {
-    const review = await prisma.review.update({
-      where: { id },
-      data: {
-        date: date ? new Date(date) : null,
-        notes: notes ?? null,
-        rating1: r1,
-        rating2: r2,
-        rating3: r3,
-        overallRating: computeOverallRating(r1, r2, r3),
-        ...(uncertainRating !== undefined && { uncertainRating: uncertainRating === true }),
-        ...(price !== undefined && { price: price != null ? Number(price) : null }),
-      },
-    });
+    const review = await prisma.review.update({ where: { id }, data });
     res.json(review);
   } catch {
     res.status(500).json({ error: 'Internal server error' });

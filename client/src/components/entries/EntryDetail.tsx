@@ -67,7 +67,7 @@ function ReviewCard({ review: r, onUpdated, onEditStart, onEditEnd }: ReviewCard
   const { mutate, isPending } = useMutation({
     mutationFn: () =>
       updateReview(r.id, {
-        date: form.date || undefined,
+        date: form.date || null,
         rating1: form.rating1,
         rating2: form.rating2,
         rating3: form.rating3,
@@ -447,7 +447,7 @@ export default function EntryDetail({ onPanelChange }: EntryDetailProps = {}) {
   return (
     <div className="anim-fade-in">
       {/* ── Entry header (always max 600) ── */}
-      <div style={{ maxWidth: 600, marginBottom: '2rem' }}>
+      <div style={{ maxWidth: 860, marginBottom: '2rem' }}>
         {isEditingDetails ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <div>
@@ -631,7 +631,7 @@ export default function EntryDetail({ onPanelChange }: EntryDetailProps = {}) {
       {/* ── Reviews + Add Review + Comparison Panel ── */}
       <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
         {/* Left column — reviews and add-review form */}
-        <div style={{ flex: 1, minWidth: 0, maxWidth: 600 }}>
+        <div style={{ flex: 1, minWidth: 0, maxWidth: 860 }}>
           <section style={{ marginBottom: '2rem' }}>
             <h3 style={{ fontWeight: 600, marginBottom: '0.75rem' }}>Reviews</h3>
             {entry.reviews.length === 0 ? (

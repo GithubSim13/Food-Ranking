@@ -13,7 +13,7 @@ export const createReview = (data: {
 }) => axios.post<Review>('/api/reviews', data).then(r => r.data);
 
 export type ReviewUpdatePayload = {
-  date?: string;
+  date?: string | null;
   notes?: string | null;
   rating1?: number | null;
   rating2?: number | null;

@@ -222,8 +222,8 @@ export default function EntryForm() {
   const showPanel = showReview && category.trim().length > 0
 
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1.5rem' }}>
-      <div style={{ width: 480, flexShrink: 0 }}>
+    <div style={{ maxWidth: 900, display: 'flex', alignItems: 'flex-start', gap: '1.5rem' }}>
+      <div style={{ width: 540, flexShrink: 0 }}>
         <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1.5rem' }}>New Entry</h2>
 
         <form
@@ -405,7 +405,9 @@ export default function EntryForm() {
         </form>
       </div>
 
-      {showPanel && <CategoryComparisonPanel category={category.trim()} />}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        {showPanel && <CategoryComparisonPanel category={category.trim()} />}
+      </div>
     </div>
   )
 }
