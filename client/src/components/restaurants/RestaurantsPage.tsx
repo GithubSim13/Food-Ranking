@@ -1,3 +1,4 @@
+import type React from 'react'
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useLocation } from 'react-router-dom'
@@ -239,7 +240,7 @@ export default function RestaurantsPage() {
           const topDish = topDishMap.get(rest.id) ?? null
 
           return (
-            <div key={`${rest.id}-${sortCol}-${sortDir}`} className={`hover-lift anim-fade-slide-up${hasStarred ? ' card-gleam' : ''}`} style={cardStyle}>
+            <div key={`${rest.id}-${sortCol}-${sortDir}`} className={`hover-lift anim-fade-slide-up${hasStarred ? ' card-gleam' : ''}`} style={{ ...cardStyle, '--gleam-periodic-delay': `${((rest.id * 0.618) % 3) + 3}s` } as React.CSSProperties}>
               <div style={{ ...stripeStyle, background: hasStarred ? 'var(--gold)' : 'var(--accent)' }} />
               {isEditing ? (
                 <>

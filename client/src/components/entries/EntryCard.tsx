@@ -1,3 +1,4 @@
+import type React from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import type { Entry } from '../../types'
 import FlagImage from '../common/FlagImage'
@@ -22,6 +23,7 @@ export default function EntryCard({ entry, index = 0 }: { entry: Entry; index?: 
       className={`hover-lift anim-fade-slide-up anim-delay-${Math.min(index + 1, 8)}${entry.starred ? ' card-gleam' : ''}`}
       onClick={() => navigate(`/entries/${entry.id}`, { state: { background: location } })}
       style={{
+        '--gleam-periodic-delay': `${((entry.id * 0.618) % 3) + 3}s`,
         position: 'relative',
         overflow: 'hidden',
         background: entry.starred ? 'var(--gold-wash)' : 'var(--surface)',
@@ -33,7 +35,7 @@ export default function EntryCard({ entry, index = 0 }: { entry: Entry; index?: 
         flexDirection: 'column',
         gap: '0.375rem',
         boxShadow: scoreGlow,
-      }}
+      } as React.CSSProperties}
     >
       {/* Flag + name */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700, fontSize: '1rem', color: entry.starred ? 'var(--gold)' : 'var(--ink)', minWidth: 0 }}>

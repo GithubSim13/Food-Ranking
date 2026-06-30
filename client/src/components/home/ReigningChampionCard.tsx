@@ -1,3 +1,4 @@
+import type React from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import FlagImage from '../common/FlagImage'
 import SectionErrorBoundary from '../common/SectionErrorBoundary'
@@ -20,6 +21,7 @@ export default function ReigningChampionCard({ champEntry, champScore, champNote
   return (
     <SectionErrorBoundary title="Best of the Month">
     <div className="card-gleam" onClick={() => champEntry && navigate(`/entries/${champEntry.id}`, { state: { background: location } })} style={{
+      '--gleam-periodic-delay': `${champEntry ? ((champEntry.id * 0.618) % 3) + 3 : 3}s`,
       position: 'relative',
       background: 'var(--accent)',
       backgroundImage: 'repeating-linear-gradient(135deg, rgba(255,255,255,0.04) 0px, rgba(255,255,255,0.04) 2px, transparent 2px, transparent 14px)',
@@ -31,7 +33,7 @@ export default function ReigningChampionCard({ champEntry, champScore, champNote
       justifyContent: 'center',
       gap: 4,
       cursor: champEntry ? 'pointer' : undefined,
-    }}>
+    } as React.CSSProperties}>
       {/* Score badge — top-right */}
       <div style={{
         position: 'absolute',
