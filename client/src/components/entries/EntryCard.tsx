@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import type { Entry } from '../../types'
 import FlagImage from '../common/FlagImage'
 import EntryFlagBadges from '../common/EntryFlagBadges'
-import { latestRating, sortReviewsByDateDesc, scoreColor, scoreColorAlpha } from '../../utils'
+import { latestRating, sortReviewsByDateDesc, scoreColor, scoreColorAlpha, restartGleam } from '../../utils'
 
 export default function EntryCard({ entry, index = 0 }: { entry: Entry; index?: number }) {
   const navigate = useNavigate()
@@ -22,6 +22,7 @@ export default function EntryCard({ entry, index = 0 }: { entry: Entry; index?: 
     <div
       className={`hover-lift anim-fade-slide-up anim-delay-${Math.min(index + 1, 8)}${entry.starred ? ' card-gleam' : ''}`}
       onClick={() => navigate(`/entries/${entry.id}`, { state: { background: location } })}
+      onMouseLeave={e => restartGleam(e.currentTarget)}
       style={{
         '--gleam-periodic-delay': `${((entry.id * 0.618) % 3) + 3}s`,
         position: 'relative',

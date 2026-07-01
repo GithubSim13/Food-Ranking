@@ -5,7 +5,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { getRestaurants, patchRestaurant, deleteRestaurant } from '../../api/restaurants'
 import { getEntries } from '../../api/entries'
 import { useToast } from '../../context/ToastContext'
-import { latestRating, scoreColor, autoResize } from '../../utils'
+import { latestRating, scoreColor, autoResize, restartGleam } from '../../utils'
 import { PencilIcon, TrashIcon, ChevronIcon, iconBtnStyle } from '../common/Icons'
 import { pillStyle } from '../common/SearchAndScopeBar'
 import { kickerStyle, pageTitleStyle, smallPrimaryBtnStyle, smallSecondaryBtnStyle, smallDeleteBtnStyle } from '../common/pageStyles'
@@ -240,7 +240,7 @@ export default function RestaurantsPage() {
           const topDish = topDishMap.get(rest.id) ?? null
 
           return (
-            <div key={`${rest.id}-${sortCol}-${sortDir}`} className={`hover-lift anim-fade-slide-up${hasStarred ? ' card-gleam' : ''}`} style={{ ...cardStyle, '--gleam-periodic-delay': `${((rest.id * 0.618) % 3) + 3}s` } as React.CSSProperties}>
+            <div key={`${rest.id}-${sortCol}-${sortDir}`} className={`hover-lift anim-fade-slide-up${hasStarred ? ' card-gleam' : ''}`} onMouseLeave={e => restartGleam(e.currentTarget)} style={{ ...cardStyle, '--gleam-periodic-delay': `${((rest.id * 0.618) % 3) + 3}s` } as React.CSSProperties}>
               <div style={{ ...stripeStyle, background: hasStarred ? 'var(--gold)' : 'var(--accent)' }} />
               {isEditing ? (
                 <>

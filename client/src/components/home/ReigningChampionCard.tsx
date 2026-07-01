@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import FlagImage from '../common/FlagImage'
 import SectionErrorBoundary from '../common/SectionErrorBoundary'
 import type { EntryDetail } from '../../types'
+import { restartGleam } from '../../utils'
 
 type Props = {
   champEntry: EntryDetail | null
@@ -20,7 +21,7 @@ export default function ReigningChampionCard({ champEntry, champScore, champNote
 
   return (
     <SectionErrorBoundary title="Best of the Month">
-    <div className="card-gleam" onClick={() => champEntry && navigate(`/entries/${champEntry.id}`, { state: { background: location } })} style={{
+    <div className="card-gleam" onClick={() => champEntry && navigate(`/entries/${champEntry.id}`, { state: { background: location } })} onMouseLeave={e => restartGleam(e.currentTarget)} style={{
       '--gleam-periodic-delay': `${champEntry ? ((champEntry.id * 0.618) % 3) + 3 : 3}s`,
       position: 'relative',
       background: 'var(--accent)',

@@ -98,6 +98,15 @@ export function autoResize(el: HTMLTextAreaElement): void {
   el.style.height = el.scrollHeight + 'px'
 }
 
+/** Force-restarts the .card-gleam sweep animation on hover-end by toggling the
+ *  class off/on with an intervening reflow. Call from onMouseLeave on the host. */
+export function restartGleam(el: HTMLElement): void {
+  if (!el.classList.contains('card-gleam')) return
+  el.classList.remove('card-gleam')
+  void el.offsetWidth
+  el.classList.add('card-gleam')
+}
+
 export function formatReviewDate(dateStr: string | Date | null | undefined): string {
   if (!dateStr) return ''
   const d = new Date(dateStr)
